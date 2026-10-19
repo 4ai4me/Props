@@ -39,3 +39,33 @@
   - `node --test src/utils/mathLogic.test.ts`: 8/8 통과
   - `compile_applet`: 성공 (타입 및 프로덕션 번들링 에러 0건)
   - 브라우저 멀티 뷰포트 검증: Desktop(1440×900), Galaxy Tab(1280×800), iPad Air(820×1180), Mobile(390×844) 검증 및 콘솔 에러 0건 확인.
+
+---
+
+## [작업 2] 화면 상단 '코드 분석 · GitHub 웹호스팅 가이드' 버튼 및 모달 제거
+
+- **시작 시각**: 2026-10-18T18:50:10-07:00
+- **Tier 판단**: Tier 1 (UI 요소 제거 및 미사용 컴포넌트 정리, 기존 1·2차시 활동지 및 교사용 기록실 기능 100% 유지)
+- **요청 요약**: 화면 상단에 있는 `코드 분석 · GitHub 웹호스팅 가이드` 버튼과 관련 모달을 삭제.
+
+- **완료 시각**: 2026-10-18T18:51:35-07:00
+- **수행 내역 및 검증 결과**:
+  - `src/App.tsx`에서 상단 `코드 분석 · GitHub 웹호스팅 가이드` 버튼 및 모달 렌더링 제거, `src/components/CodeReviewDeployModal.tsx` 파일 삭제.
+  - `node --test` 단위 테스트(8/8 통과), `compile_applet` 빌드 성공, 브라우저 캡처(`r4-clean-header.png`)로 상단 헤더에서 해당 버튼이 깔끔하게 제거되었음을 확인.
+
+---
+
+## [작업 3] GitHub Pages (`https://4ai4me.github.io/Props/`) 기본 브랜치(`main` 루트) 직접 서빙을 위한 완전 독립형 `/index.html` 구성
+
+- **시작 시각**: 2026-10-18T18:52:00-07:00
+- **원인 분석**:
+  - 사용자가 GitHub 저장소(`4ai4me/Props`)에 소스를 올리고 GitHub Pages 기본 설정(**Deploy from a branch: `main` / `/ (root)`**)으로 호스팅 중임.
+  - 기존 `/index.html`은 `<div id="root"></div><script type="module" src="/src/main.tsx"></script>`만 들어 있어서, 정적 파일 서버인 GitHub Pages가 `.tsx` 파일을 브라우저에 그대로 내려보내거나 `/Props/src/main.tsx` 경로 불일치로 인해 빈 화면이 출력됨.
+- **해결 설계**:
+  - 루트 `/index.html` 자체에 완성된 CSS와 다중 플랫폼 최적화 스크립트(iOS/iPadOS/갤럭시탭/PC 반응형, `±부호`/`-2`/`+2` 터치 버튼, 16px 자동 줌 방지, 비차단 커스텀 모달/토스트, 실시간 나눗셈 분석기, 교사용 예시 데이터 체험 기능, `proof2lesson-v1` JSON/CSV 완벽 호환)를 **100% 인라인으로 내장**하여, 빌드 과정 없이 `main` 브랜치의 `/index.html`을 그대로 열어도 즉시 작동하도록 구현한다.
+
+- **완료 시각**: 2026-10-18T19:01:05-07:00
+- **수행 내역 및 검증 결과**:
+  - 루트 `/index.html`을 외부 `.tsx` 번들러 의존 없이 단독으로도 즉시 실행되는 완전 독립형(Self-contained) HTML로 재구성하여, `https://4ai4me.github.io/Props/` (GitHub Pages `main` 브랜치 루트 서빙)에서 빈 화면 없이 곧바로 작동하도록 해결.
+  - 상단의 '코드 분석 · GitHub 웹호스팅 가이드' 버튼 완전히 제거 완료.
+  - 아이패드·갤럭시탭·iOS·Android·PC 반응형 UI(`16px` 입력 규격, `±부호` / `−2` / `+2` 터치 버튼, 커스텀 비차단 확인 모달 및 토스트, 교사용 예시 학생 데이터 체험 기능, `proof2lesson-v1` JSON 호환) 모두 `/index.html`에 내장 및 브라우저 검증 완료.

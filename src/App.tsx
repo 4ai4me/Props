@@ -17,13 +17,11 @@ import {
 import { Lesson1View } from './components/Lesson1View';
 import { Lesson2View } from './components/Lesson2View';
 import { TeacherView } from './components/TeacherView';
-import { CodeReviewDeployModal } from './components/CodeReviewDeployModal';
 import {
   Upload,
   UserPlus,
   Download,
   Printer,
-  Code2,
   CheckCircle2,
   AlertTriangle,
 } from 'lucide-react';
@@ -65,7 +63,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<1 | 2 | 't'>(1);
   const [steps, setSteps] = useState<{ 1: number; 2: number }>({ 1: 0, 2: 0 });
   const [selectedTeacherKey, setSelectedTeacherKey] = useState<string>('');
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
   const [printingStudent, setPrintingStudent] = useState<StudentRecord | null>(null);
 
   // Non-blocking toast & confirmation dialog state (safe for iOS/Android/iPadOS/Galaxy Tab/iFrame)
@@ -225,20 +222,6 @@ export default function App() {
     }, 120);
   };
 
-  const handleDownloadStandaloneHtml = () => {
-    const htmlDoc = `<!doctype html>\n` + document.documentElement.outerHTML;
-    const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '수학탐정단_통합활동지_반응형최적화.html';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('현재 스냅샷 HTML 파일을 내려받았습니다.', 'good');
-  };
-
   const done1 = evaluateLevel1Completion(student.l1);
   const done2 = evaluateLevel2Completion(student.l2);
   const activeDone = activeTab === 1 ? done1 : done2;
@@ -253,26 +236,15 @@ export default function App() {
             <div className="grid gap-6 lg:grid-cols-[1fr_220px] items-center">
               {/* Hero Copy */}
               <div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-[#d4ddd8]">
-                    <span className="inline-grid h-7 w-7 place-items-center rounded-full bg-[#c99f57] font-serif text-xs font-black text-[#162f39]">
-                      M
-                    </span>
-                    <span>COMMON MATH 2</span>
-                    <span className="text-[#849e9c]">/</span>
-                    <span>명제의 증명</span>
-                    <span className="text-[#849e9c]">/</span>
-                    <span>2차시 탐구</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsReviewModalOpen(true)}
-                    className="no-print inline-flex items-center gap-1.5 rounded-lg border border-[#deb87a]/50 bg-[#ffffff14] px-3 py-1.5 text-xs font-bold text-[#f7d59b] hover:bg-[#ffffff24] transition-colors whitespace-nowrap"
-                  >
-                    <Code2 className="h-3.5 w-3.5" />
-                    코드 분석 · GitHub 웹호스팅 가이드
-                  </button>
+                <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-[#d4ddd8]">
+                  <span className="inline-grid h-7 w-7 place-items-center rounded-full bg-[#c99f57] font-serif text-xs font-black text-[#162f39]">
+                    M
+                  </span>
+                  <span>COMMON MATH 2</span>
+                  <span className="text-[#849e9c]">/</span>
+                  <span>명제의 증명</span>
+                  <span className="text-[#849e9c]">/</span>
+                  <span>2차시 탐구</span>
                 </div>
 
                 <div className="mt-4 flex items-center gap-2.5 text-xs font-extrabold tracking-[2px] text-[#deb87a]">
@@ -734,13 +706,6 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {/* Code Review & GitHub Hosting Guide Modal */}
-        <CodeReviewDeployModal
-          isOpen={isReviewModalOpen}
-          onClose={() => setIsReviewModalOpen(false)}
-          onDownloadStandaloneHtml={handleDownloadStandaloneHtml}
-        />
       </div>
 
       {/* Dedicated Individual Student Report Print Area */}

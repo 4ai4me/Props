@@ -1,23 +1,3057 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#183342" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>우연일까, 필연일까? — 수학 탐정단 참·거짓 추리 프로젝트</title>
-    <meta name="description" content="공통수학2 명제의 증명 단원 1·2차시 통합 인터랙티브 탐구 활동지 및 교사용 수사 기록실 (iOS/Android/PC 다중 플랫폼 및 GitHub Pages 정적 호스팅 최적화)" />
-    <meta property="og:title" content="우연일까, 필연일까? — 수학 탐정단 참·거짓 추리 프로젝트" />
-    <meta property="og:description" content="공통수학2 명제의 증명 단원 1·2차시 통합 인터랙티브 탐구 활동지 및 교사용 수사 기록실 (iOS/Android/PC 다중 플랫폼 및 GitHub Pages 정적 호스팅 최적화)" />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#183342" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>우연일까, 필연일까? — 수학 탐정단 참·거짓 추리 프로젝트</title>
+  <meta name="description" content="공통수학2 명제의 증명 단원 1·2차시 통합 인터랙티브 탐구 활동지 및 교사용 수사 기록실 (iOS/Android/PC 다중 플랫폼 및 GitHub Pages 정적 호스팅 최적화)" />
+  <meta property="og:title" content="우연일까, 필연일까? — 수학 탐정단 참·거짓 추리 프로젝트" />
+  <meta property="og:description" content="공통수학2 명제의 증명 단원 1·2차시 통합 인터랙티브 탐구 활동지 및 교사용 수사 기록실 (iOS/Android/PC 다중 플랫폼 및 GitHub Pages 정적 호스팅 최적화)" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
+  <style>
+    :root {
+      --ink: #20343d;
+      --muted: #65747c;
+      --blue: #1e5661;
+      --blue-light: #e8f2f1;
+      --paper: #fffefb;
+      --bg: #f4f2ec;
+      --line: #dcded7;
+      --good: #187361;
+      --good-bg: #e5f5ed;
+      --warn: #945e18;
+      --warn-bg: #fff4da;
+      --bad: #af4550;
+      --bad-bg: #fff1f1;
+      --shadow: 0 8px 28px #172e3518;
+    }
 
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", "Malgun Gothic", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      color: var(--ink);
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(circle at 15% 5%, #dfe8dd70, transparent 31%),
+        radial-gradient(circle at 90% 45%, #efe5cf4b, transparent 30%);
+      font-size: 16px;
+      line-height: 1.65;
+      letter-spacing: -0.01em;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* 16px font-size prevents iOS / iPadOS Safari automatic zoom-in on input focus */
+    button, input, select, textarea {
+      font: inherit;
+      font-size: 16px;
+    }
+
+    button {
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    a {
+      color: var(--blue);
+    }
+
+    :focus-visible {
+      outline: 3px solid #d49b3f;
+      outline-offset: 2px;
+    }
+
+    h1, h2, h3, h4, p {
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: clamp(32px, 4.8vw, 56px);
+      line-height: 1.15;
+      letter-spacing: -1.8px;
+      margin: 0 0 12px;
+      font-weight: 850;
+    }
+
+    h2 {
+      font-size: clamp(22px, 2.7vw, 29px);
+      line-height: 1.35;
+      letter-spacing: -0.6px;
+      margin-bottom: 8px;
+      font-weight: 800;
+    }
+
+    h3 {
+      font-size: 18px;
+      letter-spacing: -0.3px;
+      margin: 0 0 10px;
+      font-weight: 750;
+    }
+
+    .wrap {
+      max-width: 1120px;
+      padding: 0 18px;
+      margin: 0 auto;
+    }
+
+    /* Hero Header */
+    .hero {
+      background-color: #183541;
+      background-image:
+        radial-gradient(ellipse at 85% 10%, #2f617249, transparent 40%),
+        linear-gradient(115deg, #142e3a 0%, #193e48 65%, #204951 100%);
+      position: relative;
+      overflow: hidden;
+      padding: 24px 0 20px;
+      color: #ffffff;
+    }
+
+    .hero::after {
+      content: "";
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      opacity: 0.065;
+      background-image:
+        repeating-linear-gradient(0deg, transparent 0 30px, #eac889 30px 31px),
+        repeating-linear-gradient(90deg, transparent 0 30px, #eac889 30px 31px);
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 215px;
+      align-items: center;
+      gap: 0 22px;
+    }
+
+    .hero-copy {
+      padding: 6px 0 16px;
+    }
+
+    .eyebrow {
+      color: #d4ddd8;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 750;
+      letter-spacing: 0.35px;
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+
+    .round-marker {
+      display: inline-grid;
+      place-items: center;
+      background: #c99f57;
+      color: #162f39;
+      border-radius: 50%;
+      font-size: 12px;
+      width: 27px;
+      height: 27px;
+      font-family: Georgia, serif;
+      font-weight: 900;
+    }
+
+    .tiny-sep {
+      color: #849e9c;
+    }
+
+    .hero-kicker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #deb87a;
+      letter-spacing: 2px;
+      font-size: 12px;
+      font-weight: 800;
+      margin: 20px 0 8px;
+    }
+
+    .kicker-line {
+      height: 1px;
+      width: 34px;
+      background: #c7aa7c;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: #f7d59b;
+    }
+
+    .hero-subtitle {
+      color: #f4f2e9;
+      font-size: clamp(16px, 2vw, 21px);
+      line-height: 1.4;
+      margin: 0 0 10px;
+    }
+
+    .hero-subtitle strong {
+      color: #f3d29a;
+    }
+
+    .hero-desc {
+      font-size: 14px;
+      color: #c7d9d6;
+      max-width: 640px;
+      line-height: 1.75;
+      margin: 0;
+    }
+
+    .hero-desc strong {
+      color: #f0dfb9;
+    }
+
+    .hero-side {
+      justify-self: center;
+      text-align: center;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .hero-graphic {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0.95;
+    }
+
+    .evidence-illustration {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: #a4c2bf;
+      font-weight: 750;
+      margin-top: -4px;
+    }
+
+    .case-id {
+      width: 100%;
+      border-top: 1px solid #ffffff40;
+      border-bottom: 1px solid #ffffff40;
+      color: #dfc397;
+      font-size: 11px;
+      letter-spacing: 1.3px;
+      padding: 8px 0;
+      text-align: left;
+    }
+
+    .case-id strong {
+      float: right;
+      font-size: 13px;
+      color: #fff4db;
+    }
+
+    .case-id span {
+      display: block;
+      clear: both;
+      font-size: 10px;
+      letter-spacing: 0.8px;
+      color: #b6c9c6;
+      padding-top: 4px;
+    }
+
+    .top-tabs {
+      grid-column: 1 / -1;
+      border-top: 1px solid #ffffff30;
+      padding-top: 15px;
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .top-tabs button {
+      border: 1px solid #9dbdb855;
+      background: #ffffff12;
+      color: #e7ece4;
+      border-radius: 11px;
+      min-height: 46px;
+      padding: 10px 16px;
+      font-weight: 800;
+      font-size: 14px;
+      transition: background-color 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .top-tabs button:hover {
+      background: #ffffff24;
+    }
+
+    .top-tabs button.on {
+      background: #f5ebd5;
+      color: #27404b;
+      border-color: #f1d8ae;
+      box-shadow: 0 3px 0 #0e253090;
+    }
+
+    .tab-index {
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: #e5bd84;
+      font-weight: 900;
+      margin-right: 5px;
+    }
+
+    .top-tabs button.on .tab-index {
+      color: #98621d;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      background: #fffcf6;
+      border: 1px solid #e0ddd1;
+      border-radius: 16px;
+      padding: 16px 20px;
+      box-shadow: 0 4px 14px #102c350d;
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 220px 220px minmax(0, 1fr);
+      gap: 14px;
+      align-items: end;
+    }
+
+    .toolbar .field {
+      margin: 0;
+    }
+
+    .toolbar .actionline {
+      justify-self: end;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .field {
+      margin-bottom: 15px;
+    }
+
+    .field label {
+      display: block;
+      font-weight: 800;
+      font-size: 14px;
+      margin: 0 0 6px;
+      color: var(--ink);
+    }
+
+    .hint-label {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 450;
+      margin-top: 4px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      background: #ffffff;
+      width: 100%;
+      border: 1.5px solid #c9d2d1;
+      border-radius: 11px;
+      padding: 10px 13px;
+      min-height: 46px;
+      color: var(--ink);
+      font-size: 16px;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 102px;
+      line-height: 1.6;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #1c6d72;
+      height: 28px;
+    }
+
+    .input-with-helpers {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .input-with-helpers input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .helper-btn {
+      min-height: 46px;
+      padding: 0 12px;
+      border-radius: 11px;
+      border: 1px solid #b8cac4;
+      background: #ffffff;
+      color: #295763;
+      font-weight: 800;
+      font-size: 14px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .helper-btn:hover {
+      background: #e8f2f1;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid #d9dfda;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: clamp(18px, 3vw, 28px);
+      margin: 16px 0;
+    }
+
+    .subtle {
+      color: var(--muted);
+    }
+
+    .tiny {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .small {
+      font-size: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-weight: 800;
+      font-size: 12px;
+      background: #e4f0e9;
+      color: #1f6165;
+      white-space: nowrap;
+    }
+
+    .badge.green {
+      background: #def3ea;
+      color: #116951;
+    }
+
+    .badge.amber {
+      background: #fff0d7;
+      color: #91601c;
+    }
+
+    .head-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .unit {
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: 1.3px;
+      color: #ad7b37;
+      margin-bottom: 6px;
+    }
+
+    .lesson-head {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(118deg, #ebf3ef, #f8f7ee);
+      border: 1px solid #c8d8ce;
+      padding: 18px 22px;
+      border-radius: 14px;
+      margin-top: 15px;
+    }
+
+    .lesson-head h2 {
+      margin: 10px 0 4px;
+      font-size: clamp(21px, 2.7vw, 29px);
+    }
+
+    .lesson-head p {
+      margin: 0;
+      color: #516b69;
+      font-size: 14px;
+    }
+
+    .lesson-head .badge {
+      background: #1b505a;
+      color: #ffffff;
+    }
+
+    .progress-line {
+      height: 9px;
+      background: #d8e2df;
+      border-radius: 99px;
+      overflow: hidden;
+      margin: 12px 0 6px;
+    }
+
+    .progress-line > div {
+      height: 100%;
+      background: linear-gradient(90deg, #c99d57, #27947c);
+      transition: width 0.2s ease;
+    }
+
+    .case-progression {
+      text-align: right;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .steps button {
+      min-height: 74px;
+      border-radius: 11px;
+      border: 1px solid #d1d9d6;
+      background: #fffefa;
+      color: #5d6b80;
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      text-align: center;
+    }
+
+    .steps button strong {
+      font-size: 11px;
+      font-weight: 900;
+      color: #7f817a;
+      letter-spacing: 0.4px;
+    }
+
+    .steps button span {
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.25;
+      word-break: keep-all;
+    }
+
+    .steps button.active {
+      border-color: #21666e;
+      background: #eaf3f0;
+      box-shadow: inset 0 0 0 1px #21666e, 0 2px 0 #173c4435;
+      color: #134650;
+    }
+
+    .steps button.active strong {
+      color: #175c60;
+    }
+
+    .steps button.complete {
+      background: #e9f4ee;
+      border-color: #96c6ae;
+      color: #176950;
+    }
+
+    .question {
+      background: #edf4ef;
+      color: #244e52;
+      border: 1px solid #c8d8ce;
+      padding: 15px 18px;
+      border-radius: 12px;
+      font-weight: 750;
+      margin: 14px 0 20px;
+    }
+
+    .task {
+      border: 1px solid #e0e3dd;
+      padding: 18px;
+      border-radius: 15px;
+      margin: 16px 0;
+      background: #ffffff;
+      box-shadow: 0 2px 10px #223e3d08;
+    }
+
+    .task.tone {
+      background: #f7f9f5;
+    }
+
+    .task-head {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .count {
+      background: #e2ece7;
+      color: #215c60;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      font-weight: 900;
+      font-size: 13px;
+      flex: 0 0 auto;
+    }
+
+    .task-head h3 {
+      margin: 0;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      background: #215b61;
+      color: #ffffff;
+      padding: 10px 16px;
+      min-height: 45px;
+      font-weight: 800;
+      font-size: 14px;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+
+    .btn.secondary {
+      background: #e2efea;
+      color: #1c6166;
+    }
+
+    .btn.ghost {
+      background: #ffffff;
+      border: 1px solid #b8cac4;
+      color: #295763;
+    }
+
+    .btn.green {
+      background: #167561;
+    }
+
+    .btn.light-warn {
+      background: #fff1d8;
+      color: #8f5b13;
+      border: 1px solid #dfbe82;
+    }
+
+    .btn.sm {
+      font-size: 13px;
+      min-height: 40px;
+      padding: 8px 12px;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .grid3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 11px;
+    }
+
+    .number-tile {
+      background: #edf5f0;
+      border: 1px solid #d2e3dc;
+      border-radius: 13px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .number-tile b {
+      display: block;
+      font-size: 25px;
+      color: #22666b;
+    }
+
+    .number-tile span {
+      font-size: 12px;
+      color: #516b69;
+      font-weight: 600;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 11px;
+      border: 1px solid #e6ebf1;
+      background: #ffffff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid #e6ebf1;
+      word-break: break-word;
+    }
+
+    th {
+      font-weight: 800;
+      color: #53627c;
+      background: #f5f8fd;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+
+    .mono {
+      font-variant-numeric: tabular-nums;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Pretendard Variable", Pretendard, "Noto Sans KR", sans-serif;
+    }
+
+    .note {
+      border: 1px solid #cbd7e6;
+      border-radius: 11px;
+      padding: 12px 15px;
+      background: #f2f6fd;
+      font-size: 14px;
+      margin-top: 13px;
+      white-space: pre-wrap;
+    }
+
+    .note.good {
+      border-color: #a8d9ca;
+      color: #075e49;
+      background: var(--good-bg);
+    }
+
+    .note.warn {
+      border-color: #e7c989;
+      color: #705012;
+      background: var(--warn-bg);
+    }
+
+    .note.bad {
+      border-color: #e2b4b9;
+      color: #873640;
+      background: var(--bad-bg);
+    }
+
+    .choice-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .choice {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      border: 1px solid #d4deed;
+      padding: 14px;
+      border-radius: 13px;
+      cursor: pointer;
+      background: #ffffff;
+    }
+
+    .choice.selected,
+    .choice:focus-within {
+      background: #eef7f1;
+      border-color: #5d9a8b;
+      box-shadow: inset 0 0 0 1px #81b6a8;
+    }
+
+    .choice input {
+      width: 18px;
+      height: 18px;
+      margin-top: 4px;
+      accent-color: #247775;
+      flex-shrink: 0;
+    }
+
+    .choice b {
+      display: block;
+    }
+
+    .choice small {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .proof-card {
+      border: 1px solid #dce4ee;
+      padding: 16px;
+      border-radius: 13px;
+      margin: 12px 0;
+      background: #ffffff;
+    }
+
+    .proof-card.ok {
+      background: #f1f8f4;
+      border-color: #9cd6c1;
+    }
+
+    .proof-card select {
+      margin: 8px 0;
+    }
+
+    .hintbox {
+      padding: 12px 14px;
+      background: #fff6e3;
+      color: #735312;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .footer-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 22px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+
+    .summary-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .divider {
+      border-top: 1px solid var(--line);
+      margin: 20px 0;
+    }
+
+    .success-band {
+      background: linear-gradient(110deg, #eaf6ed, #faf8eb);
+      border: 1px solid #b5d4bd;
+      border-radius: 14px;
+      padding: 18px;
+      margin-top: 16px;
+    }
+
+    .teacher-controls {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 45px;
+      border-radius: 10px;
+      padding: 10px 16px;
+      background: #215b61;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .upload-btn input {
+      display: none;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 11px;
+    }
+
+    .table-action {
+      font-size: 13px;
+      border: 1px solid #aabce4;
+      background: #eef3ff;
+      color: #2b4892;
+      border-radius: 9px;
+      padding: 7px 11px;
+      font-weight: 800;
+    }
+
+    .rubric {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .rubric > div {
+      background: #f4f7fd;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .rubric b {
+      display: block;
+      font-size: 18px;
+      color: #215b61;
+    }
+
+    .answer {
+      background: #faf9f5;
+      border: 1px solid #e5e4da;
+      padding: 11px 13px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin: 6px 0 11px;
+    }
+
+    .teacher-compare {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .teacher-compare .task {
+      margin: 0;
+    }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .analytics-panel {
+      border: 1px solid #dbe4ee;
+      border-radius: 15px;
+      padding: 17px;
+      background: #ffffff;
+    }
+
+    .analytics-panel h3 {
+      margin: 0 0 12px;
+    }
+
+    .bar-item {
+      margin: 10px 0;
+    }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      gap: 12px;
+    }
+
+    .bar-track {
+      height: 12px;
+      background: #e9edf5;
+      border-radius: 50px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #215b61, #187361);
+      border-radius: 50px;
+    }
+
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+
+    .donut-legend {
+      font-size: 13px;
+      line-height: 2;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 7px;
+    }
+
+    .eval-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .eval-grid label {
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .eval-grid select {
+      margin-top: 5px;
+    }
+
+    .report-area {
+      display: none;
+    }
+
+    .report-score {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .report-score > div {
+      text-align: center;
+      padding: 12px 5px;
+      border: 1px solid #d2dbe8;
+      border-radius: 12px;
+    }
+
+    .report-score strong {
+      font-size: 24px;
+      display: block;
+    }
+
+    .print-note {
+      font-size: 12px;
+      color: #596678;
+    }
+
+    .report-sheet {
+      font-family: "Pretendard Variable", Pretendard, "Malgun Gothic", "Noto Sans KR", sans-serif;
+      color: #18283b;
+    }
+
+    .report-sheet h2 {
+      margin: 12px 0;
+    }
+
+    .report-sheet h3 {
+      margin-top: 20px;
+    }
+
+    .report-sheet .answer {
+      border: 1px solid #ddd;
+      background: white;
+    }
+
+    .report-sheet .print-line {
+      border-bottom: 1px solid #ccd5df;
+      padding: 9px 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .screen-reader {
+      position: absolute;
+      left: -10000px;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    .hide {
+      display: none !important;
+    }
+
+    /* Non-blocking Toast & Modal for iOS / Android / WebView */
+    .toast-banner {
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-weight: 750;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 4px 12px #00000012;
+    }
+
+    .toast-banner.good {
+      background: #e5f5ed;
+      color: #075e49;
+      border: 1px solid #9cd6c1;
+    }
+
+    .toast-banner.warn {
+      background: #fff4da;
+      color: #705012;
+      border: 1px solid #e7c989;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: rgba(15, 23, 42, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-box {
+      background: #fffefb;
+      border: 1px solid #d5dbd6;
+      border-radius: 18px;
+      max-width: 440px;
+      width: 100%;
+      padding: 22px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+    }
+
+    footer {
+      margin: 24px auto 36px;
+      text-align: center;
+      color: #788580;
+      font-size: 12px;
+      line-height: 1.9;
+    }
+
+    .footer-brand {
+      font-weight: 850;
+      letter-spacing: 1.5px;
+      color: #41676b;
+    }
+
+    /* Tablet Portrait (iPad Air / Mini / Galaxy Tab Portrait: <= 960px) */
+    @media (max-width: 960px) {
+      .toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .toolbar .actionline {
+        grid-column: 1 / -1;
+        justify-self: start;
+      }
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-side {
+        display: none;
+      }
+    }
+
+    /* Mobile Phones (<= 760px) */
+    @media (max-width: 760px) {
+      .wrap {
+        padding: 0 13px;
+      }
+      .hero {
+        padding: 20px 0 16px;
+      }
+      .top-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .top-tabs button {
+        padding: 10px 8px;
+        font-size: 13px;
+      }
+      .top-tabs button:last-child {
+        grid-column: 1 / -1;
+      }
+      .toolbar {
+        grid-template-columns: 1fr;
+        padding: 14px;
+        gap: 10px;
+      }
+      .choice-list,
+      .grid2,
+      .teacher-compare,
+      .analytics-grid,
+      .eval-grid {
+        grid-template-columns: 1fr;
+      }
+      .grid3,
+      .stats,
+      .rubric,
+      .report-score {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .steps {
+        gap: 5px;
+      }
+      .steps button {
+        min-height: 66px;
+        padding: 6px 3px;
+      }
+      .steps button strong {
+        font-size: 10px;
+      }
+      .steps button span {
+        font-size: 11px;
+      }
+      .task {
+        padding: 15px;
+      }
+      .card {
+        padding: 16px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        scroll-behavior: auto !important;
+        transition: none !important;
+      }
+    }
+
+    @media print {
+      .hero .top-tabs,
+      .toolbar,
+      .steps,
+      .footer-nav,
+      .teacher-controls,
+      .btn,
+      .upload-btn,
+      .teacher-view,
+      .toast-banner,
+      .modal-backdrop {
+        display: none !important;
+      }
+      .hero {
+        background: #ffffff !important;
+        color: #111111 !important;
+        padding: 10px 0;
+        border-bottom: 2px solid #111111;
+      }
+      .hero::after,
+      .hero-side {
+        display: none !important;
+      }
+      .hero h1 em,
+      .hero .hero-subtitle,
+      .hero .hero-desc,
+      .eyebrow {
+        color: #222222 !important;
+      }
+      .card,
+      .task,
+      .lesson-head {
+        box-shadow: none !important;
+        background: #ffffff !important;
+        break-inside: avoid;
+      }
+      .wrap {
+        max-width: 100%;
+        padding: 0;
+      }
+      body.printing-report > *:not(#printReport) {
+        display: none !important;
+      }
+      body.printing-report #printReport {
+        display: block !important;
+        padding: 0 12mm !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+      }
+      body.printing-report #printReport .report-sheet {
+        display: block !important;
+      }
+      @page {
+        size: A4;
+        margin: 14mm;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow">
+          <span class="round-marker">M</span>
+          <span>COMMON MATH 2</span>
+          <span class="tiny-sep">/</span>
+          <span>명제의 증명</span>
+          <span class="tiny-sep">/</span>
+          <span>2차시 탐구</span>
+        </div>
+        <div class="hero-kicker">
+          MATH DETECTIVE PROJECT <span class="kicker-line"></span> CASE 01—02
+        </div>
+        <h1>우연일까,<br><em>필연일까?</em></h1>
+        <p class="hero-subtitle">수학 탐정단의 <strong>참·거짓 추리 프로젝트</strong></p>
+        <p class="hero-desc">규칙이라는 단서를 수집하고, 반례를 수색하고, 누구나 납득할 수 있는 <strong>증명 보고서</strong>를 완성해 보세요.</p>
+      </div>
+      <div class="hero-side">
+        <div class="hero-graphic" aria-hidden="true">
+          <svg width="145" height="142" viewBox="0 0 155 152" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="64" cy="63" r="48" stroke="#E6C990" stroke-width="2" stroke-dasharray="3 8" opacity=".5"/>
+            <circle cx="64" cy="63" r="34" stroke="#F4DCA4" stroke-width="8"/>
+            <path d="M89 88l30 30" stroke="#F4DCA4" stroke-width="13" stroke-linecap="round"/>
+            <path d="M52 62l10 10 18-22" stroke="#F4DCA4" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 17h20M4 25h32M114 16h30M129 24h15" stroke="#96B4B7" stroke-width="2" opacity=".45"/>
+          </svg>
+          <span class="evidence-illustration">수사 중 · EVIDENCE LAB</span>
+        </div>
+        <div class="case-id">
+          CASE FILE <strong>01 / 02</strong>
+          <span>관찰 · 추측 · 반례 · 증명</span>
+        </div>
+      </div>
+      <div class="top-tabs" role="tablist" aria-label="활동 화면 선택">
+        <button id="tab1" type="button" role="tab" aria-selected="true" class="on">
+          <span class="tab-index">01</span> 패턴의 비밀 (1차시)
+        </button>
+        <button id="tab2" type="button" role="tab" aria-selected="false">
+          <span class="tab-index">02</span> 진실의 증명 (2차시)
+        </button>
+        <button id="tabT" type="button" role="tab" aria-selected="false">
+          교사용 기록실
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="globalToast" class="toast-banner hide" role="status">
+      <span id="globalToastText"></span>
+      <button type="button" class="btn ghost sm" id="globalToastClose">닫기</button>
+    </div>
+
+    <section id="studentArea">
+      <div class="toolbar">
+        <div class="field">
+          <label for="group">학급 / 모둠</label>
+          <input id="group" type="text" maxlength="25" autocomplete="off" placeholder="예: 1학년 3반" />
+        </div>
+        <div class="field">
+          <label for="code">학생 식별코드</label>
+          <input id="code" type="text" maxlength="25" autocomplete="off" placeholder="학번·식별코드 (예: 10315)" />
+        </div>
+        <div class="actionline">
+          <button class="btn ghost sm" type="button" id="resumeJson">이전 결과 불러오기</button>
+          <input class="hide" type="file" id="studentFile" accept=".json,application/json" />
+          <button class="btn ghost sm" type="button" id="newStudent">새 학생 시작</button>
+        </div>
+      </div>
+      <div class="note" id="saveNotice" style="margin-top:12px">작성 내용은 현재 브라우저(PC · iPad · 갤럭시탭 · 스마트폰)에 자동 저장됩니다. 다른 기기에서 이어 하려면 JSON을 저장해 불러오세요. 공용 기기에서는 이전 학생이 JSON을 저장한 뒤 ‘새 학생 시작’을 사용하세요.</div>
+      <div id="lessonIntro"></div>
+      <div class="steps" id="stepNav" aria-label="단계 이동"></div>
+      <section id="studentContent" class="card" aria-live="polite"></section>
+      <section id="studentFoot" class="card"></section>
+    </section>
+
+    <section id="teacherArea" class="hide teacher-view">
+      <div class="card">
+        <div class="unit">DETECTIVE HQ · TEACHER'S DESK</div>
+        <h2>교사용 수사 기록실</h2>
+        <p class="subtle">학생들이 제출한 JSON 수사 기록을 한꺼번에 불러오면, 두 차시의 단서 수집·가설·반례·증명 내용을 나란히 확인할 수 있습니다. 별도 서버나 실시간 수집 기능은 사용하지 않습니다.</p>
+        <div class="teacher-controls">
+          <label class="upload-btn">
+            학생 JSON 여러 개 불러오기
+            <input id="teacherFiles" type="file" accept=".json,application/json" multiple />
+          </label>
+          <button class="btn secondary" type="button" id="teacherSample">예시 학생 데이터(2명) 체험하기</button>
+          <button class="btn ghost" type="button" id="teacherCSV">CSV 내려받기</button>
+          <button class="btn ghost" type="button" id="teacherClear">수합 목록 지우기</button>
+        </div>
+        <div class="note" id="teacherNotice">학번 대신 식별코드를 사용해도 됩니다. 학생 파일은 교사가 직접 수합해야 하며, 수합된 자료와 메모는 이 브라우저에 저장됩니다.</div>
+        <div class="stats" id="teacherStats" style="margin-top:18px"></div>
+      </div>
+
+      <div class="card">
+        <div class="head-row">
+          <h3>학급 탐구 역량 대시보드</h3>
+          <span class="tiny">제출 기록 기반 자동 집계 · 역량 평정은 교사가 직접 입력</span>
+        </div>
+        <div id="teacherAnalytics" class="analytics-grid">
+          <p class="subtle">학생 파일을 불러오면 그래프가 나타납니다.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="head-row">
+          <h3>탐정별 사건 기록</h3>
+          <span class="tiny">동일 학급·코드라면 저장 시각이 더 최신인 파일을 유지합니다.</span>
+        </div>
+        <div class="table-scroll">
+          <table style="min-width:740px">
+            <thead>
+              <tr>
+                <th>학급</th>
+                <th>식별코드</th>
+                <th>1차시 사례</th>
+                <th>1차시 증명</th>
+                <th>2차시 주제</th>
+                <th>2차시 판단</th>
+                <th>2차시 기록</th>
+                <th>비교</th>
+              </tr>
+            </thead>
+            <tbody id="teacherRows">
+              <tr><td colspan="8">불러온 자료 없음</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="teacherDetail"></div>
+      </div>
+
+      <div class="card">
+        <h3>교사용 수사 체크리스트</h3>
+        <p class="small">① 사례를 여러 개 확인한 것과 일반적 증명을 구별하는가? ② 새로운 명제에서 반례가 가정에 맞는지 확인하는가? ③ 참이라고 판단했을 때 문자·정수의 성질 등을 이용해 모든 경우를 설명하는가? ④ 처음 추측을 수정한 이유를 설명하는가?</p>
+        <div class="note warn">자동 계산과 단계 선택은 탐구를 돕는 기능입니다. 자유 서술형 증명의 논리적 타당성과 학생이 스스로 작성했는지는 교사가 최종 확인해 주세요.</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span class="footer-brand">MATH DETECTIVE PROJECT</span> &nbsp;·&nbsp; 우연일까, 필연일까? &nbsp;·&nbsp; 관찰 → 추측 → 반례 → 증명<br>
+    공통수학2 · 명제의 증명 &nbsp;|&nbsp; PC · iPad · 갤럭시탭 · 스마트폰 호환 통합 활동지
+  </footer>
+
+  <section id="printReport" class="report-area" aria-label="학생 개별 피드백 인쇄"></section>
+
+  <!-- Custom Non-Blocking Confirm Modal (Safe on iOS/Android/iPad/Galaxy Tab/WebView) -->
+  <div id="confirmModal" class="modal-backdrop hide" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="modal-box">
+      <h3 id="confirmModalTitle" style="margin-bottom:8px">확인</h3>
+      <p id="confirmModalMsg" class="small subtle" style="margin-bottom:18px"></p>
+      <div class="actions" style="justify-content:flex-end">
+        <button type="button" class="btn ghost sm" id="confirmCancel">취소</button>
+        <button type="button" class="btn sm" id="confirmOk">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+      const $ = (s, r = document) => r.querySelector(s);
+      const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+      const now = () => new Date().toISOString();
+      const readFileText = (f) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(Error('파일을 읽지 못했습니다.'));
+        reader.readAsText(f, 'UTF-8');
+      });
+
+      // Non-blocking toast & confirm helpers
+      let toastTimer = null;
+      function showToast(msg, type = 'good') {
+        const box = $('#globalToast');
+        const txt = $('#globalToastText');
+        if (!box || !txt) return;
+        txt.textContent = msg;
+        box.className = 'toast-banner ' + (type === 'warn' ? 'warn' : 'good');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => box.classList.add('hide'), 4500);
+      }
+      $('#globalToastClose').onclick = () => $('#globalToast').classList.add('hide');
+
+      let confirmCallback = null;
+      function askConfirm(title, message, onOk) {
+        $('#confirmModalTitle').textContent = title;
+        $('#confirmModalMsg').textContent = message;
+        confirmCallback = onOk;
+        $('#confirmModal').classList.remove('hide');
+      }
+      $('#confirmCancel').onclick = () => {
+        confirmCallback = null;
+        $('#confirmModal').classList.add('hide');
+      };
+      $('#confirmOk').onclick = () => {
+        const fn = confirmCallback;
+        confirmCallback = null;
+        $('#confirmModal').classList.add('hide');
+        if (typeof fn === 'function') fn();
+      };
+
+      const storageKey = 'proof_discovery_two_lessons_student_v1';
+      const teachKey = 'proof_discovery_two_lessons_teacher_v1';
+
+      const topics = {
+        a: {
+          tag: 'A · 조건 바꾸기',
+          title: '홀수의 제곱을 16으로 나누면 나머지는 항상 1일까?',
+          statement: '모든 홀수 n에 대하여 n²을 16으로 나눈 나머지는 1이다.',
+          scope: '홀수',
+          calc: (n) => n * n,
+          div: 16,
+          formula: (n) => `${n}²`,
+          trueValue: false,
+          proofLead: '이 명제가 참인지 확신이 서지 않는다면, 먼저 서로 다른 홀수의 나머지를 비교해 보세요.'
+        },
+        b: {
+          tag: 'B · 대상 바꾸기',
+          title: '연속하는 두 짝수의 곱은 항상 8의 배수일까?',
+          statement: '모든 짝수 n에 대하여 n(n+2)는 8의 배수이다.',
+          scope: '짝수',
+          calc: (n) => n * (n + 2),
+          div: 8,
+          formula: (n) => `${n}×(${n + 2})`,
+          trueValue: true,
+          proofLead: '짝수를 n=2k로 놓고, 연속하는 다음 짝수를 2(k+1)로 나타내 보세요.'
+        },
+        c: {
+          tag: 'C · 규칙 일반화',
+          title: '연속하는 세 정수의 곱은 항상 6의 배수일까?',
+          statement: '모든 정수 n에 대하여 n(n+1)(n+2)는 6의 배수이다.',
+          scope: '정수',
+          calc: (n) => n * (n + 1) * (n + 2),
+          div: 6,
+          formula: (n) => `${n}×${n + 1}×${n + 2}`,
+          trueValue: true,
+          proofLead: '연속하는 세 정수 중에는 반드시 짝수가 있고, 반드시 3의 배수도 있습니다.'
+        },
+        d: {
+          tag: 'D · 나만의 명제',
+          title: '내가 만든 새로운 명제',
+          statement: '',
+          scope: '직접 정하기',
+          calc: null,
+          div: null,
+          formula: null,
+          trueValue: null,
+          proofLead: '명제의 대상을 정확하게 정하고, 반례가 있는지 먼저 점검해 보세요.'
+        }
+      };
+
+      const proof1 = [
+        {
+          q: '모든 홀수 n을 표현할 수 있는 식을 고르세요. (k는 정수)',
+          opts: ['n=2k', 'n=2k+1', 'n=k+1'],
+          answer: 1,
+          hints: ['짝수와 홀수를 구별하는 표현을 떠올려 보세요.', '2의 배수가 아닌 정수를 표현해야 합니다.', '정수 k에 대하여 2k+1입니다.']
+        },
+        {
+          q: 'n=2k+1일 때, n²−1을 알맞게 정리한 식은?',
+          opts: ['4k(k+1)', '2k(k+1)', '4k²+1'],
+          answer: 0,
+          hints: ['먼저 (2k+1)²을 전개하세요.', '전개 후 1을 빼고 4k를 묶어 보세요.', '(2k+1)²−1=4k²+4k=4k(k+1)입니다.']
+        },
+        {
+          q: '모든 정수 k에 대하여 k(k+1)이 짝수인 이유는?',
+          opts: ['두 수가 모두 짝수이므로', '연속한 두 정수 중 적어도 하나는 짝수이므로', '모든 자연수는 짝수이므로'],
+          answer: 1,
+          hints: ['k와 k+1은 어떤 관계일까요?', '연속한 두 정수는 짝수와 홀수가 번갈아 나옵니다.', '연속한 두 정수 중 하나는 반드시 짝수입니다.']
+        },
+        {
+          q: '앞의 결과로부터 올바르게 결론 내릴 수 있는 것은?',
+          opts: ['n²−1은 4의 배수이지만 8의 배수는 아닐 수 있다', 'n²−1은 모든 정수 n에 대해 8의 배수이다', 'n²−1은 모든 홀수 n에 대해 8의 배수이다'],
+          answer: 2,
+          hints: ['n²−1=4k(k+1)이고 k(k+1)은 짝수입니다.', 'k(k+1)=2t (t는 정수)로 써 보세요.', 'n²−1=4×2t=8t이므로 8의 배수입니다.']
+        }
+      ];
+
+      const initial = () => ({
+        kind: 'proof2lesson-v1',
+        group: '',
+        code: '',
+        createdAt: now(),
+        updatedAt: now(),
+        l1: {
+          examples: [],
+          claim: '',
+          scope: '',
+          claimChecked: false,
+          checks: [],
+          limits: '',
+          proofChoices: [null, null, null, null],
+          proofVerified: [false, false, false, false],
+          proofHints: [0, 0, 0, 0],
+          proofText: '',
+          reflection: '',
+          bridge: ''
+        },
+        l2: {
+          topic: '',
+          customStatement: '',
+          customScope: '',
+          examples: [],
+          checks: [],
+          guess: '',
+          decision: '',
+          decisionChecked: false,
+          counter: '',
+          counterReason: '',
+          proofText: '',
+          hintLevel: 0,
+          share: '',
+          peer: '',
+          peerComment: '',
+          revision: '',
+          reflection: '',
+          nextQuestion: ''
+        }
+      });
+
+      function cleanState(x) {
+        if (!x || x.kind !== 'proof2lesson-v1' || typeof x.l1 !== 'object' || typeof x.l2 !== 'object' || !Array.isArray(x.l1.examples) || !Array.isArray(x.l2.examples)) {
+          throw Error('이 통합 활동지의 결과 파일이 아닙니다.');
+        }
+        if (typeof x.code !== 'string' || x.code.length > 25 || typeof x.group !== 'string' || x.group.length > 25) {
+          throw Error('학생 식별정보가 올바르지 않습니다.');
+        }
+        return {
+          ...initial(),
+          ...x,
+          l1: { ...initial().l1, ...x.l1 },
+          l2: { ...initial().l2, ...x.l2 }
+        };
+      }
+
+      function storeRead(k, def) {
+        try {
+          const x = localStorage.getItem(k);
+          return x ? JSON.parse(x) : def;
+        } catch {
+          return def;
+        }
+      }
+
+      let s;
+      try {
+        s = cleanState(storeRead(storageKey, initial()));
+      } catch {
+        s = initial();
+      }
+      let teacher = storeRead(teachKey, []);
+      if (!Array.isArray(teacher)) teacher = [];
+
+      let tab = 1;
+      let step = { 1: 0, 2: 0 };
+      let notice = {};
+      let selectedStudent = '';
+
+      const save = () => {
+        s.updatedAt = now();
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(s));
+        } catch {}
+      };
+      const saveTeacher = () => {
+        try {
+          localStorage.setItem(teachKey, JSON.stringify(teacher));
+        } catch {}
+      };
+
+      const nfmt = (n) => Number(n).toLocaleString('ko-KR');
+      function safeN(v) {
+        if (v === null || v === undefined) return null;
+        if (typeof v === 'string' && v.trim() === '') return null;
+        const n = Number(v);
+        return Number.isSafeInteger(n) && Math.abs(n) <= 10000 ? n : null;
+      }
+      const mod = (n, m) => ((n % m) + m) % m;
+      function calc1(n) {
+        return { n, sq: n * n, r: mod(n * n, 8), valid: Math.abs(n % 2) === 1 };
+      }
+      function checkScope(topic, n) {
+        return topic === 'a' ? mod(n, 2) === 1 : topic === 'b' ? mod(n, 2) === 0 : true;
+      }
+      function calc2(topic, n) {
+        const t = topics[topic];
+        if (!t || !t.calc) return null;
+        const product = t.calc(n);
+        const r = mod(product, t.div);
+        return {
+          n,
+          product,
+          r,
+          valid: checkScope(topic, n),
+          isCounter: checkScope(topic, n) && r !== (topic === 'a' ? 1 : 0)
+        };
+      }
+
+      const row = (a, b) => `<div class="head-row"><div>${a}</div>${b || ''}</div>`;
+      const feedback = (id, kind = '') =>
+        notice[id]
+          ? `<div class="note ${kind || notice[id].type || ''}" role="status">${esc(notice[id].text || notice[id])}</div>`
+          : '';
+
+      function tell(id, text, type = '') {
+        notice[id] = { text, type };
+        render();
+      }
+
+      function level1() {
+        const p = s.l1;
+        return [
+          p.examples.length >= 4 && p.examples.some((v) => v.n < 0),
+          p.claimChecked,
+          p.checks.filter((v) => v.valid).length >= 3 && p.limits.trim().length >= 12,
+          p.proofVerified.every(Boolean) && p.proofText.trim().length >= 35,
+          p.reflection.trim().length >= 20 && p.bridge.trim().length >= 10
+        ];
+      }
+
+      function level2() {
+        const p = s.l2;
+        return [
+          !!p.topic && (p.topic !== 'd' || p.customStatement.trim().length >= 10),
+          p.examples.length >= 5,
+          p.checks.length >= 2 && !!p.decision,
+          p.decision === 'false' ? p.counterReason.trim().length >= 25 && !!p.counter : p.proofText.trim().length >= 40,
+          p.reflection.trim().length >= 20 && p.nextQuestion.trim().length >= 10
+        ];
+      }
+
+      function changeTab(next) {
+        tab = next;
+        $('#studentArea').classList.toggle('hide', tab === 't');
+        $('#teacherArea').classList.toggle('hide', tab !== 't');
+        for (const [n, v] of [['tab1', 1], ['tab2', 2], ['tabT', 't']]) {
+          $('#' + n).classList.toggle('on', tab === v);
+          $('#' + n).setAttribute('aria-selected', tab === v ? 'true' : 'false');
+        }
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      $('#tab1').onclick = () => changeTab(1);
+      $('#tab2').onclick = () => changeTab(2);
+      $('#tabT').onclick = () => changeTab('t');
+
+      $('#group').addEventListener('input', (e) => {
+        s.group = e.target.value.slice(0, 25);
+        save();
+      });
+      $('#code').addEventListener('input', (e) => {
+        s.code = e.target.value.slice(0, 25);
+        save();
+      });
+
+      function download(text, filename, type) {
+        const blob = new Blob([text], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.append(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 900);
+      }
+
+      const filenameSafe = (x) =>
+        String(x || '미입력')
+          .replace(/[^0-9a-zA-Z가-힣_\-]/g, '_')
+          .slice(0, 30);
+
+      function exportStudent() {
+        if (!s.code.trim()) {
+          showToast('저장할 때 사용할 학생 식별코드를 상단 입력창에 먼저 입력해 주세요.', 'warn');
+          $('#code').focus();
+          return;
+        }
+        save();
+        download(
+          JSON.stringify(s, null, 2),
+          `수학탐정단_1-2차시_${filenameSafe(s.group)}_${filenameSafe(s.code)}.json`,
+          'application/json;charset=utf-8'
+        );
+        showToast('사건 파일(JSON)을 내려받았습니다.', 'good');
+      }
+
+      $('#resumeJson').onclick = () => $('#studentFile').click();
+      $('#studentFile').onchange = async (e) => {
+        const f = e.target.files[0];
+        e.target.value = '';
+        if (!f) return;
+        try {
+          if (f.size > 2e6) throw Error('파일이 너무 큽니다.');
+          const x = cleanState(JSON.parse(await readFileText(f)));
+          const apply = () => {
+            s = x;
+            save();
+            step = { 1: 0, 2: 0 };
+            notice = {};
+            $('#group').value = s.group;
+            $('#code').value = s.code;
+            render();
+            showToast('이전 탐구 결과를 불러왔습니다.', 'good');
+          };
+          if (s.l1.examples.length || s.l2.examples.length) {
+            askConfirm('이전 결과 덮어쓰기', '현재 작성 중인 내용을 이전 파일 내용으로 바꿀까요?', apply);
+          } else {
+            apply();
+          }
+        } catch (err) {
+          showToast('불러오기 실패: ' + err.message, 'warn');
+        }
+      };
+
+      $('#newStudent').onclick = () => {
+        askConfirm(
+          '새 학생으로 시작',
+          '현재 브라우저의 학생 활동 내용을 비우고 새 학생으로 시작할까요? 먼저 JSON 결과를 저장했는지 확인해 주세요.',
+          () => {
+            s = initial();
+            save();
+            notice = {};
+            step = { 1: 0, 2: 0 };
+            $('#group').value = '';
+            $('#code').value = '';
+            changeTab(1);
+            showToast('새 학생 활동지로 초기화되었습니다.', 'good');
+          }
+        );
+      };
+
+      const stageTitles = {
+        1: ['단서 수집', '가설 수립', '반례 수색', '증명 보고서', '다음 사건 예고'],
+        2: ['새 사건 선택', '현장 조사', '반례 수색', '판정서 작성', '수사 결과 공유']
+      };
+
+      function renderFooterStatus() {
+        if (tab === 't') return;
+        const done = tab === 1 ? level1() : level2();
+        const done1 = level1().filter(Boolean).length;
+        const done2 = level2().filter(Boolean).length;
+        const st = step[tab];
+        const stepBadge = $('#stepStatusBadge');
+        if (stepBadge) {
+          stepBadge.className = 'badge ' + (done[st] ? 'green' : 'amber');
+          stepBadge.textContent = done[st] ? '작성 조건 충족' : '탐구 진행 중';
+        }
+        $('#lessonIntro').innerHTML = `<div class="lesson-head"><div class="head-row"><span class="badge">CASE ${tab === 1 ? '01 · 교사 안내형 수사' : '02 · 학생 주도형 수사'}</span><span class="tiny">권장 시간 50분 · ${done.filter(Boolean).length}/5단계 기록</span></div><h2>${tab === 1 ? '패턴의 비밀을 찾아라!' : '반례를 찾아라! 진실을 증명하라!'}</h2><p>${tab === 1 ? '홀수의 제곱에서 발견한 단서는 우연일까요, 필연일까요?' : '새롭게 만든 명제는 진실일까요? 반례와 증명으로 사건을 해결해 보세요.'}</p><div class="progress-line"><div style="width:${done.filter(Boolean).length * 20}%"></div></div><div class="tiny case-progression">증거 확보 현황 · ${done.filter(Boolean).length} / 5 단계</div></div>`;
+        $('#stepNav').innerHTML = stageTitles[tab]
+          .map(
+            (t, i) =>
+              `<button type="button" data-step="${i}" class="${step[tab] === i ? 'active' : done[i] ? 'complete' : ''}" aria-current="${step[tab] === i ? 'step' : 'false'}"><strong>수사 ${i + 1}${done[i] ? ' ✓' : ''}</strong><span>${esc(t)}</span></button>`
+          )
+          .join('');
+        $('#studentFoot').innerHTML = `${row(
+          '<div><h3 style="margin-bottom:2px">나의 수사 진행 현황</h3><div class="tiny">작성 내용은 자동 저장됩니다. 차시 간 이동해도 기록이 유지됩니다.</div></div>',
+          `<span class="badge">1차시 ${done1}/5 · 2차시 ${done2}/5</span>`
+        )}<div class="actions"><button class="btn green" type="button" id="exportStudentFooter">사건 파일 저장·제출 (JSON)</button><button class="btn ghost" type="button" id="printPage">현재 화면 인쇄 / PDF</button></div>`;
+      }
+
+      function head(i, title, desc) {
+        return `<div class="unit">CASE ${tab === 1 ? '01' : '02'} · INVESTIGATION ${String(i).padStart(2, '0')} / 05</div><h2>${title}</h2><p class="subtle">${desc}</p>`;
+      }
+
+      function actionsFooter() {
+        const l = tab;
+        const st = step[l];
+        const isDone = (l === 1 ? level1() : level2())[st];
+        return `<div class="footer-nav"><button type="button" class="btn ghost" id="prevStep" ${st === 0 ? 'disabled' : ''}>← 이전 단계</button><div class="summary-row"><span id="stepStatusBadge" class="badge ${isDone ? 'green' : 'amber'}">${isDone ? '작성 조건 충족' : '탐구 진행 중'}</span><button type="button" class="btn" id="nextStep" ${st === 4 ? 'disabled' : ''}>다음 단계 →</button></div></div>`;
+      }
+
+      function content1() {
+        const p = s.l1;
+        const st = step[1];
+        let html = '';
+        if (st === 0) {
+          html =
+            head(1, '단서 01 · 숫자에서 흔적 찾기', '몇 개의 홀수를 입력한 다음, 제곱한 수를 8로 나눈 나머지를 비교해 봅시다.') +
+            `<div class="question">어떤 홀수를 제곱하더라도 8로 나눈 나머지가 같을까요?</div>
+            <div class="task tone">
+              <div class="task-head"><span class="count">1</span><h3>단서 수집 장치 · 수를 조작해 보기</h3></div>
+              <div class="grid2">
+                <div class="field">
+                  <label for="oddInput">홀수 n (−10,000 ~ 10,000)</label>
+                  <div class="input-with-helpers">
+                    <input id="oddInput" type="text" inputmode="numeric" value="3" placeholder="예: -3, 5" />
+                    <button type="button" class="helper-btn" data-sign="oddInput" title="양수/음수 부호 전환">±부호</button>
+                    <button type="button" class="helper-btn" data-delta="-2" data-target="oddInput">−2</button>
+                    <button type="button" class="helper-btn" data-delta="2" data-target="oddInput">+2</button>
+                  </div>
+                  <div class="hint-label">아이폰·아이패드·갤럭시탭 숫자 키패드에서는 <strong>[±부호]</strong> 버튼으로 음수를 편리하게 입력할 수 있습니다.</div>
+                </div>
+                <div class="field">
+                  <label for="oddRange">슬라이더로 조작하기</label>
+                  <input type="range" id="oddRange" min="-19" max="19" step="2" value="3" />
+                  <div class="tiny" id="oddRangeText">현재 선택값: 3 (3² = 9 = 8×1 + 1)</div>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn" type="button" id="addOdd">계산하고 표에 추가</button>
+                ${[-9, -3, 1, 5, 7].map((n) => `<button class="btn secondary sm" type="button" data-odd="${n}">n=${n}</button>`).join('')}
+              </div>
+              ${feedback('oneInput')}
+            </div>
+            <div class="task">
+              <div class="task-head"><span class="count">2</span><h3>단서 보관함 <span class="badge">${p.examples.length}개</span></h3></div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>홀수 n</th><th>n²</th><th>8로 나눈 식</th><th>8로 나눈 나머지</th></tr></thead>
+                  <tbody>
+                    ${
+                      p.examples.length
+                        ? p.examples
+                            .map(
+                              (x) =>
+                                `<tr><td class="mono"><strong>${x.n}</strong>${x.n < 0 ? ' <span class="tiny">(음수)</span>' : ''}</td><td class="mono">${nfmt(x.sq)}</td><td class="mono tiny">8 × ${nfmt(Math.floor(x.sq / 8))} + ${x.r}</td><td><strong class="mono">${x.r}</strong></td></tr>`
+                            )
+                            .join('')
+                        : '<tr><td colspan="4" class="subtle">홀수를 입력하면 계산 결과가 쌓입니다.</td></tr>'
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div class="actions"><button class="btn ghost sm" type="button" id="clear1examples">표 비우기</button></div>
+              <p class="tiny" style="margin-top:8px">권장: 4개 이상, 그중 음의 홀수도 1개 이상 확인해 보세요. (현재 음의 홀수: ${p.examples.some((v) => v.n < 0) ? '포함됨' : '미포함'})</p>
+            </div>`;
+        }
+        if (st === 1) {
+          html =
+            head(2, '가설 01 · 추측을 명제로 바꾸기', '어떤 수에 대해 성립하는지 대상과 범위를 분명하게 표현해 보세요.') +
+            `<div class="question">확인한 사례를 바탕으로, 모든 홀수에서 성립할 것 같은 규칙을 추측해 봅시다.</div>
+            <div class="task">
+              <h3>① 명제의 범위 정하기</h3>
+              <div class="choice-list">
+                <label class="choice ${p.scope === 'some' ? 'selected' : ''}"><input type="radio" name="scope1" value="some" ${p.scope === 'some' ? 'checked' : ''} /><span>지금 계산한 홀수에 대해서만 참이라고 말할 수 있다.</span></label>
+                <label class="choice ${p.scope === 'all' ? 'selected' : ''}"><input type="radio" name="scope1" value="all" ${p.scope === 'all' ? 'checked' : ''} /><span>모든 홀수에 대해서도 성립할 것이라고 추측한다.</span></label>
+              </div>
+              <div class="divider"></div>
+              <div class="field">
+                <label for="l1claim">② 수사 가설을 한 문장의 명제로 표현하기</label>
+                <textarea id="l1claim" placeholder="예: 모든 홀수 n에 대하여 n을 제곱한 수를 8로 나눈 나머지는 1이다.">${esc(p.claim)}</textarea>
+                <div class="hint-label">관찰한 사실과 아직 증명하지 않은 추측을 구별해 적어 보세요. (‘홀수’, ‘제곱’, ‘8’ 포함)</div>
+              </div>
+              <button class="btn" type="button" id="check1claim">명제 표현 점검</button>
+              ${feedback('oneClaim')}
+            </div>`;
+        }
+        if (st === 2) {
+          html =
+            head(3, '반례 수색 · 가설을 의심하라', '다른 수에서도 살펴보세요. 단, 많은 사례를 확인해도 모든 수에 대해 참임이 증명되지는 않습니다.') +
+            `<div class="question">아주 큰 홀수나 음의 홀수에서도 성립할까요? 혹시 반례가 있을까요?</div>
+            <div class="task tone">
+              <h3>반례 용의자 입력하기</h3>
+              <div class="grid2">
+                <div class="field">
+                  <label for="l1test">검사할 정수</label>
+                  <div class="input-with-helpers">
+                    <input type="text" inputmode="numeric" id="l1test" value="-21" />
+                    <button type="button" class="helper-btn" data-sign="l1test">±부호</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>무작위 실험</label>
+                  <button class="btn secondary" type="button" id="l1random" style="width:100%">임의의 홀수 생성·검사</button>
+                </div>
+              </div>
+              <button class="btn" type="button" id="l1check">가설과 대조해 보기</button>
+              ${feedback('oneCheck')}
+            </div>
+            <div class="task">
+              <h3>검사 기록 (${p.checks.length}회)</h3>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th>검사한 수</th><th>대상인 홀수인가?</th><th>나머지</th><th>판단</th></tr></thead>
+                  <tbody>
+                    ${
+                      p.checks.length
+                        ? p.checks
+                            .map(
+                              (x) =>
+                                `<tr><td class="mono">${x.n}</td><td>${x.valid ? '예' : '아니요'}</td><td class="mono">${x.r}</td><td>${x.valid ? (x.r === 1 ? '반례 아님' : '반례 발견') : '가정에 맞지 않음'}</td></tr>`
+                            )
+                            .join('')
+                        : '<tr><td colspan="4">아직 검사 기록이 없습니다.</td></tr>'
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div class="field" style="margin-top:17px">
+                <label for="l1limits">모든 단서가 일치해도, 왜 최종 증명이 필요할까요?</label>
+                <textarea id="l1limits" placeholder="사례 확인의 한계를 자신의 말로 설명해 보세요.">${esc(p.limits)}</textarea>
+              </div>
+            </div>`;
+        }
+        if (st === 3) {
+          html =
+            head(4, '최종 증명 보고서 작성', '이제 몇 개의 계산을 넘어, 임의의 홀수에도 적용되는 이유를 찾아봅시다.') +
+            `<div class="question">모든 홀수 n에 대하여 n²−1이 8의 배수임을 증명할 수 있을까요?</div>` +
+            proof1
+              .map(
+                (t, i) =>
+                  `<div class="proof-card ${p.proofVerified[i] ? 'ok' : ''}">
+                    <div class="head-row">
+                      <h3 style="margin:0">${i + 1}. ${esc(t.q)}</h3>
+                      <span class="badge ${p.proofVerified[i] ? 'green' : ''}">${p.proofVerified[i] ? '확인됨' : '탐구 중'}</span>
+                    </div>
+                    <div class="field">
+                      <label class="screen-reader" for="proof1choice${i}">증명 ${i + 1}단계 선택</label>
+                      <select id="proof1choice${i}" data-p1choice="${i}">
+                        <option value="">답을 선택하세요</option>
+                        ${t.opts.map((v, j) => `<option value="${j}" ${p.proofChoices[i] === j ? 'selected' : ''}>${esc(v)}</option>`).join('')}
+                      </select>
+                    </div>
+                    <div class="actions">
+                      <button class="btn sm" type="button" data-p1verify="${i}">이 단계 확인</button>
+                      <button class="btn light-warn sm" type="button" data-p1hint="${i}">힌트 보기 (${p.proofHints[i]}/3)</button>
+                    </div>
+                    ${p.proofHints[i] ? `<div class="hintbox">힌트 ${p.proofHints[i]}: ${esc(t.hints[p.proofHints[i] - 1])}</div>` : ''}
+                    ${feedback('proof' + i, p.proofVerified[i] ? 'good' : '')}
+                  </div>`
+              )
+              .join('') +
+            `<div class="task tone">
+              <h3>나의 말로 쓰는 최종 증명 보고서</h3>
+              <div class="field">
+                <label for="l1proof">선택한 네 단계를 연결하여 수학적인 문장으로 서술해 보세요.</label>
+                <textarea id="l1proof" rows="6" placeholder="임의의 홀수 n을 …라고 놓으면, … 따라서 …">${esc(p.proofText)}</textarea>
+              </div>
+              <p class="tiny">선택형 단계 확인과 별개로 서술한 증명이 논리적으로 타당한지는 교사·동료와 함께 확인합니다.</p>
+            </div>`;
+        }
+        if (st === 4) {
+          html =
+            head(5, '첫 사건 종결 · 다음 사건 예고', '첫 사건의 수사 과정을 돌아보고 다음 사건에서 확인할 새로운 가설을 세워 봅시다.') +
+            `<div class="task">
+              <div class="field">
+                <label for="l1reflection">1. 사례를 여러 개 확인하는 것과 일반적인 증명은 어떤 차이가 있을까요?</label>
+                <textarea id="l1reflection" rows="5" placeholder="구체적인 숫자를 대입한 결과와 임의의 수에 대한 설명을 비교해 적어 보세요.">${esc(p.reflection)}</textarea>
+              </div>
+              <div class="field">
+                <label for="l1bridge">2. 8 대신 16으로 나누어도 규칙이 성립할까요? 나의 예상과 이유를 적어 보세요.</label>
+                <textarea id="l1bridge" rows="4" placeholder="정답을 찾기보다 다음 시간에 확인하고 싶은 이유를 적어 보세요.">${esc(p.bridge)}</textarea>
+              </div>
+            </div>
+            <div class="success-band">
+              <h3>CASE 01 · 수사 기록 정리</h3>
+              <p>내가 발견한 규칙을 2차시에서 새롭게 변형하거나 일반화해 봅니다. 2차시로 이동해도 이번 기록은 남습니다.</p>
+              <div class="actions"><button class="btn green" type="button" id="goSecond">다음 사건 열기 →</button></div>
+            </div>`;
+        }
+        return html + actionsFooter();
+      }
+
+      function topicStatement() {
+        const p = s.l2;
+        return p.topic === 'd' ? p.customStatement || '아직 명제를 작성하지 않았습니다.' : topics[p.topic]?.statement || '먼저 명제를 선택해 주세요.';
+      }
+      function topicValid() {
+        const p = s.l2;
+        return !!p.topic && (p.topic !== 'd' || (p.customStatement.trim().length >= 10 && p.customScope.trim().length >= 2));
+      }
+      function topWarning() {
+        return `<div class="note warn">먼저 2차시 1단계에서 명제를 선택하고 필요한 정보를 적어 주세요.</div>`;
+      }
+
+      function content2() {
+        const p = s.l2;
+        const st = step[2];
+        const t = topics[p.topic];
+        const aut = !!t?.calc;
+        let html = '';
+        if (st === 0) {
+          html =
+            head(1, '새 사건 접수 · 명제를 선택하라', '1차시에서 사용한 규칙을 변형하거나, 나만의 참·거짓을 판단할 수 있는 명제를 만들어 봅시다.') +
+            `<div class="question">오늘의 목표는 참인 명제의 증명뿐 아니라, 거짓인 명제의 반례를 찾는 일도 포함합니다.</div>
+            <div class="choice-list">
+              ${Object.entries(topics)
+                .map(
+                  ([id, x]) =>
+                    `<label class="choice ${p.topic === id ? 'selected' : ''}"><input type="radio" name="topic" value="${id}" ${p.topic === id ? 'checked' : ''} /><span><b>${esc(x.tag)}</b>${esc(x.title)}<small>${id === 'd' ? '대상·조건·결론을 구체적으로 적어 보세요.' : '어떤 경우에도 참인지 검증해 봅시다.'}</small></span></label>`
+                )
+                .join('')}
+            </div>
+            ${
+              p.topic === 'd'
+                ? `<div class="task tone">
+                    <div class="field"><label for="customStatement">내가 만든 명제</label><textarea id="customStatement" placeholder="예: 모든 정수 n에 대하여 n(n+1)은 2의 배수이다.">${esc(p.customStatement)}</textarea></div>
+                    <div class="field"><label for="customScope">대상과 조건</label><input id="customScope" type="text" placeholder="예: 모든 정수 / 양의 홀수" value="${esc(p.customScope)}" /></div>
+                    <p class="tiny">직접 만든 명제는 자동으로 참·거짓을 판정할 수 없습니다. 학생의 논증과 반례 설명을 교사가 확인합니다.</p>
+                  </div>`
+                : ''
+            }
+            <div class="task tone">
+              <h3>이번 사건의 명제</h3>
+              <div class="answer">${esc(topicStatement())}</div>
+              <p class="tiny">처음에는 정답이 공개되지 않습니다. 탐구 결과를 바탕으로 판단을 기록하세요.</p>
+            </div>`;
+        }
+        if (st === 1) {
+          html =
+            head(2, '현장 조사 · 계산의 흔적 모으기', '먼저 간단한 수를 대입하고 예상과 다른 결과가 있는지 확인해 보세요.') +
+            (topicValid()
+              ? `<div class="question">${esc(topicStatement())}</div>` +
+                (aut
+                  ? `<div class="task tone">
+                      <div class="grid2">
+                        <div class="field">
+                          <label for="l2number">대입할 정수 n</label>
+                          <div class="input-with-helpers">
+                            <input type="text" inputmode="numeric" id="l2number" value="3" />
+                            <button type="button" class="helper-btn" data-sign="l2number">±부호</button>
+                          </div>
+                        </div>
+                        <div class="field">
+                          <label>추천 입력 예시</label>
+                          <div class="actions">
+                            ${(p.topic === 'a' ? [1, 3, 5, 7, -3] : p.topic === 'b' ? [0, 2, 4, 6, -4] : [-2, -1, 0, 1, 3])
+                              .map((n) => `<button class="btn secondary sm" type="button" data-example2="${n}">${n}</button>`)
+                              .join('')}
+                          </div>
+                        </div>
+                      </div>
+                      <button class="btn" type="button" id="l2add">값 계산하고 표에 추가</button>
+                      ${feedback('twoInput')}
+                    </div>`
+                  : `<div class="task tone">
+                      <div class="grid2">
+                        <div class="field">
+                          <label for="l2number">사례에 사용한 정수 n</label>
+                          <div class="input-with-helpers">
+                            <input type="text" inputmode="numeric" id="l2number" value="1" />
+                            <button type="button" class="helper-btn" data-sign="l2number">±부호</button>
+                          </div>
+                        </div>
+                        <div class="field">
+                          <label for="l2obs">계산 결과·관찰 내용</label>
+                          <input id="l2obs" type="text" placeholder="예: n=1일 때 식의 값이 2" />
+                        </div>
+                      </div>
+                      <button class="btn" type="button" id="l2add">관찰 기록 추가</button>
+                      ${feedback('twoInput')}
+                    </div>`) +
+                `<div class="task">
+                  <h3>단서 보관함 <span class="badge">${p.examples.length}개</span></h3>
+                  <div class="table-scroll">
+                    <table>
+                      <thead><tr><th>대입한 n</th><th>${aut ? '계산한 식' : '관찰 내용'}</th><th>${aut ? '계산 값' : '기록'}</th>${aut ? '<th>나머지</th>' : ''}</tr></thead>
+                      <tbody>
+                        ${
+                          p.examples.length
+                            ? p.examples
+                                .map((x) =>
+                                  aut
+                                    ? `<tr><td class="mono">${x.n}</td><td class="mono">${esc(t.formula(x.n))}</td><td class="mono">${nfmt(x.product)}</td><td class="mono"><strong>${x.r}</strong>${x.valid ? '' : ' (조건 밖)'}</td></tr>`
+                                    : `<tr><td class="mono">${x.n}</td><td colspan="2">${esc(x.obs || '')}</td></tr>`
+                                )
+                                .join('')
+                            : `<tr><td colspan="${aut ? '4' : '3'}" class="subtle">사례 5개 이상을 기록해 봅시다.</td></tr>`
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="actions"><button class="btn ghost sm" type="button" id="clear2examples">사례표 비우기</button></div>
+                </div>`
+              : topWarning());
+        }
+        if (st === 2) {
+          html =
+            head(3, '가설 검증 · 반례를 수색하라', '명제가 참일 것 같은지 먼저 생각한 뒤, 반례가 될 수 있는 수를 적극적으로 찾아보세요.') +
+            (topicValid()
+              ? `<div class="question">${esc(topicStatement())}</div>
+                <div class="task">
+                  <div class="field">
+                    <label for="l2guess">1. 앞선 계산을 보고 추측한 내용과 그 이유</label>
+                    <textarea id="l2guess" placeholder="어떤 결과가 반복되었나요? 참 또는 거짓이라고 추측하는 이유는?">${esc(p.guess)}</textarea>
+                  </div>
+                  <div class="field">
+                    <label for="l2decision">2. 현재 나의 판단</label>
+                    <select id="l2decision">
+                      <option value="">판단을 선택하세요</option>
+                      <option value="true" ${p.decision === 'true' ? 'selected' : ''}>참이라고 생각한다</option>
+                      <option value="false" ${p.decision === 'false' ? 'selected' : ''}>거짓이라고 생각한다</option>
+                      <option value="unknown" ${p.decision === 'unknown' ? 'selected' : ''}>아직 판단하기 어렵다</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="task tone">
+                  <h3>반례 후보 조사</h3>
+                  <p class="small">반례는 명제의 <strong>가정을 만족</strong>하면서 결론이 <strong>거짓</strong>인 경우여야 합니다.</p>
+                  <div class="grid2">
+                    <div class="field">
+                      <label for="l2test">검사할 정수 n</label>
+                      <div class="input-with-helpers">
+                        <input type="text" inputmode="numeric" id="l2test" value="3" />
+                        <button type="button" class="helper-btn" data-sign="l2test">±부호</button>
+                      </div>
+                    </div>
+                    ${
+                      !aut
+                        ? `<div class="field"><label for="l2testMemo">내가 확인한 계산/판단</label><input type="text" id="l2testMemo" placeholder="반례인지 설명해 보세요." /></div>`
+                        : `<div class="field"><label>임의의 수 검사</label><button class="btn secondary" type="button" id="l2random" style="width:100%">무작위 정수 검사</button></div>`
+                    }
+                  </div>
+                  <button class="btn" type="button" id="l2check">검사 결과 기록</button>
+                  ${feedback('twoCheck')}
+                  <div class="table-scroll" style="margin-top:15px">
+                    <table>
+                      <thead><tr><th>검사값</th><th>결과</th><th>해석</th></tr></thead>
+                      <tbody>
+                        ${
+                          p.checks.length
+                            ? p.checks
+                                .map(
+                                  (x) =>
+                                    `<tr><td class="mono">${x.n}</td><td>${aut ? '나머지 ' + x.r : esc(x.memo || '직접 확인')}</td><td>${aut ? (x.valid ? (x.isCounter ? '반례 확인' : '반례 아님') : '가정을 만족하지 않음') : '학생 확인 필요'}</td></tr>`
+                                )
+                                .join('')
+                            : '<tr><td colspan="3">아직 검사한 수가 없습니다.</td></tr>'
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="actions"><button class="btn secondary" type="button" id="judge2">나의 참·거짓 판단 점검</button></div>
+                  ${feedback('twoJudge')}
+                </div>`
+              : topWarning());
+        }
+        if (st === 3) {
+          const isFalse = p.decision === 'false';
+          const unknown = p.decision === 'unknown';
+          const hintTexts =
+            p.topic === 'b'
+              ? ['두 짝수를 2k, 2k+2로 나타내 보세요.', '곱을 4k(k+1)로 정리하세요.', '연속한 정수 k와 k+1 중 하나는 짝수입니다.']
+              : p.topic === 'c'
+              ? ['곱을 n(n+1)(n+2)로 표현하세요.', '연속한 세 정수 중 반드시 짝수가 있고, 3의 배수도 있습니다.', '2와 3이 서로소이므로 곱은 6의 배수입니다.']
+              : p.topic === 'a'
+              ? ['2차시 2~3단계에서 서로 다른 홀수의 나머지를 비교하세요.', 'n=1과 n=3일 때 16으로 나눈 나머지를 비교하세요.', '반례 한 개를 찾았다면 전체 명제가 거짓입니다.']
+              : ['가정이 정확히 무엇인지 먼저 명시하세요.', '참이라면 임의의 대상에 대한 논리를, 거짓이라면 구체적인 반례를 적어 보세요.', '수치 실험만으로는 모든 경우의 참을 증명할 수 없습니다.'];
+          html =
+            head(4, '최종 판정서 · 증명 또는 반례', '명제가 참이라면 모든 경우를 설명하는 증명을, 거짓이라면 조건에 맞는 반례를 제시하세요.') +
+            (topicValid()
+              ? `<div class="question">${esc(topicStatement())}</div>
+                <div class="task">
+                  <h3>내가 선택한 탐구 방향</h3>
+                  <div class="choice-list">
+                    <label class="choice ${p.decision === 'true' ? 'selected' : ''}"><input type="radio" name="decision4" value="true" ${p.decision === 'true' ? 'checked' : ''} /><span><b>참이라고 추측</b>임의의 수에 대해 성립하는 증명 시도</span></label>
+                    <label class="choice ${p.decision === 'false' ? 'selected' : ''}"><input type="radio" name="decision4" value="false" ${p.decision === 'false' ? 'checked' : ''} /><span><b>거짓이라고 추측</b>구체적인 반례와 이유 제시</span></label>
+                    <label class="choice ${p.decision === 'unknown' ? 'selected' : ''}"><input type="radio" name="decision4" value="unknown" ${p.decision === 'unknown' ? 'checked' : ''} /><span><b>아직 미해결</b>현재까지의 탐구와 남은 의문 설명</span></label>
+                  </div>
+                </div>
+                ${
+                  isFalse
+                    ? `<div class="task tone">
+                        <h3>반례로 진실 밝히기</h3>
+                        <div class="field">
+                          <label for="l2counter">명제의 가정을 만족하지만 결론이 성립하지 않는 정수 n</label>
+                          <div class="input-with-helpers" style="max-width:340px">
+                            <input type="text" inputmode="numeric" id="l2counter" value="${esc(p.counter)}" placeholder="반례 숫자를 입력" />
+                            <button type="button" class="helper-btn" data-sign="l2counter">±부호</button>
+                          </div>
+                        </div>
+                        <div class="field">
+                          <label for="l2reason">이 수가 반례임을 계산과 문장으로 설명하세요.</label>
+                          <textarea id="l2reason" rows="6" placeholder="가정이 성립하고, …을 계산하면 … 이므로 결론이 성립하지 않는다.">${esc(p.counterReason)}</textarea>
+                        </div>
+                        <button class="btn secondary" type="button" id="verifyCounter">입력한 반례 점검</button>
+                        ${feedback('twoCounter')}
+                      </div>`
+                    : `<div class="task tone">
+                        <h3>${unknown ? '아직 증명하지 못한 이유 설명하기' : '나의 말로 증명 보고서 작성하기'}</h3>
+                        <div class="field">
+                          <label for="l2proof">${unknown ? '현재까지 확인한 사실, 증명에 부족한 점, 다음 시도를 적어 보세요.' : '임의의 정수(또는 대상)를 문자로 나타내고 수학적 근거를 연결하세요.'}</label>
+                          <textarea id="l2proof" rows="8" placeholder="임의의 …에 대해 …이므로 …이다. 따라서 …">${esc(p.proofText)}</textarea>
+                        </div>
+                      </div>`
+                }
+                <div class="task">
+                  <h3>필요할 때만 힌트 열기</h3>
+                  <p class="small">증명을 스스로 시도한 다음 막히는 부분에서 활용하세요.</p>
+                  <button class="btn light-warn" type="button" id="l2hint">힌트 한 단계 보기 (${p.hintLevel}/3)</button>
+                  ${p.hintLevel ? `<div class="hintbox">힌트 ${p.hintLevel}: ${esc(hintTexts[p.hintLevel - 1])}</div>` : ''}
+                </div>
+                <div class="note warn">자동 피드백은 수치 계산 또는 정해진 조건만 확인합니다. 자유 서술 답안의 완전한 증명 여부는 교사와 동료가 검토합니다.</div>`
+              : topWarning());
+        }
+        if (st === 4) {
+          html =
+            head(5, '수사 결과 공유 · 사건을 확장하라', '서로의 논리를 점검하고, 이번 탐구가 이전 차시와 어떻게 달랐는지 되돌아보세요.') +
+            `<div class="task">
+              <h3>수사 보고서 공유 및 동료 검토</h3>
+              <div class="field">
+                <label for="l2share">1. 친구에게 내 탐구 결과를 짧게 설명하기</label>
+                <textarea id="l2share" rows="3" placeholder="내가 탐구한 명제는 … 이고, 이를 …으로 판단했다.">${esc(p.share)}</textarea>
+              </div>
+              <div class="grid2">
+                <div class="field">
+                  <label for="l2peer">피드백한 친구 식별코드 (선택)</label>
+                  <input id="l2peer" type="text" maxlength="25" value="${esc(p.peer)}" placeholder="예: 10312" />
+                </div>
+                <div class="field">
+                  <label for="l2peerComment">친구가 확인해 준 점 / 질문</label>
+                  <textarea id="l2peerComment" rows="3" placeholder="가정에 맞는 반례인가요? 설명이 모든 경우를 포함하나요?">${esc(p.peerComment)}</textarea>
+                </div>
+              </div>
+              <div class="field">
+                <label for="l2revision">피드백을 반영해 고친 점 (선택)</label>
+                <textarea id="l2revision" rows="3" placeholder="무엇을 보완했나요?">${esc(p.revision)}</textarea>
+              </div>
+            </div>
+            <div class="task tone">
+              <div class="field">
+                <label for="l2reflection">2. 1차시와 비교했을 때, 내가 달라진 점은 무엇인가요?</label>
+                <textarea id="l2reflection" rows="5" placeholder="사례 확인 / 반례 탐색 / 증명 구성에서 변화한 점을 적어 보세요.">${esc(p.reflection)}</textarea>
+              </div>
+              <div class="field">
+                <label for="l2next">3. 다음에 탐구해 보고 싶은 명제 또는 질문</label>
+                <textarea id="l2next" rows="3" placeholder="명제의 조건을 하나 더 바꾸면 어떤 문제가 생길까요?">${esc(p.nextQuestion)}</textarea>
+              </div>
+            </div>
+            <div class="success-band">
+              <h3>CASE 01 + 02 · 최종 사건 파일 저장</h3>
+              <p class="small">학생 JSON 파일 하나에 1차시와 2차시의 모든 응답이 함께 저장됩니다. 제출 전 이름 대신 식별코드를 확인하세요.</p>
+              <button class="btn green" type="button" id="exportStudentMain">최종 사건 파일(JSON) 내려받기</button>
+            </div>`;
+        }
+        return html + actionsFooter();
+      }
+
+      function render() {
+        if (tab === 't') {
+          renderTeacher();
+          return;
+        }
+        $('#group').value = s.group;
+        $('#code').value = s.code;
+        $('#studentContent').innerHTML = tab === 1 ? content1() : content2();
+        renderFooterStatus();
+      }
+
+      $('#stepNav').onclick = (e) => {
+        const b = e.target.closest('[data-step]');
+        if (b) {
+          step[tab] = Number(b.dataset.step);
+          render();
+          window.scrollTo({ top: 180, behavior: 'smooth' });
+        }
+      };
+
+      $('#studentFoot').addEventListener('click', (e) => {
+        if (e.target.id === 'exportStudentFooter') exportStudent();
+        if (e.target.id === 'printPage') window.print();
+      });
+
+      function addOdd(v) {
+        const n = safeN(v);
+        if (n === null) {
+          tell('oneInput', '−10,000부터 10,000까지의 정수를 입력해 주세요.', 'warn');
+          return;
+        }
+        if (!calc1(n).valid) {
+          tell('oneInput', `${n}은 홀수가 아니므로 대상에 맞지 않습니다. 홀수를 선택해 주세요.`, 'warn');
+          return;
+        }
+        if (s.l1.examples.some((x) => x.n === n)) {
+          tell('oneInput', '이미 표에 있는 수입니다. 다른 홀수를 탐색해 보세요.', 'warn');
+          return;
+        }
+        s.l1.examples.push(calc1(n));
+        notice.oneInput = { text: `${n}²의 나머지 ${mod(n * n, 8)}를 기록했습니다. 다른 사례도 비교해 보세요.`, type: 'good' };
+        save();
+        render();
+      }
+
+      function addL2(v, obs) {
+        const p = s.l2;
+        const n = safeN(v);
+        if (n === null) {
+          tell('twoInput', '−10,000부터 10,000까지의 정수를 입력해 주세요.', 'warn');
+          return;
+        }
+        if (p.examples.some((x) => x.n === n)) {
+          tell('twoInput', '이미 관찰한 정수입니다. 다른 수를 선택하세요.', 'warn');
+          return;
+        }
+        const t = topics[p.topic];
+        if (t.calc && !checkScope(p.topic, n)) {
+          tell('twoInput', `이 명제는 ${t.scope}를 대상으로 합니다. 가정을 만족하는 수를 선택해 보세요.`, 'warn');
+          return;
+        }
+        if (!t.calc && String(obs || '').trim().length < 2) {
+          tell('twoInput', '직접 만든 명제는 계산 결과 또는 관찰 내용을 입력해야 합니다.', 'warn');
+          return;
+        }
+        p.examples.push(t.calc ? calc2(p.topic, n) : { n, obs: String(obs).slice(0, 250) });
+        notice.twoInput = { text: '관찰 결과가 기록되었습니다. 서로 다른 수 5개 이상을 비교해 보세요.', type: 'good' };
+        save();
+        render();
+      }
+
+      function noteField(id, value) {
+        switch (id) {
+          case 'l1claim':
+            s.l1.claim = value;
+            s.l1.claimChecked = false;
+            break;
+          case 'l1limits':
+            s.l1.limits = value;
+            break;
+          case 'l1proof':
+            s.l1.proofText = value;
+            break;
+          case 'l1reflection':
+            s.l1.reflection = value;
+            break;
+          case 'l1bridge':
+            s.l1.bridge = value;
+            break;
+          case 'customStatement':
+            s.l2.customStatement = value;
+            break;
+          case 'customScope':
+            s.l2.customScope = value;
+            break;
+          case 'l2guess':
+            s.l2.guess = value;
+            break;
+          case 'l2counter':
+            s.l2.counter = value;
+            break;
+          case 'l2reason':
+            s.l2.counterReason = value;
+            break;
+          case 'l2proof':
+            s.l2.proofText = value;
+            break;
+          case 'l2share':
+            s.l2.share = value;
+            break;
+          case 'l2peer':
+            s.l2.peer = value;
+            break;
+          case 'l2peerComment':
+            s.l2.peerComment = value;
+            break;
+          case 'l2revision':
+            s.l2.revision = value;
+            break;
+          case 'l2reflection':
+            s.l2.reflection = value;
+            break;
+          case 'l2next':
+            s.l2.nextQuestion = value;
+            break;
+          default:
+            return;
+        }
+        save();
+        renderFooterStatus();
+      }
+
+      $('#studentContent').addEventListener('input', (e) => {
+        const x = e.target;
+        if (x.id === 'oddRange') {
+          const v = Number(x.value);
+          $('#oddInput').value = v;
+          $('#oddRangeText').textContent = `현재 선택값: ${v} (${v}² = ${v * v} = 8×${Math.floor((v * v) / 8)} + ${mod(v * v, 8)})`;
+          return;
+        }
+        if (x.id === 'oddInput') {
+          const n = safeN(x.value);
+          if (n !== null && n >= -19 && n <= 19 && mod(n, 2) === 1) {
+            $('#oddRange').value = n;
+            $('#oddRangeText').textContent = `현재 선택값: ${n} (${n}² = ${n * n} = 8×${Math.floor((n * n) / 8)} + ${mod(n * n, 8)})`;
+          }
+          return;
+        }
+        if (x.matches('textarea,input[type=text]') || x.id === 'l2counter') {
+          noteField(x.id, x.value);
+        }
+      });
+
+      $('#studentContent').addEventListener('change', (e) => {
+        const x = e.target;
+        if (x.name === 'scope1') {
+          s.l1.scope = x.value;
+          s.l1.claimChecked = false;
+          save();
+          renderFooterStatus();
+        }
+        if (x.dataset.p1choice !== undefined) {
+          const i = Number(x.dataset.p1choice);
+          s.l1.proofChoices[i] = x.value === '' ? null : Number(x.value);
+          s.l1.proofVerified[i] = false;
+          save();
+          renderFooterStatus();
+        }
+        if (x.name === 'topic') {
+          const nextTopic = x.value;
+          const applyTopic = () => {
+            const old = s.l2;
+            s.l2 = { ...initial().l2, topic: nextTopic, customStatement: old.customStatement, customScope: old.customScope };
+            save();
+            notice = {};
+            render();
+          };
+          if (s.l2.topic !== nextTopic && s.l2.examples.length) {
+            askConfirm('탐구 주제 변경', '탐구 주제를 바꾸면 2차시의 사례·반례·증명 기록이 초기화됩니다. 바꿀까요?', applyTopic);
+            render();
+            return;
+          }
+          applyTopic();
+        }
+        if (x.id === 'l2decision' || x.name === 'decision4') {
+          s.l2.decision = x.value;
+          s.l2.decisionChecked = false;
+          save();
+          if (x.name === 'decision4') render();
+          else renderFooterStatus();
+        }
+      });
+
+      $('#studentContent').addEventListener('click', (e) => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        const id = b.id;
+
+        // Mobile helper buttons: ±부호 and -2/+2
+        if (b.dataset.sign) {
+          const target = $('#' + b.dataset.sign);
+          if (target) {
+            const v = target.value.trim();
+            const n = safeN(v);
+            if (n !== null && n !== 0) target.value = String(-n);
+            else if (v.startsWith('-')) target.value = v.slice(1);
+            else target.value = '-' + v;
+            target.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          return;
+        }
+        if (b.dataset.delta && b.dataset.target) {
+          const target = $('#' + b.dataset.target);
+          if (target) {
+            const n = safeN(target.value) ?? 1;
+            const next = Math.max(-10000, Math.min(10000, n + Number(b.dataset.delta)));
+            target.value = String(next);
+            target.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          return;
+        }
+
+        if (id === 'prevStep' || id === 'nextStep') {
+          step[tab] = Math.min(4, Math.max(0, step[tab] + (id === 'nextStep' ? 1 : -1)));
+          render();
+          window.scrollTo({ top: 180, behavior: 'smooth' });
+          return;
+        }
+        if (b.dataset.odd !== undefined) return addOdd(b.dataset.odd);
+        if (id === 'addOdd') return addOdd($('#oddInput').value);
+        if (id === 'clear1examples') {
+          askConfirm('1차시 사례표 비우기', '1차시 사례표를 모두 비울까요?', () => {
+            s.l1.examples = [];
+            save();
+            render();
+          });
+          return;
+        }
+        if (id === 'check1claim') {
+          const p = s.l1;
+          const txt = p.claim.trim();
+          if (!p.scope) return tell('oneClaim', '명제의 대상과 범위를 먼저 선택해 주세요.', 'warn');
+          if (txt.length < 12) return tell('oneClaim', '대상(홀수), 연산(제곱), 나누는 수(8), 나머지를 포함하여 더 구체적으로 적어 보세요.', 'warn');
+          if (p.scope === 'some') return tell('oneClaim', '현재의 계산 사례는 일부에 대한 관찰입니다. 이제 모든 홀수에 대해 성립할지도 추측해 보세요.', 'warn');
+          if (!['홀수', '제곱', '8'].every((v) => txt.includes(v))) return tell('oneClaim', '홀수, 제곱, 8을 포함해 주장할 대상을 분명히 해 보세요.', 'warn');
+          p.claimChecked = true;
+          save();
+          return tell('oneClaim', '추측을 보편 명제의 형태로 적었습니다. 아직 증명된 것은 아닙니다.', 'good');
+        }
+        if (id === 'l1check') {
+          const n = safeN($('#l1test').value);
+          if (n === null) return tell('oneCheck', '범위 안의 정수를 입력해 주세요.', 'warn');
+          const x = calc1(n);
+          s.l1.checks.push(x);
+          save();
+          return tell(
+            'oneCheck',
+            x.valid
+              ? `${n}은 홀수이며, 제곱을 8로 나눈 나머지는 ${x.r}입니다. ${x.r === 1 ? '이번에도 반례가 아닙니다.' : '반례가 됩니다. 추측을 검토해 보세요.'}`
+              : `${n}은 홀수가 아니므로 홀수에 대한 명제의 반례가 될 수 없습니다.`,
+            x.valid ? 'good' : 'warn'
+          );
+        }
+        if (id === 'l1random') {
+          const n = 2 * (Math.floor(Math.random() * 10001) - 5000) + 1;
+          const x = calc1(n);
+          s.l1.checks.push(x);
+          save();
+          return tell('oneCheck', `${n}은 홀수이고 나머지는 ${x.r}입니다. 이번 수는 반례가 아닙니다.`, 'good');
+        }
+        if (b.dataset.p1verify !== undefined) {
+          const i = Number(b.dataset.p1verify);
+          const p = s.l1;
+          const choice = p.proofChoices[i];
+          if (choice === null) return tell('proof' + i, '먼저 답을 선택해 보세요.', 'warn');
+          p.proofVerified[i] = choice === proof1[i].answer;
+          save();
+          return tell(
+            'proof' + i,
+            p.proofVerified[i] ? '이 단계의 수학적 연결이 맞습니다. 다음 과정과 이어 보세요.' : '이 선택은 적절하지 않습니다. 힌트를 열거나 식을 다시 확인해 보세요.',
+            p.proofVerified[i] ? 'good' : 'warn'
+          );
+        }
+        if (b.dataset.p1hint !== undefined) {
+          const i = Number(b.dataset.p1hint);
+          s.l1.proofHints[i] = Math.min(3, s.l1.proofHints[i] + 1);
+          save();
+          render();
+          return;
+        }
+        if (id === 'goSecond') {
+          step[2] = 0;
+          changeTab(2);
+          return;
+        }
+        if (id === 'l2add') return addL2($('#l2number').value, $('#l2obs')?.value);
+        if (b.dataset.example2 !== undefined) return addL2(b.dataset.example2, '');
+        if (id === 'clear2examples') {
+          askConfirm('2차시 사례표 비우기', '2차시 사례표를 모두 비울까요?', () => {
+            s.l2.examples = [];
+            save();
+            render();
+          });
+          return;
+        }
+        if (id === 'l2check' || id === 'l2random') {
+          const p = s.l2;
+          const t = topics[p.topic];
+          let n;
+          if (id === 'l2random') {
+            n = Math.floor(Math.random() * 201) - 100;
+            if (p.topic === 'a' && mod(n, 2) === 0) n++;
+            if (p.topic === 'b' && mod(n, 2) === 1) n++;
+          } else {
+            n = safeN($('#l2test').value);
+          }
+          if (n === null) return tell('twoCheck', '정수 −10,000부터 10,000까지 입력해 주세요.', 'warn');
+          if (t.calc) {
+            const x = calc2(p.topic, n);
+            p.checks.push(x);
+            save();
+            return tell(
+              'twoCheck',
+              x.valid
+                ? x.isCounter
+                  ? `n=${n}은 가정을 만족하며 결론에 어긋납니다. 반례를 찾았습니다.`
+                  : `n=${n}에서 나머지는 ${x.r}입니다. 반례가 아닙니다.`
+                : `n=${n}은 이 명제의 가정(${t.scope})에 맞지 않으므로 반례가 아닙니다.`,
+              x.isCounter ? 'good' : x.valid ? '' : 'warn'
+            );
+          }
+          const memo = $('#l2testMemo')?.value || '';
+          if (memo.trim().length < 2) return tell('twoCheck', '직접 만든 명제에서는 검사 결과를 글로 입력해 주세요.', 'warn');
+          p.checks.push({ n, memo: memo.slice(0, 250) });
+          save();
+          return tell('twoCheck', '검사 내용을 기록했습니다. 반례인지 논리적으로 점검해 보세요.', 'good');
+        }
+        if (id === 'judge2') {
+          const p = s.l2;
+          const t = topics[p.topic];
+          if (!p.decision) return tell('twoJudge', '먼저 참·거짓에 대한 판단을 선택해 주세요.', 'warn');
+          if (!p.guess.trim()) return tell('twoJudge', '판단하기 전에 추측과 근거를 적어 보세요.', 'warn');
+          p.decisionChecked = true;
+          save();
+          if (t.trueValue === null) return tell('twoJudge', '직접 만든 명제는 자동으로 판단하지 않습니다. 다음 단계에서 논거와 반례를 제시하세요.');
+          if (p.decision === 'unknown') return tell('twoJudge', '미해결 상태도 중요한 탐구 결과입니다. 더 확인할 수 있는 사례나 일반적인 논증을 찾아 보세요.');
+          if ((p.decision === 'true') === t.trueValue) {
+            return tell(
+              'twoJudge',
+              p.decision === 'true'
+                ? '현재 판단은 명제의 실제 참·거짓과 일치합니다. 이제 모든 경우를 증명해야 합니다.'
+                : '현재 판단은 명제의 실제 참·거짓과 일치합니다. 가정을 만족하는 반례를 분명하게 설명하세요.',
+              'good'
+            );
+          }
+          return tell('twoJudge', '현재 판단과 명제의 실제 참·거짓이 일치하지 않습니다. 특히 가정에 맞는 서로 다른 값을 검사해 보세요.', 'warn');
+        }
+        if (id === 'l2hint') {
+          s.l2.hintLevel = Math.min(3, s.l2.hintLevel + 1);
+          save();
+          render();
+          return;
+        }
+        if (id === 'verifyCounter') {
+          const p = s.l2;
+          const t = topics[p.topic];
+          const n = safeN(p.counter);
+          if (n === null) return tell('twoCounter', '−10,000부터 10,000까지의 정수를 입력해 주세요.', 'warn');
+          if (t.calc) {
+            const x = calc2(p.topic, n);
+            return tell(
+              'twoCounter',
+              x.isCounter
+                ? `n=${n}은 가정을 만족하고, 나머지는 ${x.r}이므로 반례에 해당합니다. 이제 설명을 논리적으로 완성해 보세요.`
+                : !x.valid
+                ? '명제의 가정을 만족하지 않아 반례가 아닙니다.'
+                : '이 수에서는 결론이 성립하므로 반례가 아닙니다.',
+              x.isCounter ? 'good' : 'warn'
+            );
+          }
+          return tell('twoCounter', '직접 만든 명제는 반례를 자동 판정할 수 없습니다. 조건과 계산 과정을 함께 제출해 주세요.');
+        }
+        if (id === 'exportStudentMain') return exportStudent();
+      });
+
+      const key = (x) => `${x.group || ''}::${x.code || ''}`;
+      function normalizeT(x) {
+        try {
+          return cleanState(x);
+        } catch {
+          return null;
+        }
+      }
+      function rubricL1(p) {
+        return [p.examples.length >= 4, p.claimChecked, p.checks.length >= 3, p.proofVerified.every(Boolean), p.reflection.trim().length >= 20];
+      }
+      function rubricL2(p) {
+        return [!!p.topic, p.examples.length >= 5, p.checks.length >= 2, !!p.decision, p.decision === 'false' ? p.counterReason.trim().length >= 25 : p.proofText.trim().length >= 40, p.reflection.trim().length >= 20];
+      }
+      const evalCriteria = ['규칙 발견·추측', '반례 탐색·검증', '논리적 정당화', '성찰·탐구 확장'];
+      const evalDescriptions = ['사례의 규칙을 명제로 표현하는 능력', '조건에 맞는 반례를 탐색하고 판단하는 능력', '문자·정수의 성질 등으로 일반성을 설명하는 능력', '한계를 인식하고 탐구를 수정·확장하는 능력'];
+
+      function ensureEval(x) {
+        if (!x.evaluation || typeof x.evaluation !== 'object') x.evaluation = {};
+        if (!Array.isArray(x.evaluation.scores)) x.evaluation.scores = [null, null, null, null];
+        if (typeof x.evaluation.feedback !== 'string') x.evaluation.feedback = '';
+        if (typeof x.evaluation.nextStep !== 'string') x.evaluation.nextStep = '';
+        return x.evaluation;
+      }
+
+      function chartBar(rows, denom) {
+        return rows
+          .map(
+            ([title, n]) =>
+              `<div class="bar-item"><div class="bar-label"><span>${esc(title)}</span><strong>${n}명 (${denom ? Math.round((n / denom) * 100) : 0}%)</strong></div><div class="bar-track"><div class="bar-fill" style="width:${denom ? (n / denom) * 100 : 0}%"></div></div></div>`
+          )
+          .join('');
+      }
+
+      function chartDonut(rows) {
+        const total = rows.reduce((a, x) => a + x[1], 0);
+        const colors = ['#249782', '#d49b3f', '#8795ad', '#426cc1'];
+        let cum = 0;
+        const slices = rows
+          .map((x, i) => {
+            const begin = cum;
+            cum += x[1];
+            return `${colors[i]} ${total ? (begin / total) * 100 : 0}% ${total ? (cum / total) * 100 : 0}%`;
+          })
+          .join(',');
+        return `<div class="donut-wrap"><div style="width:128px;height:128px;border-radius:50%;background:${total ? `conic-gradient(${slices})` : '#e5eaf2'};position:relative;flex:none"><div style="position:absolute;inset:26px;background:white;border-radius:50%;display:grid;place-items:center;font-weight:800">${total}명</div></div><div class="donut-legend">${rows
+          .map((r, i) => `<div><span class="legend-dot" style="background:${colors[i]}"></span>${esc(r[0])}: ${r[1]}명</div>`)
+          .join('')}</div></div>`;
+      }
+
+      function renderAnalytics() {
+        const n = teacher.length;
+        if (!n) {
+          $('#teacherAnalytics').innerHTML = '<p class="subtle">학생 결과 파일을 불러오거나 상단의 [예시 학생 데이터(2명) 체험하기]를 누르면 학급별 탐구 지표가 나타납니다.</p>';
+          return;
+        }
+        const checkRows = [
+          ['1차시 사례 4개 이상', teacher.filter((x) => x.l1.examples.length >= 4).length],
+          ['1차시 증명 4단계 확인', teacher.filter((x) => x.l1.proofVerified.every(Boolean)).length],
+          ['2차시 반례 검사 2회 이상', teacher.filter((x) => x.l2.checks.length >= 2).length],
+          ['2차시 정당화 기록', teacher.filter((x) => rubricL2(x.l2)[4]).length],
+          ['두 차시 성찰 작성', teacher.filter((x) => x.l1.reflection.trim() && x.l2.reflection.trim()).length]
+        ];
+        const decisions = [
+          ['참', teacher.filter((x) => x.l2.decision === 'true').length],
+          ['거짓', teacher.filter((x) => x.l2.decision === 'false').length],
+          ['미해결', teacher.filter((x) => x.l2.decision === 'unknown').length],
+          ['미작성', teacher.filter((x) => !x.l2.decision).length]
+        ];
+        const topicsRows = Object.entries(topics).map(([id, v]) => [v.tag, teacher.filter((x) => x.l2.topic === id).length]);
+        const rated = teacher.filter((x) => ensureEval(x).scores.some((v) => v !== null));
+        const means = evalCriteria.map((t, i) => {
+          const numbers = rated.map((x) => ensureEval(x).scores[i]).filter((v) => Number.isInteger(v) && v >= 0 && v <= 3);
+          return [t, numbers.length ? numbers.reduce((a, b) => a + b, 0) / numbers.length : null, numbers.length];
+        });
+        $('#teacherAnalytics').innerHTML = `<div class="analytics-panel"><h3>활동 완료 현황</h3>${chartBar(checkRows, n)}<p class="tiny">기록 여부의 집계이며 증명의 정확성이나 성취수준을 자동 판정하지 않습니다.</p></div><div class="analytics-panel"><h3>2차시 학생 판단 분포</h3>${chartDonut(decisions)}<p class="tiny">참·거짓은 학생이 선택한 판단이며 정답률이 아닙니다.</p></div><div class="analytics-panel"><h3>탐구주제 선택 현황</h3>${chartBar(topicsRows, n)}</div><div class="analytics-panel"><h3>교사 평정 평균 (0~3점)</h3>${means
+          .map(
+            ([t, m, c]) =>
+              `<div class="bar-item"><div class="bar-label"><span>${esc(t)}</span><strong>${m === null ? '평정 없음' : m.toFixed(2) + ' / 3'} <small>(${c}명)</small></strong></div><div class="bar-track"><div class="bar-fill" style="width:${m === null ? 0 : (m / 3) * 100}%"></div></div></div>`
+          )
+          .join('')}<p class="tiny">0: 증거 부족 / 1: 시작 단계 / 2: 부분적 수행 / 3: 충분한 수행. 교사의 실제 평정만 집계합니다.</p></div>`;
+      }
+
+      function renderTeacher() {
+        teacher = teacher.map((x) => normalizeT(x)).filter(Boolean);
+        const count = teacher.length;
+        const complete1 = teacher.filter((x) => rubricL1(x.l1).every(Boolean)).length;
+        const complete2 = teacher.filter((x) => rubricL2(x.l2).every(Boolean)).length;
+        const changed = teacher.filter((x) => x.l1.reflection.trim() && x.l2.reflection.trim()).length;
+        $('#teacherStats').innerHTML = [
+          [count, '수합 학생'],
+          [complete1, '1차시 주요 항목 완성'],
+          [complete2, '2차시 주요 항목 완성'],
+          [changed, '두 차시 성찰 작성']
+        ]
+          .map(([n, t]) => `<div class="number-tile"><b>${n}</b><span>${t}</span></div>`)
+          .join('');
+        $('#teacherRows').innerHTML = teacher.length
+          ? teacher
+              .slice()
+              .sort((a, b) => (a.group || '').localeCompare(b.group || '', 'ko') || (a.code || '').localeCompare(b.code || '', 'ko'))
+              .map(
+                (x) =>
+                  `<tr><td>${esc(x.group || '—')}</td><td><strong>${esc(x.code || '미입력')}</strong></td><td>${x.l1.examples.length}개</td><td>${x.l1.proofVerified.filter(Boolean).length}/4 + 서술</td><td>${esc(topics[x.l2.topic]?.tag || '미선택')}</td><td>${esc({ true: '참', false: '거짓', unknown: '미해결' }[x.l2.decision] || '미작성')}</td><td>${rubricL2(x.l2).filter(Boolean).length}/6</td><td><button type="button" class="table-action" data-show="${esc(key(x))}">상세 비교</button></td></tr>`
+              )
+              .join('')
+          : '<tr><td colspan="8" class="subtle">학생 JSON 파일을 가져오면 결과가 표시됩니다.</td></tr>';
+        const x = teacher.find((v) => key(v) === selectedStudent);
+        $('#teacherDetail').innerHTML = x ? detailTeacher(x) : '';
+        renderAnalytics();
+      }
+
+      const answer = (title, str) => `<div class="small" style="font-weight:800;margin-top:11px">${title}</div><div class="answer">${esc(str || '미작성')}</div>`;
+
+      function detailTeacher(x) {
+        const a = x.l1;
+        const b = x.l2;
+        return `<div class="divider"></div><div class="head-row"><h3>${esc(x.code || '미입력')} 학생의 1·2차시 비교</h3><span class="badge">${esc(x.group || '학급 미입력')}</span></div><div class="teacher-compare"><div class="task"><span class="badge">1차시 · 안내형</span>${answer('추측한 명제', a.claim)}${answer('사례 확인의 한계', a.limits)}${answer('일반적인 증명 서술', a.proofText)}${answer('탐구 성찰', a.reflection)}${answer('다음 질문: 16으로 바꾸면?', a.bridge)}</div><div class="task"><span class="badge">2차시 · 자기주도형</span>${answer('선택한 명제', b.topic === 'd' ? b.customStatement : topics[b.topic]?.statement)}${answer('사례 탐색 / 판단', `${b.examples.length}개 · ${{ true: '참', false: '거짓', unknown: '미해결' }[b.decision] || '미작성'}`)}${answer('추측과 이유', b.guess)}${answer('반례 / 증명 / 미해결 탐구', b.decision === 'false' ? `반례 n=${b.counter || '(미작성)'}\n${b.counterReason}` : b.proofText)}${answer('동료 피드백', b.peerComment)}${answer('수정 사항', b.revision)}${answer('2차시 성찰', b.reflection)}${answer('후속 탐구 질문', b.nextQuestion)}</div></div><div class="task tone"><h3>학습 변화 관찰 메모</h3><p class="tiny">증명 서술을 직접 읽고, 귀납적 발견에서 연역적 정당화로 어떻게 발전했는지 기록하세요. 이 메모는 현재 교사용 브라우저의 수합 목록에만 남습니다.</p><textarea id="teacherMemo" rows="4" placeholder="예: 1차시는 사례 나열에 머물렀지만 2차시는 조건에 맞는 반례를 직접 구성함.">${esc(x.teacherMemo || '')}</textarea><div class="rubric">${[...rubricL1(a).map((v, i) => [v, ['사례', '추측', '반례 탐색', '증명 단계', '성찰'][i]]), ...rubricL2(b).map((v, i) => [v, ['주제', '사례', '반례 탐색', '판단', '정당화', '성찰'][i]])].map(([v, title]) => `<div><b>${v ? '완료' : '—'}</b>${title}</div>`).join('')}</div><div class="task"><h3>학생 역량 평가 및 맞춤 피드백</h3><p class="small">자동 기록은 참고자료입니다. 아래 평정과 피드백은 학생의 증명과 탐구 기록을 확인한 뒤 교사가 작성합니다.</p><div class="eval-grid">${evalCriteria.map((t, i) => `<div><label for="eval${i}">${t}<div class="tiny">${evalDescriptions[i]}</div></label><select id="eval${i}" data-eval="${i}"><option value="">평정 전</option>${[0, 1, 2, 3].map((v) => `<option value="${v}" ${ensureEval(x).scores[i] === v ? 'selected' : ''}>${v}점 · ${['증거 부족', '시작 단계', '부분적 수행', '충분한 수행'][v]}</option>`).join('')}</select></div>`).join('')}</div><div class="field"><label for="teacherFeedback">학생에게 전달할 구체적인 피드백</label><textarea id="teacherFeedback" rows="4" placeholder="잘한 점과 이를 뒷받침하는 학생의 탐구 기록을 적어 주세요.">${esc(ensureEval(x).feedback)}</textarea></div><div class="field"><label for="teacherNext">다음 탐구를 위한 제안</label><textarea id="teacherNext" rows="3" placeholder="예: 반례가 가정을 만족하는지 먼저 확인하고, 문자로 일반화해 보세요.">${esc(ensureEval(x).nextStep)}</textarea></div><div class="actions"><button class="btn green" type="button" id="printStudentReport">이 학생 피드백 PDF 인쇄</button></div><p class="tiny">버튼을 누르면 브라우저 인쇄창이 열립니다. 대상 프린터에서 ‘PDF로 저장’을 선택하세요.</p></div></div>`;
+      }
+
+      $('#teacherRows').onclick = (e) => {
+        const b = e.target.closest('[data-show]');
+        if (b) {
+          selectedStudent = b.dataset.show;
+          renderTeacher();
+          $('#teacherDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+
+      $('#teacherDetail').addEventListener('input', (e) => {
+        const x = teacher.find((v) => key(v) === selectedStudent);
+        if (!x) return;
+        if (e.target.id === 'teacherMemo') x.teacherMemo = e.target.value;
+        else if (e.target.dataset.eval !== undefined) {
+          ensureEval(x).scores[Number(e.target.dataset.eval)] = e.target.value === '' ? null : Number(e.target.value);
+          renderAnalytics();
+        } else if (e.target.id === 'teacherFeedback') ensureEval(x).feedback = e.target.value;
+        else if (e.target.id === 'teacherNext') ensureEval(x).nextStep = e.target.value;
+        else return;
+        saveTeacher();
+      });
+
+      function printStudent(x) {
+        const ev = ensureEval(x);
+        const chosen = x.l2.topic === 'd' ? x.l2.customStatement : topics[x.l2.topic]?.statement || '미선택';
+        $('#printReport').innerHTML = `<div class="report-sheet"><div style="font-size:12px;color:#516780;letter-spacing:2px">MATH DETECTIVE · INDIVIDUAL FEEDBACK</div><h2>우연일까, 필연일까?</h2><p>수학 탐정단 · 1·2차시 개별 탐구 피드백</p><div class="print-line"><strong>학급/모둠</strong> ${esc(x.group || '—')} &nbsp;&nbsp; <strong>학생 식별코드</strong> ${esc(x.code || '—')} &nbsp;&nbsp; <strong>발행일</strong> ${new Date().toLocaleDateString('ko-KR')}</div><h3>탐구 활동 요약</h3><div class="print-line"><strong>1차시 발견한 명제</strong> ${esc(x.l1.claim || '미작성')}</div><div class="print-line"><strong>1차시 증명 시도</strong> ${esc(x.l1.proofText || '미작성')}</div><div class="print-line"><strong>2차시 선택 명제</strong> ${esc(chosen)}</div><div class="print-line"><strong>2차시 판단</strong> ${esc({ true: '참', false: '거짓', unknown: '미해결' }[x.l2.decision] || '미작성')} / ${esc(x.l2.decision === 'false' ? x.l2.counterReason : x.l2.proofText || '미작성')}</div><h3>교사 평가 (4개 영역, 각 0~3점)</h3><div class="report-score">${evalCriteria.map((t, i) => `<div><div style="font-size:12px">${esc(t)}</div><strong>${ev.scores[i] === null ? '—' : ev.scores[i]}</strong><small>/ 3</small></div>`).join('')}</div><p class="print-note">0 증거 부족 · 1 시작 단계 · 2 부분적 수행 · 3 충분한 수행. 점수가 없는 영역은 미평정입니다.</p><h3>선생님의 피드백</h3><div class="answer">${esc(ev.feedback || '아직 작성된 피드백이 없습니다.')}</div><h3>다음 탐구를 위한 제안</h3><div class="answer">${esc(ev.nextStep || '아직 작성된 제안이 없습니다.')}</div><h3>학생의 성찰</h3><div class="answer">${esc(x.l2.reflection || '미작성')}</div><p class="print-note">본 문서는 학습 피드백용이며, 자동으로 산출된 공식 수행평가 점수가 아닙니다.</p></div>`;
+        document.body.classList.add('printing-report');
+        window.print();
+        setTimeout(() => document.body.classList.remove('printing-report'), 60000);
+      }
+
+      $('#teacherDetail').addEventListener('click', (e) => {
+        if (e.target.id === 'printStudentReport') {
+          const x = teacher.find((v) => key(v) === selectedStudent);
+          if (x) printStudent(x);
+        }
+      });
+
+      window.addEventListener('afterprint', () => document.body.classList.remove('printing-report'));
+
+      $('#teacherFiles').onchange = async (e) => {
+        const files = Array.from(e.target.files || []);
+        const errors = [];
+        let loaded = 0;
+        for (const f of files) {
+          try {
+            if (f.size > 2e6) throw Error('파일 크기 초과');
+            const x = cleanState(JSON.parse(await readFileText(f)));
+            if (!x.code.trim()) throw Error('식별코드 누락');
+            const j = teacher.findIndex((v) => key(v) === key(x));
+            if (j >= 0) {
+              const old = teacher[j];
+              if ((x.updatedAt || '') >= (old.updatedAt || '')) {
+                x.teacherMemo = old.teacherMemo || '';
+                x.evaluation = old.evaluation || {};
+                teacher[j] = x;
+              }
+            } else {
+              teacher.push(x);
+            }
+            loaded++;
+          } catch (err) {
+            errors.push(`${f.name}: ${err.message}`);
+          }
+        }
+        e.target.value = '';
+        saveTeacher();
+        renderTeacher();
+        $('#teacherNotice').className = 'note ' + (errors.length ? 'warn' : 'good');
+        $('#teacherNotice').textContent = `파일 ${loaded}개 처리 · 총 ${teacher.length}명. ${errors.length ? '가져오지 못한 파일: ' + errors.join(' / ') : '결과가 수합되었습니다.'}`;
+      };
+
+      $('#teacherSample').onclick = () => {
+        const s1 = initial();
+        s1.group = '1학년 3반';
+        s1.code = '10301';
+        s1.l1 = {
+          examples: [calc1(-3), calc1(1), calc1(3), calc1(5)],
+          claim: '모든 홀수 n에 대하여 n을 제곱한 수를 8로 나눈 나머지는 항상 1이다.',
+          scope: 'all',
+          claimChecked: true,
+          checks: [calc1(-21), calc1(17), calc1(99)],
+          limits: '홀수는 무한히 많아서 몇 개만 확인해서는 모든 홀수에서 참이라고 단정할 수 없다.',
+          proofChoices: [1, 0, 1, 2],
+          proofVerified: [true, true, true, true],
+          proofHints: [0, 0, 0, 0],
+          proofText: '임의의 홀수 n=2k+1(k는 정수)이라 하면 n²-1 = 4k(k+1)이고, 연속한 두 정수 k, k+1 중 하나는 짝수이므로 8의 배수이다.',
+          reflection: '구체적인 숫자를 대입하는 것과 문자를 사용한 일반적 증명의 차이를 이해했다.',
+          bridge: '16으로 나누면 n=3일 때 나머지가 9가 되어 성립하지 않을 것 같다.'
+        };
+        s1.l2 = {
+          topic: 'a',
+          customStatement: '',
+          customScope: '',
+          examples: [calc2('a', 1), calc2('a', 3), calc2('a', 5), calc2('a', 7), calc2('a', -3)],
+          checks: [calc2('a', 3), calc2('a', 5)],
+          guess: 'n=3일 때 나머지가 9이므로 거짓이다.',
+          decision: 'false',
+          decisionChecked: true,
+          counter: '3',
+          counterReason: 'n=3은 홀수이지만 3²=9를 16으로 나눈 나머지는 9이므로 결론이 성립하지 않는다.',
+          proofText: '',
+          hintLevel: 0,
+          share: '홀수의 제곱을 16으로 나눈 나머지는 1 또는 9가 나오므로 거짓이다.',
+          peer: '10302',
+          peerComment: '반례 n=3이 홀수 조건에 맞고 계산이 정확해요.',
+          revision: '음의 홀수 사례도 추가 확인했다.',
+          reflection: '반례 단 하나만으로도 보편 명제가 거짓임을 보일 수 있다는 점이 인상 깊었다.',
+          nextQuestion: '나머지가 1이 되는 홀수들의 공통 성질은 무엇일까?'
+        };
+        s1.evaluation = { scores: [3, 3, 3, 3], feedback: '논리적 연결이 매우 명확합니다.', nextStep: '4k±1 꼴로 나누어 증명해 보세요.' };
+
+        const s2 = initial();
+        s2.group = '1학년 3반';
+        s2.code = '10302';
+        s2.l1 = {
+          examples: [calc1(-5), calc1(-1), calc1(3), calc1(7)],
+          claim: '모든 홀수를 제곱하여 8로 나누면 나머지가 1이다.',
+          scope: 'all',
+          claimChecked: true,
+          checks: [calc1(-15), calc1(25), calc1(101)],
+          limits: '아직 안 넣어 본 홀수 중에 반례가 숨어 있을 수 있기 때문이다.',
+          proofChoices: [1, 0, 1, 2],
+          proofVerified: [true, true, true, true],
+          proofHints: [1, 0, 0, 0],
+          proofText: '홀수 n=2k+1에 대해 n²-1=4k(k+1)이고 k(k+1)은 짝수이므로 8의 배수이다.',
+          reflection: '문자로 나타내어 증명하니 왜 항상 8의 배수가 되는지 구조가 보였다.',
+          bridge: '연속하는 두 짝수의 곱도 8의 배수일지 궁금하다.'
+        };
+        s2.l2 = {
+          topic: 'b',
+          customStatement: '',
+          customScope: '',
+          examples: [calc2('b', 0), calc2('b', 2), calc2('b', 4), calc2('b', 6), calc2('b', -4)],
+          checks: [calc2('b', -10), calc2('b', 12)],
+          guess: '모든 사례에서 8로 나누어떨어지므로 참이다.',
+          decision: 'true',
+          decisionChecked: true,
+          counter: '',
+          counterReason: '',
+          proofText: '짝수 n=2k라 하면 n(n+2)=4k(k+1)이고, 연속한 두 정수 k, k+1 중 하나는 짝수이므로 8의 배수이다.',
+          hintLevel: 1,
+          share: '1차시에서 배운 k(k+1) 성질을 이용해 8의 배수임을 증명했다.',
+          peer: '10301',
+          peerComment: '1차시 아이디어를 그대로 적용한 점이 좋았어요.',
+          revision: '정수 조건을 명시했다.',
+          reflection: '1차시 증명의 핵심 아이디어를 새로운 명제에 스스로 적용할 수 있었다.',
+          nextQuestion: '연속하는 세 짝수의 곱은 항상 몇의 배수일까?'
+        };
+        s2.evaluation = { scores: [3, 2, 3, 3], feedback: '1차시 개념 전이가 훌륭합니다.', nextStep: '연속한 세 짝수의 곱도 탐구해 보세요.' };
+
+        for (const item of [s1, s2]) {
+          const idx = teacher.findIndex((v) => key(v) === key(item));
+          if (idx >= 0) teacher[idx] = item;
+          else teacher.push(item);
+        }
+        selectedStudent = key(s1);
+        saveTeacher();
+        renderTeacher();
+        $('#teacherNotice').className = 'note good';
+        $('#teacherNotice').textContent = '예시 학생 2명(10301, 10302)의 데이터를 불러왔습니다.';
+      };
+
+      $('#teacherClear').onclick = () => {
+        askConfirm('수합 목록 지우기', '현재 브라우저의 교사용 수합 자료와 메모를 삭제할까요? 학생 원본 파일은 영향을 받지 않습니다.', () => {
+          teacher = [];
+          selectedStudent = '';
+          saveTeacher();
+          renderTeacher();
+          $('#teacherNotice').textContent = '수합 목록을 비웠습니다.';
+        });
+      };
+
+      const csvSafe = (v) => {
+        let x = String(v ?? '').replace(/\r\n?/g, '\n');
+        if (/^\s*[=+\-@]/.test(x)) x = "'" + x;
+        return '"' + x.replace(/"/g, '""') + '"';
+      };
+
+      $('#teacherCSV').onclick = () => {
+        if (!teacher.length) {
+          showToast('학생 JSON 파일부터 불러오거나 예시 데이터를 추가해 주세요.', 'warn');
+          return;
+        }
+        const headers = [
+          '학급', '식별코드', '수정 시각', '1차시 사례 수', '1차시 추측', '1차시 반례 검사 수', '1차시 검증 한계', '1차시 증명 단계', '1차시 증명 서술', '1차시 성찰', '1차시 다음 질문',
+          '2차시 주제', '2차시 명제', '2차시 사례 수', '2차시 반례 검사 수', '2차시 추측', '2차시 판단', '2차시 반례 숫자', '2차시 반례 이유', '2차시 증명 또는 미해결 서술',
+          '2차시 동료 피드백', '2차시 수정', '2차시 성찰', '2차시 다음 질문', '교사 메모', ...evalCriteria.map((t) => '교사 평정_' + t), '학생 피드백', '다음 탐구 제안'
+        ];
+        const rows = teacher.map((x) => {
+          const a = x.l1;
+          const b = x.l2;
+          return [
+            x.group, x.code, x.updatedAt, a.examples.length, a.claim, a.checks.length, a.limits, a.proofVerified.filter(Boolean).length, a.proofText, a.reflection, a.bridge,
+            topics[b.topic]?.tag || '', b.topic === 'd' ? b.customStatement : topics[b.topic]?.statement || '', b.examples.length, b.checks.length, b.guess, b.decision,
+            b.counter, b.counterReason, b.proofText, b.peerComment, b.revision, b.reflection, b.nextQuestion, x.teacherMemo || '',
+            ...ensureEval(x).scores.map((v) => (v === null ? '' : v)), ensureEval(x).feedback, ensureEval(x).nextStep
+          ];
+        });
+        download('\ufeff' + [headers, ...rows].map((r) => r.map(csvSafe).join(',')).join('\r\n'), '수학탐정단_1-2차시_학급응답.csv', 'text/csv;charset=utf-8');
+      };
+
+      document.addEventListener('change', (e) => {
+        if (e.target.matches('.choice input')) {
+          document.querySelectorAll('.choice').forEach((el) => {
+            el.classList.toggle('selected', !!el.querySelector('input:checked'));
+          });
+        }
+      });
+
+      render();
+      document.documentElement.setAttribute('data-activity-ready', 'yes');
+    })();
+  </script>
+</body>
+</html>
