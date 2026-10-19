@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #20343d;
+  --muted: #65747c;
+  --blue: #1e5661;
+  --blue-light: #e8f2f1;
+  --paper: #fffefb;
+  --bg: #f4f2ec;
+  --line: #dcded7;
+  --good: #187361;
+  --good-bg: #e5f5ed;
+  --warn: #945e18;
+  --warn-bg: #fff4da;
+  --bad: #af4550;
+  --bad-bg: #fff1f1;
+  --shadow: 0 8px 28px #172e3518;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", "Malgun Gothic", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: var(--ink);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 15% 5%, #dfe8dd70, transparent 31%),
+    radial-gradient(circle at 90% 45%, #efe5cf4b, transparent 30%);
+  font-size: 16px;
+  line-height: 1.65;
+  letter-spacing: -0.01em;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  font-size: 16px; /* Prevents iOS Safari auto-zoom on focus */
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 3px solid #d49b3f;
+  outline-offset: 2px;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Pretendard Variable", Pretendard, "Noto Sans KR", sans-serif;
+}
+
+.hero-bg {
+  background-color: #183541;
+  background-image:
+    radial-gradient(ellipse at 85% 10%, #2f617249, transparent 40%),
+    linear-gradient(115deg, #142e3a 0%, #193e48 65%, #204951 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-bg::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.065;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 30px, #eac889 30px 31px),
+    repeating-linear-gradient(90deg, transparent 0 30px, #eac889 30px 31px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Print optimization for both standard worksheet print and individual student report print */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #111827 !important;
+  }
+
+  .hero-bg {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #111827 !important;
+    border-bottom: 2px solid #111827 !important;
+  }
+
+  .hero-bg * {
+    color: #111827 !important;
+  }
+
+  .hero-bg::after {
+    display: none !important;
+  }
+
+  .print-card {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    break-inside: avoid;
+  }
+
+  body.printing-report #app-shell {
+    display: none !important;
+  }
+
+  body.printing-report #print-report-sheet {
+    display: block !important;
+    padding: 0 8mm !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+}

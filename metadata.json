@@ -1,0 +1,6 @@
+{
+  "name": "우연일까, 필연일까? — 수학 탐정단 참·거짓 추리 프로젝트",
+  "description": "공통수학2 명제의 증명 단원 1·2차시 통합 인터랙티브 탐구 활동지 및 교사용 수사 기록실 (iOS/Android/PC 다중 플랫폼 및 GitHub Pages 정적 호스팅 최적화)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
