@@ -295,130 +295,117 @@ export default function App() {
   return (
     <>
       <div id="app-shell" className="min-h-screen flex flex-col">
-        {/* Top Hero Banner */}
-        <header className="hero-bg text-white pt-6 pb-5 px-4 sm:px-6">
-          <div className="mx-auto max-w-[1120px] relative z-10">
-            <div className="grid gap-6 lg:grid-cols-[1fr_220px] items-center">
+        {/* Top Navigation Bar (Strict 3-Zone Contract) */}
+        <div className="no-print border-b border-white/10 bg-[#070b14] text-slate-300 px-4 sm:px-6 py-3">
+          <div className="mx-auto max-w-[1160px] flex items-center justify-between gap-6">
+            {/* Zone 1: Single-line Brand Wordmark */}
+            <div className="text-sm sm:text-base font-extrabold tracking-tight text-white whitespace-nowrap shrink-0">
+              Math Detective Lab
+            </div>
+
+            {/* Zone 2: Unboxed Curriculum Metadata */}
+            <div className="hidden md:flex items-center gap-3 text-xs font-medium text-slate-400 whitespace-nowrap shrink-0">
+              <span>공통수학2</span>
+              <span aria-hidden="true" className="text-slate-600">·</span>
+              <span>명제의 증명</span>
+              <span aria-hidden="true" className="text-slate-600">·</span>
+              <span>관찰 · 추측 · 반례 · 증명</span>
+            </div>
+
+            {/* Zone 3: Session Status & Primary Action */}
+            <div className="flex items-center gap-3 shrink-0">
+              {sessionMode !== 'gate' ? (
+                <>
+                  <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-sky-300 whitespace-nowrap">
+                    {sessionMode === 'teacher' ? (
+                      <>
+                        <ShieldCheck className="h-3.5 w-3.5 text-sky-400" />
+                        교사(관리자) 모드 · {firebaseUser?.email || ADMIN_TEACHER_EMAIL}
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
+                        학생 모드 · {approvedProfile?.school} {approvedProfile?.grade}-
+                        {approvedProfile?.classNum}-{approvedProfile?.studentNum}{' '}
+                        {approvedProfile?.name}
+                      </>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleExitMode}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/15 whitespace-nowrap shrink-0"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    로그아웃 / 모드 전환
+                  </button>
+                </>
+              ) : (
+                <span className="text-xs font-medium text-slate-400 whitespace-nowrap">
+                  학생 · 교사 승인제 플랫폼
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Architectural Hero Banner */}
+        <header className="hero-bg text-white pt-8 pb-8 px-4 sm:px-6 border-b border-slate-800">
+          <div className="mx-auto max-w-[1160px] relative z-10">
+            <div className="grid gap-8 lg:grid-cols-[1fr_300px] items-center">
               {/* Hero Copy */}
               <div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-[#d4ddd8]">
-                    <span className="inline-grid h-7 w-7 place-items-center rounded-full bg-[#c99f57] font-serif text-xs font-black text-[#162f39]">
-                      M
-                    </span>
-                    <span>COMMON MATH 2</span>
-                    <span className="text-[#849e9c]">/</span>
-                    <span>명제의 증명</span>
-                    <span className="text-[#849e9c]">/</span>
-                    <span>2차시 탐구</span>
-                  </div>
-
-                  {sessionMode !== 'gate' && (
-                    <div className="no-print flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-bold text-[#f7d59b]">
-                        {sessionMode === 'teacher' ? (
-                          <>
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                            교사(관리자) 모드 · {firebaseUser?.email || ADMIN_TEACHER_EMAIL}
-                          </>
-                        ) : (
-                          <>
-                            <UserCheck className="h-3.5 w-3.5" />
-                            학생 모드 · {approvedProfile?.school} {approvedProfile?.grade}-
-                            {approvedProfile?.classNum}-{approvedProfile?.studentNum}{' '}
-                            {approvedProfile?.name}
-                          </>
-                        )}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleExitMode}
-                        className="inline-flex items-center gap-1 rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20"
-                      >
-                        <LogOut className="h-3.5 w-3.5" />
-                        로그아웃 / 모드 전환
-                      </button>
-                    </div>
-                  )}
+                <div className="flex items-center gap-2 text-xs font-semibold text-sky-400">
+                  <span>01 — 02차시 통합 탐구 프로젝트</span>
+                  <span aria-hidden="true" className="text-slate-600">/</span>
+                  <span className="text-slate-300">대수적 정당화와 반례 탐색</span>
                 </div>
 
-                <div className="mt-4 flex items-center gap-2.5 text-xs font-extrabold tracking-[2px] text-[#deb87a]">
-                  <span>MATH DETECTIVE PROJECT</span>
-                  <span className="h-px w-8 bg-[#c7aa7c]" />
-                  <span>CASE 01—02</span>
-                </div>
-
-                <h1 className="mt-2 text-3xl sm:text-5xl font-black tracking-tight leading-[1.15]">
-                  우연일까, <em className="not-italic text-[#f7d59b]">필연일까?</em>
+                <h1
+                  className="mt-3 text-3xl sm:text-5xl font-extrabold tracking-tight leading-[1.14] text-white"
+                  style={{ textWrap: 'balance' }}
+                >
+                  우연일까, <span className="text-sky-300">필연일까?</span>
                 </h1>
-                <p className="mt-2.5 text-base sm:text-xl text-[#f4f2e9] font-medium">
-                  수학 탐정단의 <strong className="text-[#f3d29a]">참·거짓 추리 프로젝트</strong>
+                <p className="mt-3 text-base sm:text-xl text-slate-200 font-semibold">
+                  수학 탐정단의 참·거짓 추리 프로젝트
                 </p>
-                <p className="mt-2 text-xs sm:text-sm text-[#c7d9d6] max-w-2xl leading-relaxed">
-                  규칙이라는 단서를 수집하고, 반례를 수색하고, 누구나 납득할 수 있는{' '}
-                  <strong className="text-[#f0dfb9]">증명 보고서</strong>를 완성해 보세요.
+                <p className="mt-2 text-sm sm:text-base text-slate-400 max-w-2xl leading-relaxed">
+                  구체적인 숫자의 단서를 수집하고, 가설을 의심하여 반례를 수색한 뒤, 임의의 수에서 성립하는 논리적 증명 보고서를 완성해 보세요.
                 </p>
               </div>
 
-              {/* Hero Right Emblem */}
-              <div className="hidden lg:flex flex-col items-center justify-center gap-3 text-center">
-                <div className="flex flex-col items-center opacity-95" aria-hidden="true">
-                  <svg
-                    width="136"
-                    height="134"
-                    viewBox="0 0 155 152"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <circle
-                      cx="64"
-                      cy="63"
-                      r="48"
-                      stroke="#E6C990"
-                      strokeWidth="2"
-                      strokeDasharray="3 8"
-                      opacity=".5"
-                    />
-                    <circle cx="64" cy="63" r="34" stroke="#F4DCA4" strokeWidth="8" />
-                    <path
-                      d="M89 88l30 30"
-                      stroke="#F4DCA4"
-                      strokeWidth="13"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M52 62l10 10 18-22"
-                      stroke="#F4DCA4"
-                      strokeWidth="5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M4 17h20M4 25h32M114 16h30M129 24h15"
-                      stroke="#96B4B7"
-                      strokeWidth="2"
-                      opacity=".45"
-                    />
-                  </svg>
-                  <span className="text-[10px] tracking-[2px] text-[#a4c2bf] font-extrabold -mt-1">
-                    수사 중 · EVIDENCE LAB
-                  </span>
-                </div>
-                <div className="w-full border-y border-white/25 py-2 text-left text-[11px] tracking-wider text-[#dfc397]">
-                  CASE FILE <strong className="float-right text-xs text-[#fff4db]">01 / 02</strong>
-                  <span className="block clear-both text-[10px] text-[#b6c9c6] pt-1">
-                    관찰 · 추측 · 반례 · 증명
-                  </span>
+              {/* Hero Right Geometric Mathematical Diagram */}
+              <div className="hidden lg:flex flex-col items-end justify-center">
+                <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xs">
+                  <div className="flex items-center justify-between text-xs text-slate-400 pb-3 border-b border-white/10">
+                    <span className="font-semibold text-slate-200">탐구 모델</span>
+                    <span className="mono text-sky-300">n = 2k + 1</span>
+                  </div>
+                  <div className="py-3 space-y-2 mono text-xs">
+                    <div className="flex items-center justify-between gap-3 text-slate-300 whitespace-nowrap">
+                      <span>홀수의 제곱</span>
+                      <span className="text-white font-semibold">(2k + 1)² = 4k(k + 1) + 1</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 text-slate-400 whitespace-nowrap">
+                      <span>나머지 합동</span>
+                      <span className="text-emerald-300 font-semibold">n² ≡ 1 (mod 8)</span>
+                    </div>
+                  </div>
+                  <div className="pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>관찰 → 추측 → 반례 → 증명</span>
+                    <span className="mono text-slate-300">01 / 02</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* In Student Mode: Show ONLY Lesson 1 & Lesson 2 Tabs (Teacher Mode strictly separated) */}
+            {/* In Student Mode: Show ONLY Lesson 1 & Lesson 2 Segmented Tabs */}
             {sessionMode === 'student' && (
               <div
                 role="tablist"
                 aria-label="학생 차시 선택"
-                className="no-print mt-5 pt-4 border-t border-white/20 grid grid-cols-2 sm:flex sm:flex-wrap gap-2"
+                className="no-print mt-7 pt-5 border-t border-white/10 flex flex-wrap gap-2.5"
               >
                 <button
                   type="button"
@@ -428,15 +415,15 @@ export default function App() {
                     setActiveLessonTab(1);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className={`min-h-[46px] rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all whitespace-nowrap ${
+                  className={`min-h-[44px] rounded-xl px-5 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
                     activeLessonTab === 1
-                      ? 'bg-[#f5ebd5] text-[#27404b] border border-[#f1d8ae] shadow-sm'
-                      : 'bg-white/10 text-[#e7ece4] border border-white/25 hover:bg-white/20'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
                   }`}
                 >
                   <span
-                    className={`mr-1.5 text-xs font-black ${
-                      activeLessonTab === 1 ? 'text-[#98621d]' : 'text-[#e5bd84]'
+                    className={`mr-2 mono text-xs font-extrabold ${
+                      activeLessonTab === 1 ? 'text-blue-600' : 'text-sky-300'
                     }`}
                   >
                     01
@@ -452,15 +439,15 @@ export default function App() {
                     setActiveLessonTab(2);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className={`min-h-[46px] rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all whitespace-nowrap ${
+                  className={`min-h-[44px] rounded-xl px-5 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
                     activeLessonTab === 2
-                      ? 'bg-[#f5ebd5] text-[#27404b] border border-[#f1d8ae] shadow-sm'
-                      : 'bg-white/10 text-[#e7ece4] border border-white/25 hover:bg-white/20'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
                   }`}
                 >
                   <span
-                    className={`mr-1.5 text-xs font-black ${
-                      activeLessonTab === 2 ? 'text-[#98621d]' : 'text-[#e5bd84]'
+                    className={`mr-2 mono text-xs font-extrabold ${
+                      activeLessonTab === 2 ? 'text-blue-600' : 'text-sky-300'
                     }`}
                   >
                     02
@@ -473,28 +460,28 @@ export default function App() {
         </header>
 
         {/* Main Workspace Container */}
-        <main className="mx-auto w-full max-w-[1120px] flex-1 px-3.5 sm:px-6 py-5">
+        <main className="mx-auto w-full max-w-[1160px] flex-1 px-4 sm:px-6 py-7">
           {toast && (
             <div
               role="status"
-              className={`no-print mb-4 flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-bold shadow-sm ${
+              className={`no-print mb-5 flex items-center justify-between gap-3 rounded-xl border px-4 py-3.5 text-sm font-semibold shadow-xs ${
                 toast.type === 'good'
-                  ? 'border-[#9cd6c1] bg-[#e5f5ed] text-[#075e49]'
-                  : 'border-[#e7c989] bg-[#fff4da] text-[#705012]'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                  : 'border-amber-200 bg-amber-50 text-amber-900'
               }`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 {toast.type === 'good' ? (
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                 ) : (
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
                 )}
                 <span>{toast.text}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setToast(null)}
-                className="text-xs underline opacity-80 hover:opacity-100 shrink-0"
+                className="text-xs font-bold underline opacity-80 hover:opacity-100 shrink-0 whitespace-nowrap"
               >
                 닫기
               </button>
@@ -510,28 +497,29 @@ export default function App() {
           )}
 
           {sessionMode === 'student' && (
-            <section aria-label="학생 탐구 활동 영역" className="space-y-4">
-              {/* Approved Student Identity Bar */}
-              <div className="no-print rounded-2xl border border-[#e0ddd1] bg-[#fffcf6] p-4 sm:p-5 shadow-xs">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+            <section aria-label="학생 탐구 활동 영역" className="space-y-6">
+              {/* Approved Student Identity & Progress Header Bar */}
+              <div className="no-print rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-slate-100">
                   <div>
-                    <div className="text-xs font-extrabold text-[#187361]">
-                      ✓ 관리자 승인 완료 · 학생 전용 모드 (실시간 자동 저장)
+                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-700">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      <span>관리자 승인 완료 · 학생 전용 모드 · 실시간 클라우드 자동 저장</span>
                     </div>
-                    <div className="mt-0.5 text-sm sm:text-base font-extrabold text-[#20343d]">
+                    <div className="mt-1 text-base sm:text-lg font-extrabold text-slate-900">
                       {approvedProfile
                         ? `${approvedProfile.school} ${approvedProfile.grade}학년 ${approvedProfile.classNum}반 ${approvedProfile.studentNum}번 ${approvedProfile.name}`
                         : `${student.group} ${student.code}`}
                     </div>
                     {approvedProfile && (
-                      <div className="text-xs text-[#65747c] mono mt-0.5">
-                        생년월일: {approvedProfile.birthDate} · 등록 기기 MAC:{' '}
+                      <div className="text-xs text-slate-500 mono mt-1">
+                        생년월일 {approvedProfile.birthDate} · 기기 MAC 식별자{' '}
                         {formatDeviceHashAsMac(approvedProfile.deviceHash)}
                       </div>
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2.5">
                     <input
                       ref={resumeFileInputRef}
                       type="file"
@@ -542,49 +530,49 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => resumeFileInputRef.current?.click()}
-                      className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl border border-[#b8cac4] bg-white px-3.5 py-2 text-xs sm:text-sm font-bold text-[#295763] hover:bg-[#e8f2f1] whitespace-nowrap"
+                      className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 whitespace-nowrap shrink-0"
                     >
-                      <Upload className="h-4 w-4" />
+                      <Upload className="h-4 w-4 text-slate-500" />
                       백업 JSON 불러오기
                     </button>
                   </div>
                 </div>
-              </div>
 
-              {/* Lesson Intro Banner */}
-              <div className="print-card relative overflow-hidden rounded-2xl border border-[#c8d8ce] bg-gradient-to-r from-[#ebf3ef] to-[#f8f7ee] p-5 sm:p-6">
-                <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
-                  <span className="font-extrabold text-[#1b505a] tracking-wide">
-                    CASE {activeLessonTab === 1 ? '01 · 교사 안내형 수사' : '02 · 학생 주도형 수사'}
-                  </span>
-                  <span className="text-[#516b69] font-semibold">
-                    권장 시간 50분 · 증거 확보 {activeDone.filter(Boolean).length} / 5 단계
-                  </span>
-                </div>
+                {/* Lesson Overview & Progress */}
+                <div className="pt-5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-slate-500">
+                    <span className="font-bold text-blue-600">
+                      {activeLessonTab === 1 ? '01차시 · 교사 안내형 수사' : '02차시 · 학생 주도형 수사'}
+                    </span>
+                    <span className="font-semibold mono text-slate-600">
+                      권장 시간 50분 · 단계 완료 {activeDone.filter(Boolean).length} / 5
+                    </span>
+                  </div>
 
-                <h2 className="mt-2 text-xl sm:text-2xl font-extrabold text-[#20343d]">
-                  {activeLessonTab === 1
-                    ? '패턴의 비밀을 찾아라!'
-                    : '반례를 찾아라! 진실을 증명하라!'}
-                </h2>
-                <p className="mt-1 text-xs sm:text-sm text-[#516b69]">
-                  {activeLessonTab === 1
-                    ? '홀수의 제곱에서 발견한 단서는 우연일까요, 필연일까요?'
-                    : '새롭게 만든 명제는 진실일까요? 반례와 증명으로 사건을 해결해 보세요.'}
-                </p>
+                  <h2 className="mt-1.5 text-xl sm:text-2xl font-extrabold text-slate-900">
+                    {activeLessonTab === 1
+                      ? '패턴의 비밀을 찾아라!'
+                      : '반례를 찾아라! 진실을 증명하라!'}
+                  </h2>
+                  <p className="mt-1 text-xs sm:text-sm text-slate-600">
+                    {activeLessonTab === 1
+                      ? '홀수의 제곱에서 발견한 단서는 우연일까요, 필연일까요?'
+                      : '새롭게 만든 명제는 진실일까요? 반례와 증명으로 사건을 해결해 보세요.'}
+                  </p>
 
-                <div className="mt-3.5 h-2.5 w-full overflow-hidden rounded-full bg-[#d8e2df]">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#c99d57] to-[#27947c] transition-all duration-200"
-                    style={{ width: `${activeDone.filter(Boolean).length * 20}%` }}
-                  />
+                  <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-blue-600 transition-all duration-200"
+                      style={{ width: `${activeDone.filter(Boolean).length * 20}%` }}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* 5-Stage Step Navigation */}
               <nav
                 aria-label="수사 단계 이동"
-                className="no-print grid grid-cols-5 gap-1.5 sm:gap-2.5"
+                className="no-print grid grid-cols-5 gap-2 sm:gap-3"
               >
                 {STAGE_TITLES[activeLessonTab].map((title, idx) => {
                   const isCurrent = activeStep === idx;
@@ -597,18 +585,18 @@ export default function App() {
                       onClick={() => {
                         setSteps((prev) => ({ ...prev, [activeLessonTab]: idx }));
                       }}
-                      className={`min-h-[68px] sm:min-h-[76px] rounded-xl border p-1.5 sm:p-2.5 flex flex-col items-center justify-center text-center transition-all ${
+                      className={`min-h-[68px] sm:min-h-[76px] rounded-xl border p-2 sm:p-3 flex flex-col items-center justify-center text-center transition-all ${
                         isCurrent
-                          ? 'border-[#21666e] bg-[#eaf3f0] text-[#134650] ring-1 ring-[#21666e] shadow-xs'
+                          ? 'border-blue-600 bg-blue-50/70 text-blue-950 ring-1 ring-blue-600 shadow-xs'
                           : isComplete
-                          ? 'border-[#96c6ae] bg-[#e9f4ee] text-[#176950]'
-                          : 'border-[#d1d9d6] bg-[#fffefa] text-[#5d6b80] hover:bg-white'
+                          ? 'border-emerald-200 bg-emerald-50/50 text-emerald-900 hover:bg-emerald-50'
+                          : 'border-slate-200/90 bg-white text-slate-600 hover:bg-slate-50'
                       }`}
                     >
-                      <strong className="text-[10px] sm:text-xs font-black tracking-wide">
-                        수사 {idx + 1} {isComplete ? '✓' : ''}
+                      <strong className="mono text-[10px] sm:text-xs font-extrabold">
+                        0{idx + 1} {isComplete ? '✓' : ''}
                       </strong>
-                      <span className="mt-0.5 text-[11px] sm:text-sm font-extrabold leading-tight break-keep">
+                      <span className="mt-1 text-[11px] sm:text-sm font-bold leading-tight break-keep">
                         {title}
                       </span>
                     </button>
@@ -619,7 +607,7 @@ export default function App() {
               {/* Main Stage Content Card */}
               <section
                 aria-live="polite"
-                className="print-card rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-4 sm:p-7 shadow-sm"
+                className="print-card rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-8 shadow-xs"
               >
                 {activeLessonTab === 1 ? (
                   <Lesson1View
@@ -666,15 +654,15 @@ export default function App() {
               </section>
 
               {/* Bottom Student Status & Export Footer */}
-              <section className="no-print rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-4 sm:p-6 shadow-sm">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
+              <section className="no-print rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div>
-                    <h3 className="text-base font-extrabold text-[#20343d]">나의 수사 진행 현황</h3>
-                    <p className="text-xs text-[#65747c]">
+                    <h3 className="text-base font-extrabold text-slate-900">나의 수사 진행 현황</h3>
+                    <p className="mt-0.5 text-xs sm:text-sm text-slate-500">
                       작성 내용은 교사(관리자) 기록실에 실시간으로 자동 저장되며, 백업용 JSON 파일로도 내려받을 수 있습니다.
                     </p>
                   </div>
-                  <div className="text-xs sm:text-sm font-extrabold text-[#1f6165]">
+                  <div className="mono text-xs sm:text-sm font-bold text-slate-700">
                     1차시 {done1.filter(Boolean).length}/5 · 2차시 {done2.filter(Boolean).length}/5 완료
                   </div>
                 </div>
@@ -683,7 +671,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={handleExportStudentJson}
-                    className="inline-flex min-h-[45px] items-center gap-2 rounded-xl bg-[#167561] px-4 py-2.5 text-sm font-bold text-white hover:brightness-110"
+                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800 whitespace-nowrap shrink-0"
                   >
                     <Download className="h-4 w-4" />
                     사건 파일 백업·저장 (JSON)
@@ -691,7 +679,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="inline-flex min-h-[45px] items-center gap-2 rounded-xl border border-[#b8cac4] bg-white px-4 py-2.5 text-sm font-bold text-[#295763] hover:bg-[#f4f2ec]"
+                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0"
                   >
                     <Printer className="h-4 w-4" />
                     현재 화면 인쇄 / PDF
@@ -717,13 +705,17 @@ export default function App() {
         </main>
 
         {/* Footer */}
-        <footer className="no-print mx-auto max-w-[1120px] px-4 py-6 text-center text-xs text-[#788580] leading-relaxed">
-          <span className="font-extrabold tracking-widest text-[#41676b]">
-            MATH DETECTIVE PROJECT
-          </span>{' '}
-          · 우연일까, 필연일까? · 관찰 → 추측 → 반례 → 증명
-          <br />
-          공통수학2 · 명제의 증명 | 학생 모드 · 교사(관리자 {ADMIN_TEACHER_EMAIL}) 승인제 통합 플랫폼
+        <footer className="no-print border-t border-slate-200/80 bg-white mt-10">
+          <div className="mx-auto max-w-[1160px] px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+            <div>
+              <span className="font-bold text-slate-800">우연일까, 필연일까?</span>
+              <span className="mx-2 text-slate-300">·</span>
+              <span>공통수학2 명제의 증명 탐구 프로젝트</span>
+            </div>
+            <div>
+              학생 모드 · 교사(관리자 <span className="mono">{ADMIN_TEACHER_EMAIL}</span>) 승인제 통합 플랫폼
+            </div>
+          </div>
         </footer>
 
         {/* Custom Confirmation Modal */}
@@ -734,18 +726,18 @@ export default function App() {
             aria-modal="true"
             aria-labelledby="confirm-dialog-title"
           >
-            <div className="w-full max-w-md rounded-2xl border border-[#d5dbd6] bg-[#fffefb] p-5 sm:p-6 shadow-xl">
-              <h3 id="confirm-dialog-title" className="text-lg font-extrabold text-[#20343d]">
+            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+              <h3 id="confirm-dialog-title" className="text-lg font-extrabold text-slate-900">
                 {confirmDialog.title}
               </h3>
-              <p className="mt-2 text-sm text-[#516b69] leading-relaxed">
+              <p className="mt-2 text-sm text-slate-600 leading-relaxed">
                 {confirmDialog.message}
               </p>
-              <div className="mt-5 flex justify-end gap-2.5">
+              <div className="mt-6 flex justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setConfirmDialog(null)}
-                  className="min-h-[42px] rounded-xl border border-[#b8cac4] bg-white px-4 py-2 text-sm font-bold text-[#295763] hover:bg-[#f4f2ec]"
+                  className="min-h-[42px] rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 whitespace-nowrap"
                 >
                   취소
                 </button>
@@ -756,7 +748,7 @@ export default function App() {
                     setConfirmDialog(null);
                     fn();
                   }}
-                  className="min-h-[42px] rounded-xl bg-[#215b61] px-4 py-2 text-sm font-bold text-white hover:brightness-110"
+                  className="min-h-[42px] rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 whitespace-nowrap"
                 >
                   확인
                 </button>

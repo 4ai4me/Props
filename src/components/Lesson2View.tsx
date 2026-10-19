@@ -234,17 +234,17 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
   };
 
   const renderTopicLockedNotice = () => (
-    <div className="mt-5 rounded-2xl border border-[#e7c989] bg-[#fff4da] p-5 text-sm text-[#705012] flex items-center justify-between gap-4 flex-wrap">
+    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900 flex items-center justify-between gap-4 flex-wrap">
       <div>
-        <strong className="block text-base">먼저 2차시 1단계에서 탐구할 명제를 선택해 주세요.</strong>
-        <span className="text-xs sm:text-sm">
+        <strong className="block text-base font-bold">먼저 2차시 1단계에서 탐구할 명제를 선택해 주세요.</strong>
+        <span className="text-xs sm:text-sm text-amber-800">
           주제 A, B, C 중 하나를 고르거나, 주제 D에서 나만의 명제와 대상 조건을 작성하면 현장 조사를 시작할 수 있습니다.
         </span>
       </div>
       <button
         type="button"
         onClick={() => onStepChange(0)}
-        className="min-h-[44px] rounded-xl bg-[#945e18] px-4 py-2 text-xs sm:text-sm font-bold text-white hover:brightness-110 shrink-0"
+        className="min-h-[42px] rounded-xl bg-amber-700 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-amber-800 shrink-0 whitespace-nowrap"
       >
         1단계(사건 선택)로 이동
       </button>
@@ -255,17 +255,17 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
     <div className="space-y-6">
       {step === 0 && (
         <div>
-          <div className="text-xs font-extrabold tracking-widest text-[#ad7b37] uppercase">
-            CASE 02 · INVESTIGATION 01 / 05
+          <div className="text-xs font-bold text-blue-600">
+            02차시 · 1 / 5단계
           </div>
-          <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-[#20343d]">
+          <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             새 사건 접수 · 명제를 선택하라
           </h2>
-          <p className="mt-1 text-sm sm:text-base text-[#65747c]">
+          <p className="mt-1 text-sm sm:text-base text-slate-500">
             1차시에서 사용한 규칙을 변형하거나, 나만의 참·거짓을 판단할 수 있는 명제를 만들어 봅시다.
           </p>
 
-          <div className="mt-4 rounded-xl bg-[#edf4ef] px-4 py-3.5 text-sm sm:text-base font-bold text-[#244e52] border border-[#c8d8ce]">
+          <div className="mt-4 rounded-xl bg-blue-50/70 px-4 py-3.5 text-sm sm:text-base font-bold text-slate-900 border border-blue-200/80">
             오늘의 목표는 참인 명제의 증명뿐 아니라, 거짓인 명제의 반례를 찾는 일도 포함합니다.
           </div>
 
@@ -277,8 +277,8 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   key={t.id}
                   className={`flex items-start gap-3.5 rounded-2xl border p-4 sm:p-5 cursor-pointer transition-colors ${
                     selected
-                      ? 'bg-[#eef7f1] border-[#5d9a8b] ring-1 ring-[#81b6a8]'
-                      : 'bg-white border-[#d4deed] hover:bg-[#f9fbf9]'
+                      ? 'bg-blue-50/60 border-blue-600 ring-1 ring-blue-600'
+                      : 'bg-white border-slate-200 hover:bg-slate-50'
                   }`}
                 >
                   <input
@@ -287,12 +287,12 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                     value={t.id}
                     checked={selected}
                     onChange={() => onChangeTopic(t.id)}
-                    className="mt-1.5 h-4 w-4 accent-[#247775] shrink-0"
+                    className="mt-1.5 h-4 w-4 accent-blue-600 shrink-0"
                   />
                   <div className="space-y-1">
-                    <div className="text-xs font-extrabold text-[#1e5661]">{t.tag}</div>
-                    <div className="text-base font-bold text-[#20343d]">{t.title}</div>
-                    <div className="text-xs text-[#65747c]">
+                    <div className="text-xs font-bold text-blue-600">{t.tag}</div>
+                    <div className="text-base font-bold text-slate-900">{t.title}</div>
+                    <div className="text-xs text-slate-500 leading-relaxed">
                       {t.id === 'd'
                         ? '대상·조건·결론을 구체적으로 적어 보세요.'
                         : t.statement}
@@ -304,9 +304,9 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
           </div>
 
           {state.topic === 'd' && (
-            <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 sm:p-6 space-y-4">
+            <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6 space-y-4">
               <div>
-                <label htmlFor="customStatement" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                <label htmlFor="customStatement" className="block text-sm font-bold text-slate-800 mb-1.5">
                   내가 만든 명제 (10자 이상)
                 </label>
                 <textarea
@@ -315,11 +315,11 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   value={state.customStatement}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, customStatement: e.target.value }))}
                   placeholder="예: 모든 정수 n에 대하여 n(n+1)은 2의 배수이다."
-                  className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3.5 text-base text-[#20343d]"
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
                 />
               </div>
               <div>
-                <label htmlFor="customScope" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                <label htmlFor="customScope" className="block text-sm font-bold text-slate-800 mb-1.5">
                   대상과 조건 (2자 이상)
                 </label>
                 <input
@@ -328,21 +328,21 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   value={state.customScope}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, customScope: e.target.value }))}
                   placeholder="예: 모든 정수 / 양의 홀수"
-                  className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base text-[#20343d]"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900"
                 />
               </div>
-              <p className="text-xs text-[#65747c]">
+              <p className="text-xs text-slate-500">
                 직접 만든 명제는 자동으로 참·거짓을 판정할 수 없습니다. 학생의 논증과 반례 설명을 교사가 확인합니다.
               </p>
             </div>
           )}
 
-          <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 sm:p-6">
-            <h3 className="text-base font-bold text-[#20343d] mb-2">이번 사건의 명제</h3>
-            <div className="rounded-xl border border-[#e5e4da] bg-[#faf9f5] p-3.5 text-sm sm:text-base font-bold text-[#183541]">
+          <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-2">이번 사건의 명제</h3>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm sm:text-base font-bold text-slate-900">
               {topicStatement}
             </div>
-            <p className="mt-2 text-xs text-[#65747c]">
+            <p className="mt-2 text-xs text-slate-500">
               처음에는 정답이 공개되지 않습니다. 다음 단계에서 탐구 결과를 바탕으로 참·거짓 판단을 기록하세요.
             </p>
           </div>
@@ -351,13 +351,13 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
 
       {step === 1 && (
         <div>
-          <div className="text-xs font-extrabold tracking-widest text-[#ad7b37] uppercase">
-            CASE 02 · INVESTIGATION 02 / 05
+          <div className="text-xs font-bold text-blue-600">
+            02차시 · 2 / 5단계
           </div>
-          <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-[#20343d]">
+          <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             현장 조사 · 계산의 흔적 모으기
           </h2>
-          <p className="mt-1 text-sm sm:text-base text-[#65747c]">
+          <p className="mt-1 text-sm sm:text-base text-slate-500">
             먼저 간단한 수를 대입하고 예상과 다른 결과가 있는지 확인해 보세요.
           </p>
 
@@ -365,15 +365,15 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
             renderTopicLockedNotice()
           ) : (
             <>
-              <div className="mt-4 rounded-xl bg-[#edf4ef] px-4 py-3.5 text-sm sm:text-base font-bold text-[#244e52] border border-[#c8d8ce]">
+              <div className="mt-4 rounded-xl bg-blue-50/70 px-4 py-3.5 text-sm sm:text-base font-bold text-slate-900 border border-blue-200/80">
                 탐구 명제: {topicStatement}
               </div>
 
-              <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 sm:p-6">
+              <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6">
                 {isAutoCalc && currentTopic ? (
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <label htmlFor="l2number" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                      <label htmlFor="l2number" className="block text-sm font-bold text-slate-800 mb-1.5">
                         대입할 정수 n (대상: {currentTopic.scope})
                       </label>
                       <div className="flex items-center gap-2">
@@ -383,12 +383,12 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                           inputMode="numeric"
                           value={numInputStr}
                           onChange={(e) => setNumInputStr(e.target.value)}
-                          className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base font-semibold mono"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base font-semibold mono text-slate-900"
                         />
                         <button
                           type="button"
                           onClick={() => toggleSign(numInputStr, setNumInputStr)}
-                          className="min-h-[46px] px-3 rounded-xl border border-[#b8cac4] bg-white text-sm font-bold text-[#295763] hover:bg-[#e8f2f1] shrink-0 whitespace-nowrap"
+                          className="min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-100 shrink-0 whitespace-nowrap"
                         >
                           ±부호
                         </button>
@@ -396,7 +396,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold text-[#20343d] mb-1.5">
+                      <label className="block text-sm font-bold text-slate-800 mb-1.5">
                         추천 입력 예시 (터치하여 즉시 추가)
                       </label>
                       <div className="flex flex-wrap gap-2">
@@ -405,7 +405,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                             key={n}
                             type="button"
                             onClick={() => handleAddExample(n)}
-                            className="min-h-[42px] rounded-xl bg-[#e2efea] px-3.5 py-2 text-xs sm:text-sm font-bold text-[#1c6166] hover:bg-[#d1e6de] mono whitespace-nowrap"
+                            className="min-h-[40px] rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 mono whitespace-nowrap"
                           >
                             n = {n}
                           </button>
@@ -416,7 +416,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <label htmlFor="l2number" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                      <label htmlFor="l2number" className="block text-sm font-bold text-slate-800 mb-1.5">
                         사례에 사용한 정수 n
                       </label>
                       <div className="flex items-center gap-2">
@@ -426,12 +426,12 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                           inputMode="numeric"
                           value={numInputStr}
                           onChange={(e) => setNumInputStr(e.target.value)}
-                          className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base font-semibold mono"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base font-semibold mono text-slate-900"
                         />
                         <button
                           type="button"
                           onClick={() => toggleSign(numInputStr, setNumInputStr)}
-                          className="min-h-[46px] px-3 rounded-xl border border-[#b8cac4] bg-white text-sm font-bold text-[#295763] hover:bg-[#e8f2f1] shrink-0 whitespace-nowrap"
+                          className="min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-100 shrink-0 whitespace-nowrap"
                         >
                           ±부호
                         </button>
@@ -439,7 +439,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                     </div>
 
                     <div>
-                      <label htmlFor="l2obs" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                      <label htmlFor="l2obs" className="block text-sm font-bold text-slate-800 mb-1.5">
                         계산 결과 · 관찰 내용
                       </label>
                       <input
@@ -448,7 +448,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                         value={obsInputStr}
                         onChange={(e) => setObsInputStr(e.target.value)}
                         placeholder="예: n=1일 때 식의 값이 2이므로 성립함"
-                        className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900"
                       />
                     </div>
                   </div>
@@ -458,7 +458,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   <button
                     type="button"
                     onClick={() => handleAddExample(numInputStr)}
-                    className="inline-flex min-h-[45px] items-center gap-1.5 rounded-xl bg-[#215b61] px-5 py-2.5 text-sm font-bold text-white hover:brightness-110"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
                   >
                     <Plus className="h-4 w-4" />
                     {isAutoCalc ? '값 계산하고 표에 추가' : '관찰 기록 추가'}
@@ -468,10 +468,10 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 {feedback.twoInput && (
                   <div
                     role="status"
-                    className={`mt-3.5 flex items-start gap-2 rounded-xl p-3.5 text-sm ${
+                    className={`mt-3.5 flex items-start gap-2 rounded-xl p-3.5 text-sm font-medium ${
                       feedback.twoInput.type === 'good'
-                        ? 'bg-[#e5f5ed] text-[#075e49] border border-[#a8d9ca]'
-                        : 'bg-[#fff4da] text-[#705012] border border-[#e7c989]'
+                        ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                        : 'bg-amber-50 text-amber-900 border border-amber-200'
                     }`}
                   >
                     <span>{feedback.twoInput.text}</span>
@@ -479,9 +479,9 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 )}
               </div>
 
-              <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-white p-4 sm:p-6">
+              <div className="mt-5 pt-5 border-t border-slate-100">
                 <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
-                  <h3 className="text-base sm:text-lg font-bold text-[#20343d]">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     단서 보관함 ({state.examples.length}개 / 5개 이상 권장)
                   </h3>
                   {state.examples.length > 0 && (
@@ -492,7 +492,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                           onUpdate((prev) => ({ ...prev, examples: [] }));
                         })
                       }
-                      className="inline-flex items-center gap-1 rounded-lg border border-[#b8cac4] bg-white px-3 py-1.5 text-xs font-bold text-[#295763] hover:bg-[#f4f2ec]"
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 whitespace-nowrap"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       사례표 비우기
@@ -500,34 +500,34 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   )}
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-[#e6ebf1]">
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
                   <table className="w-full border-collapse text-sm">
                     <thead>
-                      <tr className="bg-[#f5f8fd] text-[#53627c] text-xs font-extrabold border-b border-[#e6ebf1]">
-                        <th className="py-3 px-3.5 text-left">대입한 n</th>
-                        <th className="py-3 px-3.5 text-left">{isAutoCalc ? '계산한 식' : '관찰 내용'}</th>
-                        <th className="py-3 px-3.5 text-left">{isAutoCalc ? '계산 값' : '기록'}</th>
+                      <tr className="bg-slate-50 text-slate-600 text-xs font-bold border-b border-slate-200">
+                        <th className="py-3 px-4 text-left">대입한 n</th>
+                        <th className="py-3 px-4 text-left">{isAutoCalc ? '계산한 식' : '관찰 내용'}</th>
+                        <th className="py-3 px-4 text-left">{isAutoCalc ? '계산 값' : '기록'}</th>
                         {isAutoCalc && (
-                          <th className="py-3 px-3.5 text-left">{currentTopic?.div}로 나눈 나머지</th>
+                          <th className="py-3 px-4 text-left">{currentTopic?.div}로 나눈 나머지</th>
                         )}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#e6ebf1]">
+                    <tbody className="divide-y divide-slate-100">
                       {state.examples.length > 0 ? (
                         state.examples.map((x, idx) =>
                           isAutoCalc && currentTopic?.formula ? (
-                            <tr key={`${x.n}-${idx}`}>
-                              <td className="py-3 px-3.5 mono font-bold">{x.n}</td>
-                              <td className="py-3 px-3.5 mono">{currentTopic.formula(x.n)}</td>
-                              <td className="py-3 px-3.5 mono">{(x.product ?? 0).toLocaleString('ko-KR')}</td>
-                              <td className="py-3 px-3.5 mono font-bold text-[#187361]">
+                            <tr key={`${x.n}-${idx}`} className="hover:bg-slate-50/80">
+                              <td className="py-3 px-4 mono font-bold text-slate-900">{x.n}</td>
+                              <td className="py-3 px-4 mono text-slate-700">{currentTopic.formula(x.n)}</td>
+                              <td className="py-3 px-4 mono text-slate-700">{(x.product ?? 0).toLocaleString('ko-KR')}</td>
+                              <td className="py-3 px-4 mono font-bold text-emerald-600">
                                 {x.r} {x.valid ? '' : '(조건 밖)'}
                               </td>
                             </tr>
                           ) : (
-                            <tr key={`${x.n}-${idx}`}>
-                              <td className="py-3 px-3.5 mono font-bold">{x.n}</td>
-                              <td colSpan={2} className="py-3 px-3.5">
+                            <tr key={`${x.n}-${idx}`} className="hover:bg-slate-50/80">
+                              <td className="py-3 px-4 mono font-bold text-slate-900">{x.n}</td>
+                              <td colSpan={2} className="py-3 px-4 text-slate-700">
                                 {x.obs}
                               </td>
                             </tr>
@@ -535,7 +535,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                         )
                       ) : (
                         <tr>
-                          <td colSpan={isAutoCalc ? 4 : 3} className="py-6 px-4 text-center text-[#65747c]">
+                          <td colSpan={isAutoCalc ? 4 : 3} className="py-6 px-4 text-center text-slate-500">
                             사례 5개 이상을 기록해 봅시다.
                           </td>
                         </tr>
@@ -551,13 +551,13 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
 
       {step === 2 && (
         <div>
-          <div className="text-xs font-extrabold tracking-widest text-[#ad7b37] uppercase">
-            CASE 02 · INVESTIGATION 03 / 05
+          <div className="text-xs font-bold text-blue-600">
+            02차시 · 3 / 5단계
           </div>
-          <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-[#20343d]">
+          <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             가설 검증 · 반례를 수색하라
           </h2>
-          <p className="mt-1 text-sm sm:text-base text-[#65747c]">
+          <p className="mt-1 text-sm sm:text-base text-slate-500">
             명제가 참일 것 같은지 먼저 생각한 뒤, 반례가 될 수 있는 수를 적극적으로 찾아보세요.
           </p>
 
@@ -565,13 +565,13 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
             renderTopicLockedNotice()
           ) : (
             <>
-              <div className="mt-4 rounded-xl bg-[#edf4ef] px-4 py-3.5 text-sm sm:text-base font-bold text-[#244e52] border border-[#c8d8ce]">
+              <div className="mt-4 rounded-xl bg-blue-50/70 px-4 py-3.5 text-sm sm:text-base font-bold text-slate-900 border border-blue-200/80">
                 탐구 명제: {topicStatement}
               </div>
 
-              <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-white p-4 sm:p-6 space-y-4">
+              <div className="mt-5 space-y-4">
                 <div>
-                  <label htmlFor="l2guess" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                  <label htmlFor="l2guess" className="block text-sm font-bold text-slate-800 mb-1.5">
                     1. 앞선 계산을 보고 추측한 내용과 그 이유
                   </label>
                   <textarea
@@ -580,12 +580,12 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                     value={state.guess}
                     onChange={(e) => onUpdate((prev) => ({ ...prev, guess: e.target.value }))}
                     placeholder="어떤 결과가 반복되었나요? 참 또는 거짓이라고 추측하는 이유는 무엇인가요?"
-                    className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3.5 text-base"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="l2decision" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                  <label htmlFor="l2decision" className="block text-sm font-bold text-slate-800 mb-1.5">
                     2. 현재 나의 판단
                   </label>
                   <select
@@ -598,7 +598,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                         decisionChecked: false,
                       }))
                     }
-                    className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white px-3.5 py-2.5 text-base text-slate-900"
                   >
                     <option value="">판단을 선택하세요</option>
                     <option value="true">참이라고 생각한다</option>
@@ -608,15 +608,15 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 </div>
               </div>
 
-              <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-bold text-[#20343d]">반례 후보 조사 (2회 이상 권장)</h3>
-                <p className="mt-1 text-xs sm:text-sm text-[#65747c]">
+              <div className="mt-6 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">반례 후보 조사 (2회 이상 권장)</h3>
+                <p className="mt-1 text-xs sm:text-sm text-slate-500">
                   반례는 명제의 <strong>가정을 만족</strong>하면서 결론이 <strong>거짓</strong>인 경우여야 합니다.
                 </p>
 
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <div>
-                    <label htmlFor="l2test" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                    <label htmlFor="l2test" className="block text-sm font-bold text-slate-800 mb-1.5">
                       검사할 정수 n
                     </label>
                     <div className="flex items-center gap-2">
@@ -626,12 +626,12 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                         inputMode="numeric"
                         value={testInputStr}
                         onChange={(e) => setTestInputStr(e.target.value)}
-                        className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base font-semibold mono"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base font-semibold mono text-slate-900"
                       />
                       <button
                         type="button"
                         onClick={() => toggleSign(testInputStr, setTestInputStr)}
-                        className="min-h-[46px] px-3 rounded-xl border border-[#b8cac4] bg-white text-sm font-bold text-[#295763] hover:bg-[#e8f2f1] shrink-0 whitespace-nowrap"
+                        className="min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-100 shrink-0 whitespace-nowrap"
                       >
                         ±부호
                       </button>
@@ -640,19 +640,19 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
 
                   {isAutoCalc ? (
                     <div>
-                      <label className="block text-sm font-bold text-[#20343d] mb-1.5">임의의 수 검사</label>
+                      <label className="block text-sm font-bold text-slate-800 mb-1.5">임의의 수 검사</label>
                       <button
                         type="button"
                         onClick={() => handleCheckCandidate(0, true)}
-                        className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-[#e2efea] px-4 py-2.5 text-sm font-bold text-[#1c6166] hover:bg-[#d1e6de]"
+                        className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100"
                       >
-                        <Shuffle className="h-4 w-4" />
+                        <Shuffle className="h-4 w-4 text-blue-600" />
                         무작위 정수 검사
                       </button>
                     </div>
                   ) : (
                     <div>
-                      <label htmlFor="l2testMemo" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                      <label htmlFor="l2testMemo" className="block text-sm font-bold text-slate-800 mb-1.5">
                         내가 확인한 계산/판단
                       </label>
                       <input
@@ -661,7 +661,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                         value={testMemoStr}
                         onChange={(e) => setTestMemoStr(e.target.value)}
                         placeholder="반례인지 설명해 보세요."
-                        className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900"
                       />
                     </div>
                   )}
@@ -671,7 +671,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   <button
                     type="button"
                     onClick={() => handleCheckCandidate(testInputStr)}
-                    className="min-h-[45px] rounded-xl bg-[#215b61] px-5 py-2.5 text-sm font-bold text-white hover:brightness-110"
+                    className="min-h-[44px] rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
                   >
                     검사 결과 기록
                   </button>
@@ -680,36 +680,36 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 {feedback.twoCheck && (
                   <div
                     role="status"
-                    className={`mt-3.5 rounded-xl p-3.5 text-sm ${
+                    className={`mt-3.5 rounded-xl p-3.5 text-sm font-medium ${
                       feedback.twoCheck.type === 'good'
-                        ? 'bg-[#e5f5ed] text-[#075e49] border border-[#a8d9ca]'
+                        ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
                         : feedback.twoCheck.type === 'warn'
-                        ? 'bg-[#fff4da] text-[#705012] border border-[#e7c989]'
-                        : 'bg-[#f2f6fd] text-[#20343d] border border-[#cbd7e6]'
+                        ? 'bg-amber-50 text-amber-900 border border-amber-200'
+                        : 'bg-blue-50 text-blue-900 border border-blue-200'
                     }`}
                   >
                     {feedback.twoCheck.text}
                   </div>
                 )}
 
-                <div className="mt-4 overflow-x-auto rounded-xl border border-[#e6ebf1] bg-white">
+                <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
                   <table className="w-full border-collapse text-sm">
                     <thead>
-                      <tr className="bg-[#f5f8fd] text-[#53627c] text-xs font-extrabold border-b border-[#e6ebf1]">
-                        <th className="py-3 px-3.5 text-left">검사값</th>
-                        <th className="py-3 px-3.5 text-left">결과</th>
-                        <th className="py-3 px-3.5 text-left">해석</th>
+                      <tr className="bg-slate-50 text-slate-600 text-xs font-bold border-b border-slate-200">
+                        <th className="py-3 px-4 text-left">검사값</th>
+                        <th className="py-3 px-4 text-left">결과</th>
+                        <th className="py-3 px-4 text-left">해석</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#e6ebf1]">
+                    <tbody className="divide-y divide-slate-100">
                       {state.checks.length > 0 ? (
                         state.checks.map((x, idx) => (
-                          <tr key={`${x.n}-${idx}`}>
-                            <td className="py-3 px-3.5 mono font-bold">{x.n}</td>
-                            <td className="py-3 px-3.5 mono">
+                          <tr key={`${x.n}-${idx}`} className="hover:bg-slate-50/80">
+                            <td className="py-3 px-4 mono font-bold text-slate-900">{x.n}</td>
+                            <td className="py-3 px-4 mono text-slate-700">
                               {isAutoCalc ? `나머지 ${x.r}` : x.memo || '직접 확인'}
                             </td>
-                            <td className="py-3 px-3.5 font-semibold">
+                            <td className="py-3 px-4 font-semibold text-slate-800">
                               {isAutoCalc
                                 ? x.valid
                                   ? x.isCounter
@@ -722,7 +722,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={3} className="py-5 px-4 text-center text-[#65747c]">
+                          <td colSpan={3} className="py-5 px-4 text-center text-slate-500">
                             아직 검사한 수가 없습니다.
                           </td>
                         </tr>
@@ -735,7 +735,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   <button
                     type="button"
                     onClick={handleJudgeDecision}
-                    className="min-h-[45px] rounded-xl bg-[#e2efea] px-4 py-2.5 text-sm font-bold text-[#1c6166] hover:bg-[#d1e6de]"
+                    className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-100"
                   >
                     나의 참·거짓 판단 점검
                   </button>
@@ -744,12 +744,12 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 {feedback.twoJudge && (
                   <div
                     role="status"
-                    className={`mt-3.5 rounded-xl p-3.5 text-sm ${
+                    className={`mt-3.5 rounded-xl p-3.5 text-sm font-medium ${
                       feedback.twoJudge.type === 'good'
-                        ? 'bg-[#e5f5ed] text-[#075e49] border border-[#a8d9ca]'
+                        ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
                         : feedback.twoJudge.type === 'warn'
-                        ? 'bg-[#fff4da] text-[#705012] border border-[#e7c989]'
-                        : 'bg-[#f2f6fd] text-[#20343d] border border-[#cbd7e6]'
+                        ? 'bg-amber-50 text-amber-900 border border-amber-200'
+                        : 'bg-blue-50 text-blue-900 border border-blue-200'
                     }`}
                   >
                     {feedback.twoJudge.text}
@@ -763,13 +763,13 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
 
       {step === 3 && (
         <div>
-          <div className="text-xs font-extrabold tracking-widest text-[#ad7b37] uppercase">
-            CASE 02 · INVESTIGATION 04 / 05
+          <div className="text-xs font-bold text-blue-600">
+            02차시 · 4 / 5단계
           </div>
-          <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-[#20343d]">
+          <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             최종 판정서 · 증명 또는 반례
           </h2>
-          <p className="mt-1 text-sm sm:text-base text-[#65747c]">
+          <p className="mt-1 text-sm sm:text-base text-slate-500">
             명제가 참이라면 모든 경우를 설명하는 증명을, 거짓이라면 조건에 맞는 반례를 제시하세요.
           </p>
 
@@ -777,12 +777,12 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
             renderTopicLockedNotice()
           ) : (
             <>
-              <div className="mt-4 rounded-xl bg-[#edf4ef] px-4 py-3.5 text-sm sm:text-base font-bold text-[#244e52] border border-[#c8d8ce]">
+              <div className="mt-4 rounded-xl bg-blue-50/70 px-4 py-3.5 text-sm sm:text-base font-bold text-slate-900 border border-blue-200/80">
                 탐구 명제: {topicStatement}
               </div>
 
-              <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-white p-4 sm:p-6">
-                <h3 className="text-base font-bold text-[#20343d] mb-3">내가 선택한 탐구 방향</h3>
+              <div className="mt-5">
+                <h3 className="text-base font-bold text-slate-900 mb-3">내가 선택한 탐구 방향</h3>
                 <div className="grid gap-3 md:grid-cols-3">
                   {[
                     {
@@ -805,8 +805,8 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                       key={item.val}
                       className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
                         state.decision === item.val
-                          ? 'bg-[#eef7f1] border-[#5d9a8b] ring-1 ring-[#81b6a8]'
-                          : 'bg-white border-[#d4deed] hover:bg-[#f9fbf9]'
+                          ? 'bg-blue-50/60 border-blue-600 ring-1 ring-blue-600'
+                          : 'bg-white border-slate-200 hover:bg-slate-50'
                       }`}
                     >
                       <input
@@ -821,11 +821,11 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                             decisionChecked: false,
                           }))
                         }
-                        className="mt-1 h-4 w-4 accent-[#247775] shrink-0"
+                        className="mt-1 h-4 w-4 accent-blue-600 shrink-0"
                       />
                       <div>
-                        <div className="text-sm font-bold text-[#20343d]">{item.title}</div>
-                        <div className="text-xs text-[#65747c] mt-0.5">{item.desc}</div>
+                        <div className="text-sm font-bold text-slate-900">{item.title}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{item.desc}</div>
                       </div>
                     </label>
                   ))}
@@ -833,10 +833,10 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
               </div>
 
               {state.decision === 'false' ? (
-                <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 sm:p-6 space-y-4">
-                  <h3 className="text-base sm:text-lg font-bold text-[#20343d]">반례로 진실 밝히기</h3>
+                <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6 space-y-4">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">반례로 진실 밝히기</h3>
                   <div>
-                    <label htmlFor="l2counter" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                    <label htmlFor="l2counter" className="block text-sm font-bold text-slate-800 mb-1.5">
                       명제의 가정을 만족하지만 결론이 성립하지 않는 정수 n
                     </label>
                     <div className="flex items-center gap-2 max-w-sm">
@@ -847,7 +847,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                         value={state.counter}
                         onChange={(e) => onUpdate((prev) => ({ ...prev, counter: e.target.value }))}
                         placeholder="반례 숫자를 입력 (예: 3)"
-                        className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base font-semibold mono placeholder:font-normal"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base font-semibold mono text-slate-900 placeholder:font-normal"
                       />
                       <button
                         type="button"
@@ -859,7 +859,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                               : '-' + prev.counter,
                           }))
                         }
-                        className="min-h-[46px] px-3 rounded-xl border border-[#b8cac4] bg-white text-sm font-bold text-[#295763] shrink-0 whitespace-nowrap"
+                        className="min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-100 shrink-0 whitespace-nowrap"
                       >
                         ±부호
                       </button>
@@ -867,7 +867,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   </div>
 
                   <div>
-                    <label htmlFor="l2reason" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                    <label htmlFor="l2reason" className="block text-sm font-bold text-slate-800 mb-1.5">
                       이 수가 반례임을 계산과 문장으로 설명하세요. (25자 이상)
                     </label>
                     <textarea
@@ -876,14 +876,14 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                       value={state.counterReason}
                       onChange={(e) => onUpdate((prev) => ({ ...prev, counterReason: e.target.value }))}
                       placeholder="가정이 성립하고, …을 계산하면 … 이므로 결론이 성립하지 않는다."
-                      className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3.5 text-base"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
                     />
                   </div>
 
                   <button
                     type="button"
                     onClick={handleVerifyCounter}
-                    className="min-h-[44px] rounded-xl bg-[#e2efea] px-4 py-2.5 text-sm font-bold text-[#1c6166] hover:bg-[#d1e6de]"
+                    className="min-h-[44px] rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
                   >
                     입력한 반례 점검
                   </button>
@@ -891,10 +891,10 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   {feedback.twoCounter && (
                     <div
                       role="status"
-                      className={`rounded-xl p-3.5 text-sm ${
+                      className={`rounded-xl p-3.5 text-sm font-medium ${
                         feedback.twoCounter.type === 'good'
-                          ? 'bg-[#e5f5ed] text-[#075e49] border border-[#a8d9ca]'
-                          : 'bg-[#fff4da] text-[#705012] border border-[#e7c989]'
+                          ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-900 border border-amber-200'
                       }`}
                     >
                       {feedback.twoCounter.text}
@@ -902,13 +902,13 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   )}
                 </div>
               ) : (
-                <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 sm:p-6 space-y-3">
-                  <h3 className="text-base sm:text-lg font-bold text-[#20343d]">
+                <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6 space-y-3">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     {state.decision === 'unknown'
                       ? '아직 증명하지 못한 이유 설명하기'
                       : '나의 말로 증명 보고서 작성하기'}
                   </h3>
-                  <label htmlFor="l2proof" className="block text-xs sm:text-sm text-[#65747c]">
+                  <label htmlFor="l2proof" className="block text-xs sm:text-sm text-slate-500">
                     {state.decision === 'unknown'
                       ? '현재까지 확인한 사실, 증명에 부족한 점, 다음 시도를 적어 보세요. (40자 이상)'
                       : '임의의 정수(또는 대상)를 문자로 나타내고 수학적 근거를 연결하세요. (40자 이상)'}
@@ -919,14 +919,14 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                     value={state.proofText}
                     onChange={(e) => onUpdate((prev) => ({ ...prev, proofText: e.target.value }))}
                     placeholder="임의의 …에 대해 …이므로 …이다. 따라서 …"
-                    className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3.5 text-base"
+                    className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
                   />
                 </div>
               )}
 
-              <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-white p-4 sm:p-6">
-                <h3 className="text-base font-bold text-[#20343d]">필요할 때만 힌트 열기</h3>
-                <p className="mt-1 text-xs sm:text-sm text-[#65747c]">
+              <div className="mt-5 pt-5 border-t border-slate-100">
+                <h3 className="text-base font-bold text-slate-900">필요할 때만 힌트 열기</h3>
+                <p className="mt-1 text-xs sm:text-sm text-slate-500">
                   증명을 스스로 시도한 다음 막히는 부분에서 활용하세요.
                 </p>
                 <div className="mt-3">
@@ -935,14 +935,14 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                     onClick={() =>
                       onUpdate((prev) => ({ ...prev, hintLevel: Math.min(3, (prev.hintLevel || 0) + 1) }))
                     }
-                    className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl border border-[#dfbe82] bg-[#fff1d8] px-4 py-2 text-xs sm:text-sm font-bold text-[#8f5b13] hover:bg-[#fae6c0]"
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs sm:text-sm font-bold text-amber-800 hover:bg-amber-100"
                   >
                     <HelpCircle className="h-4 w-4" />
                     힌트 한 단계 보기 ({state.hintLevel}/3)
                   </button>
                 </div>
                 {state.hintLevel > 0 && currentTopic && (
-                  <div className="mt-3 rounded-xl bg-[#fff6e3] p-3.5 text-sm text-[#735312]">
+                  <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3.5 text-sm text-amber-900">
                     <strong>힌트 {state.hintLevel}:</strong> {currentTopic.hints[state.hintLevel - 1]}
                   </div>
                 )}
@@ -954,20 +954,20 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
 
       {step === 4 && (
         <div>
-          <div className="text-xs font-extrabold tracking-widest text-[#ad7b37] uppercase">
-            CASE 02 · INVESTIGATION 05 / 05
+          <div className="text-xs font-bold text-blue-600">
+            02차시 · 5 / 5단계
           </div>
-          <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-[#20343d]">
+          <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             수사 결과 공유 · 사건을 확장하라
           </h2>
-          <p className="mt-1 text-sm sm:text-base text-[#65747c]">
+          <p className="mt-1 text-sm sm:text-base text-slate-500">
             서로의 논리를 점검하고, 이번 탐구가 이전 차시와 어떻게 달랐는지 되돌아보세요.
           </p>
 
-          <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-white p-4 sm:p-6 space-y-4">
-            <h3 className="text-base sm:text-lg font-bold text-[#20343d]">수사 보고서 공유 및 동료 검토</h3>
+          <div className="mt-5 space-y-4">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900">수사 보고서 공유 및 동료 검토</h3>
             <div>
-              <label htmlFor="l2share" className="block text-sm font-bold text-[#20343d] mb-1.5">
+              <label htmlFor="l2share" className="block text-sm font-bold text-slate-800 mb-1.5">
                 1. 친구에게 내 탐구 결과를 짧게 설명하기
               </label>
               <textarea
@@ -976,13 +976,13 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 value={state.share}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, share: e.target.value }))}
                 placeholder="내가 탐구한 명제는 … 이고, 이를 …으로 판단했다."
-                className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3.5 text-base"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900"
               />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label htmlFor="l2peer" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                <label htmlFor="l2peer" className="block text-sm font-bold text-slate-800 mb-1.5">
                   피드백한 친구 식별코드 (선택)
                 </label>
                 <input
@@ -992,11 +992,11 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   value={state.peer}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, peer: e.target.value }))}
                   placeholder="예: 10312"
-                  className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white px-3.5 py-2.5 text-base text-slate-900"
                 />
               </div>
               <div>
-                <label htmlFor="l2peerComment" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                <label htmlFor="l2peerComment" className="block text-sm font-bold text-slate-800 mb-1.5">
                   친구가 확인해 준 점 / 질문
                 </label>
                 <textarea
@@ -1005,13 +1005,13 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   value={state.peerComment}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, peerComment: e.target.value }))}
                   placeholder="가정에 맞는 반례인가요? 설명이 모든 경우를 포함하나요?"
-                  className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3 text-base"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white p-3 text-base text-slate-900"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="l2revision" className="block text-sm font-bold text-[#20343d] mb-1.5">
+              <label htmlFor="l2revision" className="block text-sm font-bold text-slate-800 mb-1.5">
                 피드백을 반영해 고친 점 (선택)
               </label>
               <textarea
@@ -1020,14 +1020,14 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 value={state.revision}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, revision: e.target.value }))}
                 placeholder="무엇을 보완했나요?"
-                className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3 text-base"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white p-3 text-base text-slate-900"
               />
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 sm:p-6 space-y-4">
+          <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6 space-y-4">
             <div>
-              <label htmlFor="l2reflection" className="block text-sm font-bold text-[#20343d] mb-1.5">
+              <label htmlFor="l2reflection" className="block text-sm font-bold text-slate-800 mb-1.5">
                 2. 1차시와 비교했을 때, 내가 달라진 점은 무엇인가요? (20자 이상)
               </label>
               <textarea
@@ -1036,12 +1036,12 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 value={state.reflection}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, reflection: e.target.value }))}
                 placeholder="사례 확인 / 반례 탐색 / 증명 구성에서 변화한 점을 적어 보세요."
-                className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3.5 text-base"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
               />
             </div>
 
             <div>
-              <label htmlFor="l2next" className="block text-sm font-bold text-[#20343d] mb-1.5">
+              <label htmlFor="l2next" className="block text-sm font-bold text-slate-800 mb-1.5">
                 3. 다음에 탐구해 보고 싶은 명제 또는 질문 (10자 이상)
               </label>
               <textarea
@@ -1050,21 +1050,21 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 value={state.nextQuestion}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, nextQuestion: e.target.value }))}
                 placeholder="명제의 조건을 하나 더 바꾸면 어떤 문제가 생길까요?"
-                className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3.5 text-base"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
               />
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-[#b5d4bd] bg-gradient-to-r from-[#eaf6ed] to-[#faf8eb] p-5">
-            <h3 className="text-lg font-extrabold text-[#183541]">CASE 01 + 02 · 최종 사건 파일 저장</h3>
-            <p className="mt-1 text-sm text-[#3c544f]">
+          <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50/60 p-5">
+            <h3 className="text-lg font-extrabold text-slate-900">01 + 02차시 최종 사건 파일 저장</h3>
+            <p className="mt-1 text-sm text-slate-600">
               학생 JSON 파일 하나에 1차시와 2차시의 모든 응답이 함께 저장됩니다. 제출 전 이름 대신 학생 식별코드를 입력했는지 확인하세요.
             </p>
             <div className="mt-4">
               <button
                 type="button"
                 onClick={onExportStudentJson}
-                className="inline-flex min-h-[46px] items-center gap-2 rounded-xl bg-[#167561] px-5 py-2.5 text-sm font-bold text-white hover:brightness-110"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
               >
                 <Download className="h-4 w-4" />
                 최종 사건 파일(JSON) 내려받기
@@ -1075,12 +1075,12 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
       )}
 
       {/* Bottom Step Navigation */}
-      <div className="flex items-center justify-between gap-3 pt-4 border-t border-[#dcded7] flex-wrap">
+      <div className="flex items-center justify-between gap-3 pt-5 border-t border-slate-100 flex-wrap">
         <button
           type="button"
           disabled={step === 0}
           onClick={() => onStepChange(Math.max(0, step - 1))}
-          className="min-h-[45px] rounded-xl border border-[#b8cac4] bg-white px-4 py-2.5 text-sm font-bold text-[#295763] hover:bg-[#f4f2ec] disabled:opacity-40"
+          className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 whitespace-nowrap"
         >
           ← 이전 단계
         </button>
@@ -1088,16 +1088,16 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
         <div className="flex items-center gap-3">
           <span
             className={`text-xs font-extrabold ${
-              completion[step] ? 'text-[#116951]' : 'text-[#91601c]'
+              completion[step] ? 'text-emerald-700' : 'text-amber-700'
             }`}
           >
-            {completion[step] ? '✓ 현재 단계 작성 조건 충족' : '● 탐구 진행 중'}
+            {completion[step] ? '✓ 현재 단계 작성 조건 충족' : '현재 단계 탐구 진행 중'}
           </span>
           <button
             type="button"
             disabled={step === 4}
             onClick={() => onStepChange(Math.min(4, step + 1))}
-            className="min-h-[45px] rounded-xl bg-[#215b61] px-5 py-2.5 text-sm font-bold text-white hover:brightness-110 disabled:opacity-40"
+            className="min-h-[44px] rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-40 whitespace-nowrap"
           >
             다음 단계 →
           </button>

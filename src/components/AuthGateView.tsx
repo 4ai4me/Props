@@ -426,23 +426,23 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
   const pwdValidation = validateStudentPassword(form.password || '');
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
+    <div className="mx-auto max-w-3xl py-2 sm:py-6">
       {/* Mode Switcher: Student Mode vs Teacher Admin Mode */}
-      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-[#c8d8ce] bg-[#fffcf6] p-2 shadow-xs">
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-2 rounded-2xl border border-slate-200/80 bg-slate-100/90 p-1.5">
         <button
           type="button"
           onClick={() => {
             setPortalMode('student');
             setStatusMsg(null);
           }}
-          className={`flex items-center justify-center gap-2 rounded-xl py-3.5 px-4 text-sm sm:text-base font-extrabold transition-all ${
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl py-2.5 sm:py-3 px-2 sm:px-4 text-xs sm:text-base font-bold transition-all text-center ${
             portalMode === 'student'
-              ? 'bg-[#183541] text-white shadow-sm'
-              : 'text-[#20343d] hover:bg-[#e8f2f1]'
+              ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-900/5'
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <UserCheck className="h-5 w-5" />
-          학생 모드 (입장 · 가입 신청)
+          <UserCheck className="h-4 w-4 shrink-0" />
+          <span>학생 모드 (입장 · 가입 신청)</span>
         </button>
 
         <button
@@ -451,64 +451,64 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
             setPortalMode('teacher');
             setStatusMsg(null);
           }}
-          className={`flex items-center justify-center gap-2 rounded-xl py-3.5 px-4 text-sm sm:text-base font-extrabold transition-all ${
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl py-2.5 sm:py-3 px-2 sm:px-4 text-xs sm:text-base font-bold transition-all text-center ${
             portalMode === 'teacher'
-              ? 'bg-[#183541] text-white shadow-sm'
-              : 'text-[#20343d] hover:bg-[#e8f2f1]'
+              ? 'bg-white text-slate-900 shadow-xs ring-1 ring-slate-900/5'
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <ShieldCheck className="h-5 w-5" />
-          교사(관리자) 모드
+          <ShieldCheck className="h-4 w-4 shrink-0" />
+          <span>교사(관리자) 모드</span>
         </button>
       </div>
 
       {statusMsg && (
         <div
           role="status"
-          className={`mt-4 flex items-start gap-2.5 rounded-xl border p-4 text-sm font-bold ${
+          className={`mt-4 flex items-start gap-2.5 rounded-xl border p-4 text-sm font-semibold ${
             statusMsg.type === 'good'
-              ? 'border-[#9cd6c1] bg-[#e5f5ed] text-[#075e49]'
-              : 'border-[#e7c989] bg-[#fff4da] text-[#705012]'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+              : 'border-amber-200 bg-amber-50 text-amber-900'
           }`}
         >
           {statusMsg.type === 'good' ? (
-            <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
           ) : (
-            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           )}
           <span>{statusMsg.text}</span>
         </div>
       )}
 
       {portalMode === 'student' ? (
-        <div className="mt-5 rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-5 sm:p-8 shadow-sm">
+        <div className="mt-5 rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-xs">
           {/* If student has an active pending/rejected registration on this device, show live status card */}
           {pendingDoc && pendingDoc.status !== 'approved' && (
-            <div className="mb-6 rounded-2xl border border-[#e7c989] bg-[#fff9eb] p-5">
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50/70 p-5">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2 text-sm font-extrabold text-[#945e18]">
-                  <Clock className="h-5 w-5" />
+                <div className="flex items-center gap-2 text-sm font-extrabold text-amber-900">
+                  <Clock className="h-4 w-4 text-amber-600" />
                   {pendingDoc.status === 'pending'
                     ? '관리자(교사) 가입 승인 대기 중'
                     : '가입 신청 반려됨'}
                 </div>
-                <span className="rounded-lg bg-[#fff0d7] px-2.5 py-1 text-xs font-extrabold text-[#91601c]">
-                  {pendingDoc.status === 'pending' ? '승인 대기 (실시간 연동)' : '반려됨'}
+                <span className="text-xs font-bold text-amber-800">
+                  {pendingDoc.status === 'pending' ? '실시간 승인 연동 중' : '반려됨'}
                 </span>
               </div>
-              <div className="mt-3 text-sm text-[#20343d] space-y-1">
+              <div className="mt-3 text-sm text-slate-800 space-y-1">
                 <div>
                   <strong>신청 학생:</strong> {pendingDoc.school} {pendingDoc.grade}학년{' '}
                   {pendingDoc.classNum}반 {pendingDoc.studentNum}번 <strong>{pendingDoc.name}</strong> (생년월일: {pendingDoc.birthDate})
                 </div>
-                <div className="text-xs text-[#65747c] mono">
+                <div className="text-xs text-slate-500 mono">
                   등록 기기 MAC 주소 식별자: {formatDeviceHashAsMac(pendingDoc.deviceHash)}
                 </div>
               </div>
-              <p className="mt-3 text-xs sm:text-sm text-[#705012]">
+              <p className="mt-3 text-xs sm:text-sm text-amber-900/90">
                 선생님(관리자)이 교사 모드에서 <strong>[가입 승인]</strong>을 누르면 새로고침 없이 즉시 수학 탐정단 활동지 화면이 열립니다.
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3.5 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -518,7 +518,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                     setActiveStudentKey('');
                     setPendingDoc(null);
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#b8cac4] bg-white px-3.5 py-2 text-xs font-bold text-[#295763] hover:bg-[#f4f2ec]"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 whitespace-nowrap"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
                   다른 학적 정보로 조회 / 전환
@@ -528,17 +528,17 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
           )}
 
           {/* Student Sub-tabs: Login vs Sign-up Request */}
-          <div className="flex gap-2 border-b border-[#e2e6e1] pb-4 mb-5">
+          <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-5 mb-6">
             <button
               type="button"
               onClick={() => {
                 setStudentSubTab('login');
                 setStatusMsg(null);
               }}
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-colors ${
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors whitespace-nowrap ${
                 studentSubTab === 'login'
-                  ? 'bg-[#215b61] text-white'
-                  : 'bg-[#f4f2ec] text-[#20343d] hover:bg-[#e2efea]'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
               }`}
             >
               <LogIn className="h-4 w-4" />
@@ -551,10 +551,10 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                 setStudentSubTab('register');
                 setStatusMsg(null);
               }}
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-colors ${
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors whitespace-nowrap ${
                 studentSubTab === 'register'
-                  ? 'bg-[#215b61] text-white'
-                  : 'bg-[#f4f2ec] text-[#20343d] hover:bg-[#e2efea]'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
               }`}
             >
               <UserPlus className="h-4 w-4" />
@@ -562,13 +562,13 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
             </button>
           </div>
 
-          <div className="mb-5">
-            <h2 className="text-xl sm:text-2xl font-extrabold text-[#20343d]">
+          <div className="mb-6">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
               {studentSubTab === 'login'
                 ? '학생 탐정단 입장하기'
                 : '학생 탐정단 신규 가입 신청'}
             </h2>
-            <p className="mt-1 text-xs sm:text-sm text-[#65747c]">
+            <p className="mt-1.5 text-xs sm:text-sm text-slate-500 leading-relaxed">
               {studentSubTab === 'login'
                 ? '가입 신청 후 교사(관리자)의 승인이 완료된 학생은 아래 정보를 입력하여 활동지를 시작하세요.'
                 : '학교, 학년, 반, 번호, 생년월일, 이름을 입력해 가입을 신청하세요. 기기 고유 MAC 주소 식별자가 함께 기록되어 중복 가입이 방지되며, 관리자 승인 후 가입 처리됩니다.'}
@@ -577,11 +577,11 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
 
           <form
             onSubmit={studentSubTab === 'login' ? handleStudentLoginSubmit : handleRegisterSubmit}
-            className="space-y-4"
+            className="space-y-5"
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="stu-school" className="block text-sm font-bold text-[#20343d] mb-1">
+                <label htmlFor="stu-school" className="block text-sm font-bold text-slate-800 mb-1.5">
                   학교 이름
                 </label>
                 <input
@@ -592,12 +592,12 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                   value={form.school}
                   onChange={(e) => setForm((p) => ({ ...p, school: e.target.value }))}
                   placeholder="예: 수일고등학교"
-                  className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white px-3.5 py-2.5 text-base text-slate-900 placeholder:text-slate-400"
                 />
               </div>
 
               <div>
-                <label htmlFor="stu-name" className="block text-sm font-bold text-[#20343d] mb-1">
+                <label htmlFor="stu-name" className="block text-sm font-bold text-slate-800 mb-1.5">
                   학생 이름
                 </label>
                 <input
@@ -608,21 +608,21 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                   value={form.name}
                   onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                   placeholder="예: 홍길동"
-                  className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white px-3.5 py-2.5 text-base text-slate-900 placeholder:text-slate-400"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3.5">
               <div>
-                <label htmlFor="stu-grade" className="block text-sm font-bold text-[#20343d] mb-1">
+                <label htmlFor="stu-grade" className="block text-sm font-bold text-slate-800 mb-1.5">
                   학년
                 </label>
                 <select
                   id="stu-grade"
                   value={form.grade}
                   onChange={(e) => setForm((p) => ({ ...p, grade: e.target.value }))}
-                  className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3 py-2.5 text-base mono font-semibold"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white px-3 py-2.5 text-base mono font-semibold text-slate-900"
                 >
                   {[1, 2, 3, 4, 5, 6].map((g) => (
                     <option key={g} value={String(g)}>
@@ -633,7 +633,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
               </div>
 
               <div>
-                <label htmlFor="stu-class" className="block text-sm font-bold text-[#20343d] mb-1">
+                <label htmlFor="stu-class" className="block text-sm font-bold text-slate-800 mb-1.5">
                   반
                 </label>
                 <input
@@ -645,12 +645,12 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                   value={form.classNum}
                   onChange={(e) => setForm((p) => ({ ...p, classNum: e.target.value.replace(/[^0-9]/g, '') }))}
                   placeholder="예: 9"
-                  className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base mono font-semibold placeholder:font-normal"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white px-3.5 py-2.5 text-base mono font-semibold text-slate-900 placeholder:font-normal placeholder:text-slate-400"
                 />
               </div>
 
               <div>
-                <label htmlFor="stu-num" className="block text-sm font-bold text-[#20343d] mb-1">
+                <label htmlFor="stu-num" className="block text-sm font-bold text-slate-800 mb-1.5">
                   번호
                 </label>
                 <input
@@ -662,13 +662,13 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                   value={form.studentNum}
                   onChange={(e) => setForm((p) => ({ ...p, studentNum: e.target.value.replace(/[^0-9]/g, '') }))}
                   placeholder="예: 15"
-                  className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base mono font-semibold placeholder:font-normal"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white px-3.5 py-2.5 text-base mono font-semibold text-slate-900 placeholder:font-normal placeholder:text-slate-400"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="stu-birth" className="block text-sm font-bold text-[#20343d] mb-1">
+              <label htmlFor="stu-birth" className="block text-sm font-bold text-slate-800 mb-1.5">
                 생년월일 (8자리 또는 6자리)
               </label>
               <input
@@ -680,21 +680,21 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                 value={form.birthDate}
                 onChange={(e) => setForm((p) => ({ ...p, birthDate: e.target.value }))}
                 placeholder="예: 20100212 또는 100212"
-                className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base mono font-semibold placeholder:font-normal"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white px-3.5 py-2.5 text-base mono font-semibold text-slate-900 placeholder:font-normal placeholder:text-slate-400"
               />
             </div>
 
             {/* Password Input Field (Created per requirement: Upper, Lower, Number, Special, 8~32 chars — Currently in Disabled Mode) */}
-            <div className="rounded-xl border border-[#d5dbd6] bg-[#f8f9f7] p-3.5 space-y-2">
+            <div className="pt-4 border-t border-slate-100 space-y-2">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <label
                   htmlFor="stu-password"
-                  className="inline-flex items-center gap-1.5 text-sm font-bold text-[#20343d]"
+                  className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-700"
                 >
-                  <KeyRound className="h-4 w-4 text-[#65747c]" />
+                  <KeyRound className="h-4 w-4 text-slate-400" />
                   비밀번호 (대문자·소문자·숫자·특수문자 포함 8~32자리)
                 </label>
-                <span className="rounded-md bg-[#e6ebe8] px-2.5 py-0.5 text-[11px] font-extrabold text-[#516b69]">
+                <span className="text-xs font-semibold text-slate-500">
                   {STUDENT_PASSWORD_FEATURE_ENABLED ? '활성화됨' : '현재 비활성화 모드 (입력 불필요)'}
                 </span>
               </div>
@@ -712,52 +712,53 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                     ? '대문자, 소문자, 숫자, 특수문자 포함 8~32자리 입력'
                     : '비활성화 모드 — 비밀번호 입력 없이 학적 정보만으로 신청·입장 가능합니다'
                 }
-                className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base disabled:bg-[#eef1ee] disabled:text-[#7c8a86] disabled:cursor-not-allowed"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
               />
 
-              <div className="flex flex-wrap gap-1.5 text-[11px] font-semibold text-[#65747c]">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                <span className="font-semibold text-slate-600">비밀번호 규격:</span>
                 {[
                   ['8~32자리', pwdValidation.checks.length],
                   ['대문자(A-Z)', pwdValidation.checks.upper],
                   ['소문자(a-z)', pwdValidation.checks.lower],
                   ['숫자(0-9)', pwdValidation.checks.digit],
                   ['특수문자(!@# 등)', pwdValidation.checks.special],
-                ].map(([ruleLabel, ok]) => (
-                  <span
-                    key={String(ruleLabel)}
-                    className={`rounded-md border px-2 py-0.5 ${
-                      STUDENT_PASSWORD_FEATURE_ENABLED && ok
-                        ? 'border-[#9cd6c1] bg-[#e5f5ed] text-[#075e49]'
-                        : 'border-[#d5dbd6] bg-white text-[#65747c]'
-                    }`}
-                  >
-                    규격: {ruleLabel}
-                  </span>
+                ].map(([ruleLabel, ok], i) => (
+                  <React.Fragment key={String(ruleLabel)}>
+                    {i > 0 && <span aria-hidden="true" className="text-slate-300">·</span>}
+                    <span
+                      className={
+                        STUDENT_PASSWORD_FEATURE_ENABLED && ok
+                          ? 'font-bold text-emerald-700'
+                          : 'text-slate-500'
+                      }
+                    >
+                      {ruleLabel}
+                    </span>
+                  </React.Fragment>
                 ))}
               </div>
             </div>
 
             {/* Device / MAC Duplicate Guard Info Box (MAC-only, no IP check) */}
-            <div className="rounded-xl border border-[#d2e3dc] bg-[#f3f8f5] p-3.5 text-xs text-[#365249] space-y-1">
-              <div className="font-bold flex items-center gap-1.5 text-[#184f44]">
-                <Fingerprint className="h-4 w-4" />
+            <div className="rounded-xl bg-slate-50 p-4 text-xs text-slate-600 space-y-1 border border-slate-200/70">
+              <div className="font-bold flex items-center gap-1.5 text-slate-800">
+                <Fingerprint className="h-4 w-4 text-blue-600" />
                 중복 가입 방지용 기기 고유 MAC 주소 식별자 자동 인증
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mono text-[11px] sm:text-xs">
-                <span>
-                  기기 MAC 주소 식별값: <strong>{formatDeviceHashAsMac(netInfo.deviceHash)}</strong>
-                </span>
+              <div className="mono text-xs text-slate-700">
+                기기 MAC 주소 식별값: <strong className="text-slate-900">{formatDeviceHashAsMac(netInfo.deviceHash)}</strong>
               </div>
-              <p className="text-[11px] text-[#516b69]">
+              <p className="text-[11px] text-slate-500">
                 * 학교 공용 네트워크(동일 IP) 환경을 고려하여 IP는 검사하지 않으며, 기기 고유 MAC 주소 식별자 및 학번 기준으로만 중복 신청을 방지합니다.
               </p>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-1">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full min-h-[48px] rounded-xl bg-[#215b61] px-5 py-3 text-base font-extrabold text-white hover:brightness-110 disabled:opacity-50"
+                className="w-full min-h-[48px] rounded-xl bg-blue-600 px-5 py-3 text-base font-bold text-white shadow-xs hover:bg-blue-700 disabled:opacity-50"
               >
                 {loading
                   ? '처리 중...'
@@ -769,36 +770,40 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
           </form>
         </div>
       ) : (
-        <div className="mt-5 rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-5 sm:p-8 shadow-sm space-y-5">
-          <div className="flex items-start gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#e4f0e9] text-[#1e5661] shrink-0">
-              <Lock className="h-6 w-6" />
+        <div className="mt-5 rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-xs space-y-6">
+          <div className="flex items-start gap-3.5">
+            <div className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600 shrink-0">
+              <Lock className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-xs font-extrabold tracking-wider text-[#ad7b37] uppercase">
-                SOLE ADMINISTRATOR AUTHENTICATION
+              <div className="text-xs font-bold text-blue-600">
+                유일 관리자 전용 인증
               </div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-[#20343d]">
+              <h2 className="mt-0.5 text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                 교사(관리자) 전용 Google 이메일 인증
               </h2>
-              <p className="mt-1 text-xs sm:text-sm text-[#65747c]">
-                교사 모드는 유일한 관리자 이메일 계정(<strong className="mono text-[#183541]">{ADMIN_TEACHER_EMAIL}</strong>)으로 Google 인증을 완료한 경우에만 열립니다.
+              <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-relaxed">
+                교사 모드는 유일한 관리자 이메일 계정(<strong className="mono text-slate-900">{ADMIN_TEACHER_EMAIL}</strong>)으로 Google 인증을 완료한 경우에만 열립니다.
               </p>
             </div>
           </div>
 
-          <div className="rounded-xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 text-xs sm:text-sm text-[#3c544f] space-y-1.5">
-            <div>• <strong>가입 신청 학생 승인 관리:</strong> 학생이 신청한 학교/학년/반/번호/생년월일/이름과 기기 MAC 주소 식별값 중복 여부를 확인한 후 <strong>[승인]</strong> 또는 <strong>[반려]</strong> 처리합니다.</div>
-            <div>• <strong>실시간 수사 기록실 연동:</strong> 승인된 학생들이 작성하는 1·2차시 탐구 답안과 루브릭 평정, 피드백 PDF 인쇄, CSV 내려받기를 통합 관리합니다.</div>
+          <div className="rounded-xl bg-slate-50 p-4 text-xs sm:text-sm text-slate-600 space-y-2 border border-slate-200/70">
+            <div>
+              <strong className="text-slate-900">가입 신청 학생 승인 관리</strong> · 학생이 신청한 학교/학년/반/번호/생년월일/이름과 기기 MAC 주소 식별값 중복 여부를 확인한 후 <strong>[가입 승인]</strong> 또는 <strong>[반려]</strong> 처리합니다.
+            </div>
+            <div>
+              <strong className="text-slate-900">실시간 수사 기록실 연동</strong> · 승인된 학생들이 작성하는 1·2차시 탐구 답안과 루브릭 평정, 피드백 PDF 인쇄, CSV 내려받기를 통합 관리합니다.
+            </div>
           </div>
 
           <button
             type="button"
             disabled={loading}
             onClick={handleGoogleTeacherLogin}
-            className="w-full min-h-[50px] inline-flex items-center justify-center gap-2.5 rounded-xl bg-[#183541] px-6 py-3.5 text-base font-extrabold text-white hover:bg-[#214858] transition-colors"
+            className="w-full min-h-[50px] inline-flex items-center justify-center gap-2.5 rounded-xl bg-slate-900 px-6 py-3.5 text-base font-bold text-white hover:bg-slate-800 transition-colors"
           >
-            <ShieldCheck className="h-5 w-5 text-[#f7d59b]" />
+            <ShieldCheck className="h-5 w-5 text-sky-400" />
             {loading
               ? 'Google 계정 확인 중...'
               : `Google 계정(${ADMIN_TEACHER_EMAIL})으로 관리자 인증하기`}

@@ -456,10 +456,10 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   ];
 
   const decisions: [string, number, string][] = [
-    ['참', records.filter((x) => x.l2.decision === 'true').length, '#249782'],
-    ['거짓', records.filter((x) => x.l2.decision === 'false').length, '#d49b3f'],
-    ['미해결', records.filter((x) => x.l2.decision === 'unknown').length, '#8795ad'],
-    ['미작성', records.filter((x) => !x.l2.decision).length, '#426cc1'],
+    ['참', records.filter((x) => x.l2.decision === 'true').length, '#10b981'],
+    ['거짓', records.filter((x) => x.l2.decision === 'false').length, '#f59e0b'],
+    ['미해결', records.filter((x) => x.l2.decision === 'unknown').length, '#94a3b8'],
+    ['미작성', records.filter((x) => !x.l2.decision).length, '#3b82f6'],
   ];
 
   const topicRows: [string, number][] = (
@@ -490,16 +490,16 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   return (
     <div className="space-y-6">
       {/* SECTION 1: Student Registration Approval Management (Admin Only) */}
-      <div className="rounded-2xl border border-[#c8d8ce] bg-[#fffefb] p-5 sm:p-7 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-7 shadow-xs">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <div className="text-xs font-extrabold tracking-widest text-[#187361] uppercase">
-              STUDENT REGISTRATION &amp; DUPLICATE GUARD · ADMIN ({adminEmail})
+            <div className="text-xs font-bold text-blue-600">
+              학생 가입 관리 · 관리자 ({adminEmail})
             </div>
-            <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[#20343d]">
+            <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               학생 가입 신청 승인 · 기기(MAC 주소) 중복 관리
             </h2>
-            <p className="mt-1 text-sm text-[#65747c]">
+            <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">
               학생이 <strong>학교 / 학년 / 반 / 번호 / 생년월일 / 이름</strong>으로 가입을 신청하면 이곳에 실시간으로 표시됩니다.
               학교 공용 네트워크 환경을 고려하여 IP는 검사하지 않으며, <strong>기기 고유 MAC 주소 식별자</strong> 기준으로만 중복을 식별합니다.
             </p>
@@ -509,10 +509,10 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             <button
               type="button"
               onClick={() => setApprovalFilter('all')}
-              className={`rounded-xl px-3.5 py-2 text-xs font-extrabold ${
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors ${
                 approvalFilter === 'all'
-                  ? 'bg-[#183541] text-white'
-                  : 'bg-[#f4f2ec] text-[#20343d]'
+                  ? 'bg-slate-900 text-white'
+                  : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
               }`}
             >
               전체 ({cloudRegistrations.length})
@@ -520,10 +520,10 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             <button
               type="button"
               onClick={() => setApprovalFilter('pending')}
-              className={`rounded-xl px-3.5 py-2 text-xs font-extrabold ${
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors ${
                 approvalFilter === 'pending'
-                  ? 'bg-[#945e18] text-white'
-                  : 'bg-[#fff4da] text-[#705012]'
+                  ? 'bg-amber-600 text-white'
+                  : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
               }`}
             >
               승인 대기 ({pendingCount})
@@ -531,10 +531,10 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             <button
               type="button"
               onClick={() => setApprovalFilter('approved')}
-              className={`rounded-xl px-3.5 py-2 text-xs font-extrabold ${
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors ${
                 approvalFilter === 'approved'
-                  ? 'bg-[#187361] text-white'
-                  : 'bg-[#e5f5ed] text-[#075e49]'
+                  ? 'bg-emerald-600 text-white'
+                  : 'border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
               }`}
             >
               승인 완료 ({approvedCount})
@@ -542,10 +542,10 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             <button
               type="button"
               onClick={() => setApprovalFilter('rejected')}
-              className={`rounded-xl px-3.5 py-2 text-xs font-extrabold ${
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-colors ${
                 approvalFilter === 'rejected'
-                  ? 'bg-[#af4550] text-white'
-                  : 'bg-[#fff1f1] text-[#873640]'
+                  ? 'bg-rose-600 text-white'
+                  : 'border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100'
               }`}
             >
               반려됨 ({rejectedCount})
@@ -554,7 +554,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               <button
                 type="button"
                 onClick={handleBulkApprovePending}
-                className="inline-flex items-center gap-1 rounded-xl bg-[#167561] px-3.5 py-2 text-xs font-extrabold text-white hover:brightness-110"
+                className="inline-flex items-center gap-1 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-colors"
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 대기 학생 일괄 승인 ({pendingCount}명)
@@ -563,7 +563,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             <button
               type="button"
               onClick={handleManualRefreshRegistrations}
-              className="inline-flex items-center gap-1 rounded-xl border border-[#b8cac4] bg-white px-3 py-2 text-xs font-extrabold text-[#295763] hover:bg-[#f4f2ec]"
+              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               목록 새로고침
@@ -571,64 +571,64 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           </div>
         </div>
 
-        <div className="mt-5 overflow-x-auto rounded-xl border border-[#e6ebf1] bg-white">
+        <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 bg-white">
           <table className="w-full min-w-[820px] border-collapse text-sm">
             <thead>
-              <tr className="bg-[#f5f8fd] text-[#53627c] text-xs font-extrabold border-b border-[#e6ebf1]">
-                <th className="py-3 px-3 text-left">상태</th>
-                <th className="py-3 px-3 text-left">학교 / 학년 / 반 / 번호</th>
-                <th className="py-3 px-3 text-left">이름</th>
-                <th className="py-3 px-3 text-left">생년월일</th>
-                <th className="py-3 px-3 text-left">기기 고유 MAC 주소 식별자 (중복 점검)</th>
-                <th className="py-3 px-3 text-left">관리자 승인 처리</th>
+              <tr className="bg-slate-50 text-slate-600 text-xs font-bold border-b border-slate-200">
+                <th className="py-3 px-3.5 text-left">상태</th>
+                <th className="py-3 px-3.5 text-left">학교 / 학년 / 반 / 번호</th>
+                <th className="py-3 px-3.5 text-left">이름</th>
+                <th className="py-3 px-3.5 text-left">생년월일</th>
+                <th className="py-3 px-3.5 text-left">기기 고유 MAC 주소 식별자 (중복 점검)</th>
+                <th className="py-3 px-3.5 text-left">관리자 승인 처리</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e6ebf1]">
+            <tbody className="divide-y divide-slate-200">
               {filteredRegistrations.length > 0 ? (
                 filteredRegistrations.map((reg) => {
                   const isDupDev = reg.deviceHash && deviceCounts[reg.deviceHash] > 1;
                   return (
-                    <tr key={reg.studentKey} className="hover:bg-[#f9fbf9]">
-                      <td className="py-3 px-3">
+                    <tr key={reg.studentKey} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-3.5">
                         {reg.status === 'pending' && (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-[#fff0d7] px-2.5 py-1 text-xs font-extrabold text-[#91601c]">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1 text-xs font-bold text-amber-800">
                             <Clock className="h-3.5 w-3.5" /> 승인 대기
                           </span>
                         )}
                         {reg.status === 'approved' && (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-[#def3ea] px-2.5 py-1 text-xs font-extrabold text-[#116951]">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-bold text-emerald-800">
                             <UserCheck className="h-3.5 w-3.5" /> 승인됨
                           </span>
                         )}
                         {reg.status === 'rejected' && (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-[#fff1f1] px-2.5 py-1 text-xs font-extrabold text-[#873640]">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 border border-rose-200 px-2.5 py-1 text-xs font-bold text-rose-800">
                             <XCircle className="h-3.5 w-3.5" /> 반려됨
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-3 font-semibold">
+                      <td className="py-3 px-3.5 font-semibold text-slate-800">
                         {reg.school} {reg.grade}학년 {reg.classNum}반 {reg.studentNum}번
                       </td>
-                      <td className="py-3 px-3 font-extrabold text-[#20343d]">{reg.name}</td>
-                      <td className="py-3 px-3 mono text-xs">{reg.birthDate}</td>
-                      <td className="py-3 px-3 mono text-xs">
+                      <td className="py-3 px-3.5 font-bold text-slate-900">{reg.name}</td>
+                      <td className="py-3 px-3.5 mono text-xs text-slate-600">{reg.birthDate}</td>
+                      <td className="py-3 px-3.5 mono text-xs">
                         <div className="flex items-center gap-1.5">
-                          <Fingerprint className="h-3.5 w-3.5 text-[#1e5661]" />
-                          <span>MAC: {formatDeviceHashAsMac(reg.deviceHash)}</span>
+                          <Fingerprint className="h-3.5 w-3.5 text-blue-600" />
+                          <span className="text-slate-700">MAC: {formatDeviceHashAsMac(reg.deviceHash)}</span>
                           {isDupDev && (
-                            <span className="inline-flex items-center gap-0.5 text-[#af4550] font-bold">
+                            <span className="inline-flex items-center gap-0.5 text-rose-600 font-bold">
                               <ShieldAlert className="h-3.5 w-3.5" /> 동일 MAC 중복 ({deviceCounts[reg.deviceHash]}명)
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3.5">
                         <div className="flex flex-wrap items-center gap-1.5">
                           {reg.status !== 'approved' && (
                             <button
                               type="button"
                               onClick={() => handleUpdateStudentStatus(reg, 'approved')}
-                              className="inline-flex items-center gap-1 rounded-lg bg-[#167561] px-3 py-1.5 text-xs font-bold text-white hover:brightness-110"
+                              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors"
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" />
                               가입 승인
@@ -638,7 +638,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                             <button
                               type="button"
                               onClick={() => handleUpdateStudentStatus(reg, 'rejected')}
-                              className="inline-flex items-center gap-1 rounded-lg border border-[#e2b4b9] bg-[#fff1f1] px-2.5 py-1.5 text-xs font-bold text-[#873640] hover:bg-[#fde2e4]"
+                              className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors"
                             >
                               반려
                             </button>
@@ -646,7 +646,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDeleteStudentRegistration(reg)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-[#c9d2d1] bg-white px-2.5 py-1.5 text-xs font-bold text-[#65747c] hover:bg-[#f4f2ec]"
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
                           >
                             삭제
                           </button>
@@ -657,7 +657,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="py-6 px-4 text-center text-[#65747c]">
+                  <td colSpan={6} className="py-8 px-4 text-center text-slate-500">
                     현재 해당 상태의 학생 가입 신청 내역이 없습니다.
                   </td>
                 </tr>
@@ -668,12 +668,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
       </div>
 
       {/* SECTION 2: Header & Controls Card */}
-      <div className="rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-5 sm:p-7 shadow-sm">
-        <div className="text-xs font-extrabold tracking-widest text-[#ad7b37] uppercase">
-          DETECTIVE HQ · TEACHER&apos;S DESK
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-7 shadow-xs">
+        <div className="text-xs font-bold text-blue-600">
+          학급 데이터 수합 · 교사 워크스페이스
         </div>
-        <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[#20343d]">교사용 수사 기록실</h2>
-        <p className="mt-1 text-sm sm:text-base text-[#65747c]">
+        <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">교사용 수사 기록실</h2>
+        <p className="mt-1.5 text-sm sm:text-base text-slate-600 leading-relaxed">
           승인된 학생들이 작성한 1·2차시 탐구 기록이 실시간으로 연동되며, 외부 JSON 파일을 추가로 불러오거나 CSV로 내려받을 수도 있습니다.
         </p>
 
@@ -689,7 +689,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex min-h-[45px] items-center gap-2 rounded-xl bg-[#215b61] px-4 py-2.5 text-sm font-bold text-white hover:brightness-110"
+            className="inline-flex min-h-[45px] items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800 transition-colors"
           >
             <Upload className="h-4 w-4" />
             학생 JSON 여러 개 불러오기
@@ -698,7 +698,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           <button
             type="button"
             onClick={handleLoadSampleData}
-            className="inline-flex min-h-[45px] items-center gap-2 rounded-xl bg-[#e2efea] px-4 py-2.5 text-sm font-bold text-[#1c6166] hover:bg-[#d1e6de]"
+            className="inline-flex min-h-[45px] items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-100 transition-colors"
           >
             <Sparkles className="h-4 w-4" />
             예시 학생 데이터(2명) 체험하기
@@ -707,7 +707,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           <button
             type="button"
             onClick={handleExportCSV}
-            className="inline-flex min-h-[45px] items-center gap-2 rounded-xl border border-[#b8cac4] bg-white px-4 py-2.5 text-sm font-bold text-[#295763] hover:bg-[#f4f2ec]"
+            className="inline-flex min-h-[45px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
           >
             <Download className="h-4 w-4" />
             CSV 내려받기
@@ -727,7 +727,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   }
                 )
               }
-              className="inline-flex min-h-[45px] items-center gap-1.5 rounded-xl border border-[#e2b4b9] bg-[#fff1f1] px-4 py-2.5 text-sm font-bold text-[#873640] hover:bg-[#fde2e4]"
+              className="inline-flex min-h-[45px] items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100 transition-colors"
             >
               <Trash2 className="h-4 w-4" />
               로컬 수합 목록 지우기
@@ -737,12 +737,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
         <div
           role="status"
-          className={`mt-4 rounded-xl p-3.5 text-sm ${
+          className={`mt-4 rounded-xl p-3.5 text-sm font-medium ${
             notice.type === 'good'
-              ? 'bg-[#e5f5ed] text-[#075e49] border border-[#a8d9ca]'
+              ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
               : notice.type === 'warn'
-              ? 'bg-[#fff4da] text-[#705012] border border-[#e7c989]'
-              : 'bg-[#f2f6fd] text-[#20343d] border border-[#cbd7e6]'
+              ? 'bg-amber-50 text-amber-900 border border-amber-200'
+              : 'bg-slate-50 text-slate-800 border border-slate-200'
           }`}
         >
           {notice.text}
@@ -758,46 +758,46 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           ].map(([num, label], idx) => (
             <div
               key={idx}
-              className="rounded-xl border border-[#d2e3dc] bg-[#edf5f0] p-3.5 text-center"
+              className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 text-center"
             >
-              <strong className="block text-2xl font-extrabold text-[#22666b] mono">{num}</strong>
-              <span className="text-xs font-semibold text-[#516b69]">{label}</span>
+              <strong className="block text-2xl font-extrabold text-blue-600 mono">{num}</strong>
+              <span className="mt-0.5 block text-xs font-semibold text-slate-600">{label}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* SECTION 3: Analytics Dashboard */}
-      <div className="rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-5 sm:p-7 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-7 shadow-xs">
         <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
-          <h3 className="text-lg sm:text-xl font-extrabold text-[#20343d]">학급 탐구 역량 대시보드</h3>
-          <span className="text-xs text-[#65747c]">
+          <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">학급 탐구 역량 대시보드</h3>
+          <span className="text-xs font-medium text-slate-500">
             제출 기록 기반 자동 집계 · 역량 평정은 교사가 직접 입력
           </span>
         </div>
 
         {count === 0 ? (
-          <div className="rounded-xl border border-dashed border-[#c9d2d1] p-8 text-center text-sm text-[#65747c]">
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-8 text-center text-sm text-slate-600">
             승인된 학생이 활동을 시작하거나 상단의 <strong>[예시 학생 데이터(2명) 체험하기]</strong> 버튼을 누르면 학급별 탐구 지표 그래프가 나타납니다.
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-[#dbe4ee] bg-white p-4">
-              <h4 className="font-bold text-sm sm:text-base text-[#20343d] mb-3">활동 완료 현황</h4>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+              <h4 className="font-bold text-sm sm:text-base text-slate-900 mb-3">활동 완료 현황</h4>
               <div className="space-y-2.5">
                 {checkRows.map(([title, n]) => {
                   const pct = count ? Math.round((n / count) * 100) : 0;
                   return (
                     <div key={title}>
-                      <div className="flex justify-between text-xs font-semibold">
+                      <div className="flex justify-between text-xs font-semibold text-slate-700">
                         <span>{title}</span>
-                        <strong className="mono">
+                        <strong className="mono text-slate-900">
                           {n}명 ({pct}%)
                         </strong>
                       </div>
-                      <div className="mt-1 h-3 rounded-full bg-[#e9edf5] overflow-hidden">
+                      <div className="mt-1 h-2.5 rounded-full bg-slate-200 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#215b61] to-[#187361]"
+                          className="h-full rounded-full bg-blue-600"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -805,23 +805,23 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   );
                 })}
               </div>
-              <p className="mt-3 text-xs text-[#65747c]">
+              <p className="mt-3 text-xs text-slate-500">
                 기록 여부의 집계이며 증명의 정확성이나 성취수준을 자동 판정하지 않습니다.
               </p>
             </div>
 
-            <div className="rounded-xl border border-[#dbe4ee] bg-white p-4">
-              <h4 className="font-bold text-sm sm:text-base text-[#20343d] mb-3">2차시 학생 판단 분포</h4>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+              <h4 className="font-bold text-sm sm:text-base text-slate-900 mb-3">2차시 학생 판단 분포</h4>
               <div className="flex items-center gap-6 flex-wrap">
                 <div
                   className="relative h-32 w-32 rounded-full shrink-0"
-                  style={{ background: count ? `conic-gradient(${slices})` : '#e5eaf2' }}
+                  style={{ background: count ? `conic-gradient(${slices})` : '#e2e8f0' }}
                 >
-                  <div className="absolute inset-6 rounded-full bg-white grid place-items-center font-extrabold text-sm mono">
+                  <div className="absolute inset-6 rounded-full bg-white grid place-items-center font-extrabold text-sm mono text-slate-900">
                     {count}명
                   </div>
                 </div>
-                <div className="space-y-1.5 text-xs sm:text-sm">
+                <div className="space-y-1.5 text-xs sm:text-sm text-slate-700">
                   {decisions.map(([label, n, color]) => (
                     <div key={label} className="flex items-center gap-2">
                       <span
@@ -829,33 +829,33 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                         style={{ backgroundColor: color }}
                       />
                       <span>
-                        {label}: <strong className="mono">{n}명</strong>
+                        {label}: <strong className="mono text-slate-900">{n}명</strong>
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
-              <p className="mt-3 text-xs text-[#65747c]">
+              <p className="mt-3 text-xs text-slate-500">
                 참·거짓은 학생이 선택한 판단이며 정답률이 아닙니다.
               </p>
             </div>
 
-            <div className="rounded-xl border border-[#dbe4ee] bg-white p-4">
-              <h4 className="font-bold text-sm sm:text-base text-[#20343d] mb-3">2차시 탐구주제 선택 현황</h4>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+              <h4 className="font-bold text-sm sm:text-base text-slate-900 mb-3">2차시 탐구주제 선택 현황</h4>
               <div className="space-y-2.5">
                 {topicRows.map(([title, n]) => {
                   const pct = count ? Math.round((n / count) * 100) : 0;
                   return (
                     <div key={title}>
-                      <div className="flex justify-between text-xs font-semibold">
+                      <div className="flex justify-between text-xs font-semibold text-slate-700">
                         <span>{title}</span>
-                        <strong className="mono">
+                        <strong className="mono text-slate-900">
                           {n}명 ({pct}%)
                         </strong>
                       </div>
-                      <div className="mt-1 h-3 rounded-full bg-[#e9edf5] overflow-hidden">
+                      <div className="mt-1 h-2.5 rounded-full bg-slate-200 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#c99d57] to-[#27947c]"
+                          className="h-full rounded-full bg-emerald-600"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -865,27 +865,27 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               </div>
             </div>
 
-            <div className="rounded-xl border border-[#dbe4ee] bg-white p-4">
-              <h4 className="font-bold text-sm sm:text-base text-[#20343d] mb-3">교사 평정 평균 (0~3점)</h4>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+              <h4 className="font-bold text-sm sm:text-base text-slate-900 mb-3">교사 평정 평균 (0~3점)</h4>
               <div className="space-y-2.5">
                 {means.map((m) => (
                   <div key={m.title}>
-                    <div className="flex justify-between text-xs font-semibold">
+                    <div className="flex justify-between text-xs font-semibold text-slate-700">
                       <span>{m.title}</span>
-                      <strong className="mono">
+                      <strong className="mono text-slate-900">
                         {m.mean === null ? '평정 없음' : `${m.mean.toFixed(2)} / 3`} ({m.count}명)
                       </strong>
                     </div>
-                    <div className="mt-1 h-3 rounded-full bg-[#e9edf5] overflow-hidden">
+                    <div className="mt-1 h-2.5 rounded-full bg-slate-200 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-[#315cb7] to-[#15998e]"
+                        className="h-full rounded-full bg-indigo-600"
                         style={{ width: `${m.mean === null ? 0 : (m.mean / 3) * 100}%` }}
                       />
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-xs text-[#65747c]">
+              <p className="mt-3 text-xs text-slate-500">
                 0: 증거 부족 / 1: 시작 단계 / 2: 부분적 수행 / 3: 충분한 수행.
               </p>
             </div>
@@ -894,55 +894,55 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
       </div>
 
       {/* SECTION 4: Student Records Table & Detail View */}
-      <div className="rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-5 sm:p-7 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-7 shadow-xs">
         <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
-          <h3 className="text-lg sm:text-xl font-extrabold text-[#20343d] flex items-center gap-2">
-            <Users className="h-5 w-5 text-[#1e5661]" />
+          <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2">
+            <Users className="h-5 w-5 text-blue-600" />
             탐정별 사건 기록
           </h3>
-          <span className="text-xs text-[#65747c]">
+          <span className="text-xs font-medium text-slate-500">
             승인된 학생 답안 및 불러온 파일이 함께 표시됩니다.
           </span>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-[#e6ebf1] bg-white">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
           <table className="w-full min-w-[740px] border-collapse text-sm">
             <thead>
-              <tr className="bg-[#f5f8fd] text-[#53627c] text-xs font-extrabold border-b border-[#e6ebf1]">
-                <th className="py-3 px-3 text-left">학급</th>
-                <th className="py-3 px-3 text-left">식별코드(학번·이름)</th>
-                <th className="py-3 px-3 text-left">1차시 사례</th>
-                <th className="py-3 px-3 text-left">1차시 증명</th>
-                <th className="py-3 px-3 text-left">2차시 주제</th>
-                <th className="py-3 px-3 text-left">2차시 판단</th>
-                <th className="py-3 px-3 text-left">2차시 기록</th>
-                <th className="py-3 px-3 text-left">비교</th>
+              <tr className="bg-slate-50 text-slate-600 text-xs font-bold border-b border-slate-200">
+                <th className="py-3 px-3.5 text-left">학급</th>
+                <th className="py-3 px-3.5 text-left">식별코드(학번·이름)</th>
+                <th className="py-3 px-3.5 text-left">1차시 사례</th>
+                <th className="py-3 px-3.5 text-left">1차시 증명</th>
+                <th className="py-3 px-3.5 text-left">2차시 주제</th>
+                <th className="py-3 px-3.5 text-left">2차시 판단</th>
+                <th className="py-3 px-3.5 text-left">2차시 기록</th>
+                <th className="py-3 px-3.5 text-left">비교</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#e6ebf1]">
+            <tbody className="divide-y divide-slate-200">
               {sortedRecords.length > 0 ? (
                 sortedRecords.map((x) => {
                   const k = studentKey(x);
                   const isSel = k === selectedKey;
                   const tDef = x.l2.topic ? TOPICS[x.l2.topic as TopicId] : null;
                   return (
-                    <tr key={k} className={isSel ? 'bg-[#eef7f1]' : 'hover:bg-[#f9fbf9]'}>
-                      <td className="py-3 px-3">{x.group || '—'}</td>
-                      <td className="py-3 px-3 font-bold mono">{x.code || '미입력'}</td>
-                      <td className="py-3 px-3 mono">{x.l1.examples.length}개</td>
-                      <td className="py-3 px-3 mono">
+                    <tr key={k} className={isSel ? 'bg-blue-50/70' : 'hover:bg-slate-50/80 transition-colors'}>
+                      <td className="py-3 px-3.5 text-slate-700">{x.group || '—'}</td>
+                      <td className="py-3 px-3.5 font-bold mono text-slate-900">{x.code || '미입력'}</td>
+                      <td className="py-3 px-3.5 mono text-slate-700">{x.l1.examples.length}개</td>
+                      <td className="py-3 px-3.5 mono text-slate-700">
                         {x.l1.proofVerified.filter(Boolean).length}/4 + 서술
                       </td>
-                      <td className="py-3 px-3">{tDef?.tag || '미선택'}</td>
-                      <td className="py-3 px-3 font-semibold">
+                      <td className="py-3 px-3.5 text-slate-700">{tDef?.tag || '미선택'}</td>
+                      <td className="py-3 px-3.5 font-semibold text-slate-900">
                         {({ true: '참', false: '거짓', unknown: '미해결' } as Record<string, string>)[
                           x.l2.decision
                         ] || '미작성'}
                       </td>
-                      <td className="py-3 px-3 mono">
+                      <td className="py-3 px-3.5 mono text-slate-700">
                         {evaluateRubricL2(x.l2).filter(Boolean).length}/6
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3.5">
                         <button
                           type="button"
                           onClick={() => {
@@ -953,8 +953,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           }}
                           className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
                             isSel
-                              ? 'bg-[#1e5661] text-white'
-                              : 'border border-[#aabce4] bg-[#eef3ff] text-[#2b4892] hover:bg-[#dce6ff]'
+                              ? 'bg-blue-600 text-white'
+                              : 'border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
                           }`}
                         >
                           {isSel ? '선택됨' : '상세 비교'}
@@ -965,7 +965,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-6 px-4 text-center text-[#65747c]">
+                  <td colSpan={8} className="py-8 px-4 text-center text-slate-500">
                     불러온 학생 자료가 없습니다.
                   </td>
                 </tr>
@@ -975,15 +975,15 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
         </div>
 
         {selectedStudent && (
-          <div ref={detailRef} className="mt-6 pt-6 border-t border-[#dcded7] space-y-5">
+          <div ref={detailRef} className="mt-6 pt-6 border-t border-slate-200 space-y-5">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <h3 className="text-lg sm:text-xl font-extrabold text-[#20343d]">
+              <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
                 {selectedStudent.code || '미입력'} 학생의 1·2차시 비교 ({selectedStudent.group || '학급 미입력'})
               </h3>
               <button
                 type="button"
                 onClick={() => onPrintStudentReport(selectedStudent)}
-                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl bg-[#167561] px-4 py-2 text-xs sm:text-sm font-bold text-white hover:brightness-110"
+                className="inline-flex min-h-[42px] items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-blue-700 transition-colors"
               >
                 <Printer className="h-4 w-4" />
                 이 학생 피드백 PDF 인쇄
@@ -991,8 +991,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-[#e0e3dd] bg-white p-4 space-y-3">
-                <div className="text-xs font-extrabold text-[#1e5661]">1차시 · 교사 안내형 수사</div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
+                <div className="text-xs font-bold text-blue-600">1차시 · 교사 안내형 수사</div>
                 {[
                   ['추측한 명제', selectedStudent.l1.claim],
                   ['사례 확인의 한계', selectedStudent.l1.limits],
@@ -1001,16 +1001,16 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   ['다음 질문: 16으로 바꾸면?', selectedStudent.l1.bridge],
                 ].map(([label, val]) => (
                   <div key={label}>
-                    <div className="text-xs font-bold text-[#516b69]">{label}</div>
-                    <div className="mt-1 rounded-lg border border-[#e5e4da] bg-[#faf9f5] p-2.5 text-xs sm:text-sm whitespace-pre-wrap">
+                    <div className="text-xs font-bold text-slate-700">{label}</div>
+                    <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
                       {val || '미작성'}
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="rounded-xl border border-[#e0e3dd] bg-white p-4 space-y-3">
-                <div className="text-xs font-extrabold text-[#187361]">2차시 · 학생 주도형 수사</div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
+                <div className="text-xs font-bold text-emerald-700">2차시 · 학생 주도형 수사</div>
                 {[
                   [
                     '선택한 명제',
@@ -1039,8 +1039,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   ['후속 탐구 질문', selectedStudent.l2.nextQuestion],
                 ].map(([label, val]) => (
                   <div key={label}>
-                    <div className="text-xs font-bold text-[#516b69]">{label}</div>
-                    <div className="mt-1 rounded-lg border border-[#e5e4da] bg-[#faf9f5] p-2.5 text-xs sm:text-sm whitespace-pre-wrap">
+                    <div className="text-xs font-bold text-slate-700">{label}</div>
+                    <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
                       {val || '미작성'}
                     </div>
                   </div>
@@ -1048,9 +1048,9 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 sm:p-6 space-y-5">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-6 space-y-5">
               <div>
-                <label htmlFor="teacherMemo" className="block text-sm font-bold text-[#20343d] mb-1">
+                <label htmlFor="teacherMemo" className="block text-sm font-bold text-slate-900 mb-1">
                   학습 변화 관찰 메모
                 </label>
                 <textarea
@@ -1061,20 +1061,20 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                     updateSelectedStudent((item) => ({ ...item, teacherMemo: e.target.value }))
                   }
                   placeholder="예: 1차시는 사례 나열에 머물렀지만 2차시는 조건에 맞는 반례를 직접 구성함."
-                  className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3 text-base"
+                  className="w-full rounded-xl border border-slate-300 bg-white p-3 text-base"
                 />
               </div>
 
-              <div className="rounded-xl border border-[#e0e3dd] bg-white p-4 sm:p-5 space-y-4">
-                <h4 className="text-base font-bold text-[#20343d]">학생 역량 평가 및 맞춤 피드백</h4>
+              <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
+                <h4 className="text-base font-bold text-slate-900">학생 역량 평가 및 맞춤 피드백</h4>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {EVAL_CRITERIA.map((title, i) => {
                     const ev = ensureTeacherEval(selectedStudent);
                     return (
                       <div key={title}>
-                        <label htmlFor={`eval${i}`} className="block text-xs sm:text-sm font-bold text-[#20343d]">
+                        <label htmlFor={`eval${i}`} className="block text-xs sm:text-sm font-bold text-slate-900">
                           {title}
-                          <span className="block text-xs font-normal text-[#65747c]">
+                          <span className="block text-xs font-normal text-slate-500">
                             {EVAL_DESCRIPTIONS[i]}
                           </span>
                         </label>
@@ -1093,7 +1093,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                               };
                             });
                           }}
-                          className="mt-1.5 w-full rounded-xl border border-[#c9d2d1] bg-white px-3 py-2.5 text-base"
+                          className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base"
                         >
                           <option value="">평정 전</option>
                           {[0, 1, 2, 3].map((v) => (
@@ -1108,7 +1108,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor="teacherFeedback" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                  <label htmlFor="teacherFeedback" className="block text-sm font-bold text-slate-900 mb-1.5">
                     학생에게 전달할 구체적인 피드백
                   </label>
                   <textarea
@@ -1122,12 +1122,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       })
                     }
                     placeholder="잘한 점과 이를 뒷받침하는 학생의 탐구 기록을 적어 주세요."
-                    className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3 text-base"
+                    className="w-full rounded-xl border border-slate-300 bg-white p-3 text-base"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="teacherNext" className="block text-sm font-bold text-[#20343d] mb-1.5">
+                  <label htmlFor="teacherNext" className="block text-sm font-bold text-slate-900 mb-1.5">
                     다음 탐구를 위한 제안
                   </label>
                   <textarea
@@ -1141,7 +1141,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       })
                     }
                     placeholder="예: 반례가 가정을 만족하는지 먼저 확인하고, 문자로 일반화해 보세요."
-                    className="w-full rounded-xl border border-[#c9d2d1] bg-white p-3 text-base"
+                    className="w-full rounded-xl border border-slate-300 bg-white p-3 text-base"
                   />
                 </div>
 
@@ -1149,7 +1149,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   <button
                     type="button"
                     onClick={() => onPrintStudentReport(selectedStudent)}
-                    className="inline-flex min-h-[45px] items-center gap-2 rounded-xl bg-[#167561] px-5 py-2.5 text-sm font-bold text-white hover:brightness-110"
+                    className="inline-flex min-h-[45px] items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition-colors"
                   >
                     <Printer className="h-4 w-4" />
                     이 학생 피드백 PDF 인쇄
@@ -1162,9 +1162,9 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
       </div>
 
       {/* Checklist Card */}
-      <div className="rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-5 sm:p-7 shadow-sm">
-        <h3 className="text-base sm:text-lg font-extrabold text-[#20343d]">교사용 수사 체크리스트</h3>
-        <p className="mt-1.5 text-xs sm:text-sm text-[#516b69]">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-7 shadow-xs">
+        <h3 className="text-base sm:text-lg font-extrabold text-slate-900">교사용 수사 체크리스트</h3>
+        <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
           ① 사례를 여러 개 확인한 것과 일반적 증명을 구별하는가? ② 새로운 명제에서 반례가 가정에 맞는지 확인하는가? ③ 참이라고 판단했을 때 문자·정수의 성질 등을 이용해 모든 경우를 설명하는가? ④ 처음 추측을 수정한 이유를 설명하는가?
         </p>
       </div>

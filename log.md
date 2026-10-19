@@ -137,3 +137,20 @@
   - `src/utils/deviceFingerprint.ts`: 외부 공인 IP 조회(`api.ipify.org`)를 제거하고, 기기 고유 MAC 주소 식별자(`deviceHash`)만을 생성·반환하도록 변경 (`ipAddress: 'mac-only'`).
   - `src/components/AuthGateView.tsx` 및 `src/components/TeacherView.tsx`: IP 표시 및 동일 네트워크 IP 중복 경고를 모두 제거하고, 오직 기기 고유 MAC 주소 식별자(`formatDeviceHashAsMac(deviceHash)`) 기준으로만 중복 가입을 식별·표시하도록 수정.
   - 루트 정적 번들(`ghpages-app.js`, `ghpages-app.css`) 최신화 및 단위 테스트·브라우저 검증 완료.
+
+---
+
+## [작업 7] 사이트 전체 GUI 및 UX/UI 최신 트렌드 리디자인 (기능 변경 0%)
+
+- **시작 및 완료 시각**: 2026-10-18T23:24:00-07:00
+- **적용 Tier**: Tier 1~2 (시각 디자인 시스템 전면 리모델링 및 기능 100% 보존 회귀 검증)
+- **핵심 변경 사항**:
+  1. **디자인 시스템 및 타이포그래피 현대화 (`index.html`, `src/index.css`)**:
+     - 기존 빈티지 베이지/틸 톤(`#f4f2ec`, `#183342`)에서 최신 EdTech/SaaS 트렌드인 **Architectural Slate & Electric Cobalt (`#f8fafc` 캔버스, `#0f172a` 딥 슬레이트 헤더, `#2563eb` 코발트 블루, `#059669` 에메랄드)** 컬러 시스템으로 전환.
+     - `Plus Jakarta Sans` + `Pretendard Variable` + `JetBrains Mono` 조합 및 수치/수식/MAC 주소 영역 `tabular-nums` 고정폭 숫자 정렬 적용.
+  2. **상단 내비게이션 & 히어로 배너 재설계 (`src/App.tsx`)**:
+     - 3-Zone 상단 바(브랜드 · 교육과정 메타데이터 · 실시간 클라우드 동기화 상태)와 아키텍처 그리드 패턴의 다크 슬레이트 히어로 배너 적용.
+     - 차시 전환 탭 및 5단계 스테퍼의 시각적 위계와 현재 단계 강조(Active Focus Ring) 개선.
+  3. **학생/교사 인증 게이트, 1·2차시 탐구 샌드박스, 교사 대시보드 UI 개선 (`AuthGateView.tsx`, `Lesson1View.tsx`, `Lesson2View.tsx`, `TeacherView.tsx`)**:
+     - 세그먼트 컨트롤 형태의 모드 전환기, 깔끔한 1px 보더(`border-slate-200`)와 정제된 여백, 직관적인 상태 배지 적용.
+     - **기능 보존 검증**: 모든 상태 변수, 이벤트 핸들러, `id`, 입력 폼, 비활성화 비밀번호 입력창, MAC 주소 단독 식별 로직, Firestore 연동 및 PDF/JSON/CSV 입출력 기능 변경 없음(0%).

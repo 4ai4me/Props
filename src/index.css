@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #20343d;
-  --muted: #65747c;
-  --blue: #1e5661;
-  --blue-light: #e8f2f1;
-  --paper: #fffefb;
-  --bg: #f4f2ec;
-  --line: #dcded7;
-  --good: #187361;
-  --good-bg: #e5f5ed;
-  --warn: #945e18;
-  --warn-bg: #fff4da;
-  --bad: #af4550;
-  --bad-bg: #fff1f1;
-  --shadow: 0 8px 28px #172e3518;
+  --ink: #0f172a;
+  --muted: #475569;
+  --blue: #2563eb;
+  --blue-light: #eff6ff;
+  --paper: #ffffff;
+  --bg: #f8fafc;
+  --line: #e2e8f0;
+  --good: #059669;
+  --good-bg: #ecfdf5;
+  --warn: #d97706;
+  --warn-bg: #fffbeb;
+  --bad: #e11d48;
+  --bad-bg: #fff1f2;
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 8px 24px -4px rgba(15, 23, 42, 0.05);
 }
 
 * {
@@ -23,22 +23,26 @@
 }
 
 html {
+  scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", "Malgun Gothic", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: "Pretendard Variable", Pretendard, "Plus Jakarta Sans", "Noto Sans KR",
+    "Malgun Gothic", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   color: var(--ink);
   background-color: var(--bg);
   background-image:
-    radial-gradient(circle at 15% 5%, #dfe8dd70, transparent 31%),
-    radial-gradient(circle at 90% 45%, #efe5cf4b, transparent 30%);
+    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.045) 0px, transparent 45%),
+    radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.045) 0px, transparent 45%);
   font-size: 16px;
   line-height: 1.65;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
   word-break: keep-all;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
@@ -55,6 +59,17 @@ textarea {
 button {
   cursor: pointer;
   touch-action: manipulation;
+  transition:
+    transform 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.99);
 }
 
 button:disabled {
@@ -62,21 +77,32 @@ button:disabled {
   cursor: not-allowed;
 }
 
+input,
+select,
+textarea {
+  transition:
+    border-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 :focus-visible {
-  outline: 3px solid #d49b3f;
+  outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 
 .mono {
   font-variant-numeric: tabular-nums;
-  font-family: "Pretendard Variable", Pretendard, ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Noto Sans KR", sans-serif;
+  font-family: "JetBrains Mono", "Pretendard Variable", Pretendard, ui-monospace,
+    "SFMono-Regular", Menlo, Monaco, Consolas, "Noto Sans KR", sans-serif;
 }
 
 .hero-bg {
-  background-color: #183541;
+  background-color: #090d16;
   background-image:
-    radial-gradient(ellipse at 85% 10%, #2f617249, transparent 40%),
-    linear-gradient(115deg, #142e3a 0%, #193e48 65%, #204951 100%);
+    radial-gradient(ellipse at 85% 15%, rgba(56, 189, 248, 0.16), transparent 45%),
+    radial-gradient(ellipse at 15% 85%, rgba(99, 102, 241, 0.14), transparent 50%),
+    linear-gradient(135deg, #090d16 0%, #0f172a 60%, #1e293b 100%);
   position: relative;
   overflow: hidden;
 }
@@ -86,10 +112,10 @@ button:disabled {
   pointer-events: none;
   position: absolute;
   inset: 0;
-  opacity: 0.065;
+  opacity: 0.04;
   background-image:
-    repeating-linear-gradient(0deg, transparent 0 30px, #eac889 30px 31px),
-    repeating-linear-gradient(90deg, transparent 0 30px, #eac889 30px 31px);
+    repeating-linear-gradient(0deg, transparent 0 31px, #ffffff 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, #ffffff 31px 32px);
 }
 
 @media (prefers-reduced-motion: reduce) {
