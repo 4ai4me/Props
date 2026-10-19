@@ -105,3 +105,15 @@
      - 관리자(`liha1634@gmail.com`)가 교사 모드에서 `[가입 승인]`(개별 또는 일괄 승인)을 누르면 즉시 `status: 'approved'`로 전환되어 학생 화면이 새로고침 없이 본 활동지(1·2차시)로 전환됨.
   5. **GitHub Pages `main` 브랜치 루트 호환 유지**:
      - `/index.html`이 Vite 환경(`/src/main.tsx`)과 GitHub Pages 정적 브랜치 호스팅(`./ghpages-app.js`, `./ghpages-app.css` 자동 폴백) 양쪽에서 모두 동일하게 동작하도록 구성.
+
+---
+
+## [작업 5] GitHub Actions 중복 워크플로우(`deploy.yml`) 오류 해결 및 GitHub Pages + Firebase 도메인 설정 안내
+
+- **시작 및 완료 시각**: 2026-10-18T21:01:30-07:00
+- **원인 분석**:
+  1. 스크린샷에서 초록색 체크(`pages build and deployment`)는 GitHub 기본 브랜치 배포(`Deploy from a branch: main`)로 이미 정상 성공하고 있었음.
+  2. 반면 빨간색 X(`Deploy to GitHub Pages`)는 커스텀 워크플로우(`.github/workflows/deploy.yml`)에서 `cache: 'npm'` 설정이 `package-lock.json` 부재(`bun.lock` 사용)로 인해 10초 만에 실패한 것이며, 브랜치 직접 배포 방식과 중복 실행되고 있었음.
+- **해결 내역**:
+  - 충돌을 일으키던 `.github/workflows/deploy.yml` 파일을 제거하여 기본 `pages build and deployment` 워크플로우만 깔끔하게(초록색 ✅) 실행되도록 정리.
+  - 루트 `/index.html` + `/ghpages-app.js` + `/ghpages-app.css` 구조로 `main` 브랜치 푸시 시 빌드 설정 변경 없이 즉시 배포됨을 확인.
