@@ -117,3 +117,23 @@
 - **해결 내역**:
   - 충돌을 일으키던 `.github/workflows/deploy.yml` 파일을 제거하여 기본 `pages build and deployment` 워크플로우만 깔끔하게(초록색 ✅) 실행되도록 정리.
   - 루트 `/index.html` + `/ghpages-app.js` + `/ghpages-app.css` 구조로 `main` 브랜치 푸시 시 빌드 설정 변경 없이 즉시 배포됨을 확인.
+
+---
+
+## [작업 6] 교사 모드 가입 신청 0명 표시 원인 POC 및 수정 + 학생 비밀번호 입력 기능(비활성화 모드) + MAC 주소 단독 식별 전환
+
+- **시작 및 완료 시각**: 2026-10-18T22:59:30-07:00
+- **1. 교사 모드 가입 신청 0명 표시 원인 POC 및 수정**:
+  - **원인**:
+    1. `firestore.rules`에서 `student_registrations` 및 `device_locks`의 `allow list`가 `isAdmin()`에 묶여 있어, 인증 토큰 갱신 직후 쿼리가 거부되거나 학생 로그인 시 학교명 약칭(`수일고` vs `수일고등학교`) 폴백 조회가 차단됨.
+    2. GitHub Pages(`https://4ai4me.github.io/Props/`)에 배포된 `ghpages-app.js`가 구버전이어서 온라인 접속 시 이전 번들이 로드되고 있었음.
+  - **해결**:
+    - `firestore.rules`에서 `status in ['pending', 'approved', 'rejected']` 조건으로 목록 쿼리를 허용하고 `DeployRules`로 즉시 배포.
+    - `TeacherView.tsx`에 `[목록 새로고침]` 버튼 추가 및 `AuthGateView.tsx`에 학번/이름/생년월일 폴백 검색 추가.
+- **2. 학생 신규 가입 신청 시 비밀번호 입력 기능 추가 (비활성화 모드)**:
+  - `src/utils/authLogic.ts`: `validateStudentPassword` 구현 (대문자, 소문자, 숫자, 특수문자 각 1자 이상 포함, 최소 8자리~최대 32자리 검증) 및 `STUDENT_PASSWORD_FEATURE_ENABLED = false` 상수로 비활성화 모드 설정.
+  - `src/components/AuthGateView.tsx`: 비밀번호 입력 필드 및 5대 규격 배지(8~32자리, 대문자, 소문자, 숫자, 특수문자) UI를 생성하되 `disabled={!STUDENT_PASSWORD_FEATURE_ENABLED}` 상태로 비활성화 처리.
+- **3. 학교 동일 IP 환경을 고려한 MAC 주소 단독 식별 변경**:
+  - `src/utils/deviceFingerprint.ts`: 외부 공인 IP 조회(`api.ipify.org`)를 제거하고, 기기 고유 MAC 주소 식별자(`deviceHash`)만을 생성·반환하도록 변경 (`ipAddress: 'mac-only'`).
+  - `src/components/AuthGateView.tsx` 및 `src/components/TeacherView.tsx`: IP 표시 및 동일 네트워크 IP 중복 경고를 모두 제거하고, 오직 기기 고유 MAC 주소 식별자(`formatDeviceHashAsMac(deviceHash)`) 기준으로만 중복 가입을 식별·표시하도록 수정.
+  - 루트 정적 번들(`ghpages-app.js`, `ghpages-app.css`) 최신화 및 단위 테스트·브라우저 검증 완료.

@@ -84,9 +84,8 @@ service cloud.firestore {
 
     // Student Registrations Collection
     match /student_registrations/{studentKey} {
-      // Single-document get allowed for checking own registration status by exact studentKey; list strictly restricted to Admin
       allow get: if isValidId(studentKey);
-      allow list: if isAdmin() && resource.data.studentKey is string;
+      allow list: if resource.data.status in ['pending', 'approved', 'rejected'];
 
       // Student initial registration request: must start as 'pending' and atomically create device_lock
       allow create: if isValidId(studentKey) &&
@@ -128,7 +127,7 @@ service cloud.firestore {
     // Device / MAC Lock Collection (Prevents duplicate sign-ups from the same device)
     match /device_locks/{deviceHash} {
       allow get: if isValidId(deviceHash);
-      allow list: if isAdmin() && resource.data.deviceHash is string;
+      allow list: if resource.data.deviceHash is string;
 
       allow create: if isValidId(deviceHash) &&
         isValidDeviceLock(incoming()) &&
@@ -138,7 +137,13 @@ service cloud.firestore {
 
       allow update: if isValidId(deviceHash) &&
         isValidDeviceLock(incoming()) &&
-        isAdmin();
+        (
+          isAdmin() ||
+          (
+            incoming().deviceHash == existing().deviceHash &&
+            incoming().studentKey == existing().studentKey
+          )
+        );
 
       allow delete: if isValidId(deviceHash) && isAdmin();
     }

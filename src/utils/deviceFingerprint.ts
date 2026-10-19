@@ -36,37 +36,16 @@ export function getOrCreateDeviceHash(): string {
   return computeDeterministicDeviceHash(hwTraits);
 }
 
-export async function detectClientIpAddress(): Promise<string> {
-  const endpoints = [
-    'https://api.ipify.org?format=json',
-    'https://api64.ipify.org?format=json',
-  ];
-  for (const url of endpoints) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 2500);
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timer);
-      if (res.ok) {
-        const data = (await res.json()) as { ip?: string };
-        if (data?.ip && typeof data.ip === 'string') {
-          return data.ip.trim().slice(0, 64);
-        }
-      }
-    } catch {
-      // try next or fallback
-    }
-  }
-  return 'local-network';
-}
-
+/**
+ * 학교 와이파이 등 동일 공인 IP 환경을 고려하여,
+ * IP 조회를 수행하지 않고 기기 고유 MAC 식별자(deviceHash)만을 기준으로 식별합니다.
+ */
 export async function getClientNetworkIdentity(): Promise<ClientNetworkIdentity> {
   const deviceHash = getOrCreateDeviceHash();
-  const ipAddress = await detectClientIpAddress();
   const userAgent =
     (typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown').slice(
       0,
       240
     ) || 'Unknown';
-  return { deviceHash, ipAddress, userAgent };
+  return { deviceHash, ipAddress: 'mac-only', userAgent };
 }

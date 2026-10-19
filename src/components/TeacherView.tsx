@@ -1,8 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   collection,
   doc,
+  getDocs,
   onSnapshot,
+  query,
+  where,
   updateDoc,
   deleteDoc,
   serverTimestamp,
@@ -37,6 +40,7 @@ import {
   ShieldAlert,
   UserCheck,
   Fingerprint,
+  RefreshCw,
 } from 'lucide-react';
 
 interface TeacherViewProps {
@@ -68,57 +72,98 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     type: 'info',
   });
 
-  // Real-time Firestore listener for student_registrations (Admin only)
-  useEffect(() => {
-    const colRef = collection(db, 'student_registrations');
-    const unsub = onSnapshot(
-      colRef,
-      (snap) => {
-        const docs: FirestoreStudentRegistrationDoc[] = [];
-        const approvedWorksheets: StudentRecord[] = [];
+  const applySnapshotDocs = useCallback(
+    (docs: FirestoreStudentRegistrationDoc[]) => {
+      const approvedWorksheets: StudentRecord[] = [];
+      for (const data of docs) {
+        if (data.status === 'approved' && data.worksheetJson) {
+          try {
+            const parsed = cleanStudentState(JSON.parse(data.worksheetJson));
+            parsed.group = `${data.school} ${data.grade}학년 ${data.classNum}반`.slice(0, 25);
+            parsed.code = `${data.grade}${String(data.classNum).padStart(2, '0')}${String(
+              data.studentNum
+            ).padStart(2, '0')}_${data.name}`.slice(0, 25);
+            approvedWorksheets.push(parsed);
+          } catch {
+            // ignore malformed worksheet
+          }
+        }
+      }
 
-        snap.forEach((d) => {
-          const data = d.data() as FirestoreStudentRegistrationDoc;
-          docs.push(data);
-          if (data.status === 'approved' && data.worksheetJson) {
-            try {
-              const parsed = cleanStudentState(JSON.parse(data.worksheetJson));
-              parsed.group = `${data.school} ${data.grade}학년 ${data.classNum}반`.slice(0, 25);
-              parsed.code = `${data.grade}${String(data.classNum).padStart(2, '0')}${String(data.studentNum).padStart(2, '0')}_${data.name}`.slice(0, 25);
-              approvedWorksheets.push(parsed);
-            } catch {
-              // ignore malformed worksheet
+      setCloudRegistrations(docs);
+
+      if (approvedWorksheets.length > 0) {
+        onUpdateRecords((prevRecords) => {
+          const merged = [...prevRecords];
+          for (const cw of approvedWorksheets) {
+            const k = studentKey(cw);
+            const idx = merged.findIndex((item) => studentKey(item) === k);
+            if (idx >= 0) {
+              const old = merged[idx];
+              cw.teacherMemo = cw.teacherMemo || old.teacherMemo || '';
+              cw.evaluation = cw.evaluation || old.evaluation;
+              merged[idx] = cw;
+            } else {
+              merged.push(cw);
             }
           }
+          return merged;
         });
+      }
+    },
+    [onUpdateRecords]
+  );
 
-        setCloudRegistrations(docs);
+  const handleManualRefreshRegistrations = useCallback(async () => {
+    try {
+      const q = query(
+        collection(db, 'student_registrations'),
+        where('status', 'in', ['pending', 'approved', 'rejected'])
+      );
+      const snap = await getDocs(q);
+      const docs: FirestoreStudentRegistrationDoc[] = [];
+      snap.forEach((d) => {
+        docs.push(d.data() as FirestoreStudentRegistrationDoc);
+      });
+      applySnapshotDocs(docs);
+      setNotice({
+        text: `학생 가입 신청 목록을 새로고침했습니다. (현재 총 ${docs.length}명)`,
+        type: 'good',
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '조회 오류';
+      setNotice({
+        text: `가입 신청 목록 조회 중 오류: ${msg}`,
+        type: 'warn',
+      });
+    }
+  }, [applySnapshotDocs]);
 
-        if (approvedWorksheets.length > 0) {
-          onUpdateRecords((prevRecords) => {
-            const merged = [...prevRecords];
-            for (const cw of approvedWorksheets) {
-              const k = studentKey(cw);
-              const idx = merged.findIndex((item) => studentKey(item) === k);
-              if (idx >= 0) {
-                const old = merged[idx];
-                cw.teacherMemo = cw.teacherMemo || old.teacherMemo || '';
-                cw.evaluation = cw.evaluation || old.evaluation;
-                merged[idx] = cw;
-              } else {
-                merged.push(cw);
-              }
-            }
-            return merged;
-          });
-        }
+  // Real-time Firestore listener for student_registrations
+  useEffect(() => {
+    const q = query(
+      collection(db, 'student_registrations'),
+      where('status', 'in', ['pending', 'approved', 'rejected'])
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const docs: FirestoreStudentRegistrationDoc[] = [];
+        snap.forEach((d) => {
+          docs.push(d.data() as FirestoreStudentRegistrationDoc);
+        });
+        applySnapshotDocs(docs);
       },
       (error) => {
         console.error('Admin registration listener error:', error);
+        setNotice({
+          text: `실시간 가입 목록 동기화 확인 필요: ${error.message}`,
+          type: 'warn',
+        });
       }
     );
     return () => unsub();
-  }, [onUpdateRecords]);
+  }, [applySnapshotDocs, adminEmail]);
 
   const handleUpdateStudentStatus = async (
     reg: FirestoreStudentRegistrationDoc,
@@ -332,11 +377,9 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
-  // Detect duplicate IP or deviceHash across registrations for teacher warning badge
-  const ipCounts: Record<string, number> = {};
+  // Detect duplicate MAC address (deviceHash) across registrations for teacher warning badge
   const deviceCounts: Record<string, number> = {};
   for (const r of cloudRegistrations) {
-    if (r.ipAddress) ipCounts[r.ipAddress] = (ipCounts[r.ipAddress] || 0) + 1;
     if (r.deviceHash) deviceCounts[r.deviceHash] = (deviceCounts[r.deviceHash] || 0) + 1;
   }
 
@@ -344,9 +387,18 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   const approvedCount = cloudRegistrations.filter((r) => r.status === 'approved').length;
   const rejectedCount = cloudRegistrations.filter((r) => r.status === 'rejected').length;
 
-  const filteredRegistrations = cloudRegistrations.filter((r) =>
-    approvalFilter === 'all' ? true : r.status === approvalFilter
-  );
+  const filteredRegistrations = cloudRegistrations
+    .filter((r) => (approvalFilter === 'all' ? true : r.status === approvalFilter))
+    .slice()
+    .sort((a, b) => {
+      const gDiff = (parseInt(a.grade, 10) || 0) - (parseInt(b.grade, 10) || 0);
+      if (gDiff !== 0) return gDiff;
+      const cDiff = (parseInt(a.classNum, 10) || 0) - (parseInt(b.classNum, 10) || 0);
+      if (cDiff !== 0) return cDiff;
+      const nDiff = (parseInt(a.studentNum, 10) || 0) - (parseInt(b.studentNum, 10) || 0);
+      if (nDiff !== 0) return nDiff;
+      return (a.name || '').localeCompare(b.name || '', 'ko');
+    });
 
   const count = records.length;
   const complete1 = records.filter((x) => evaluateRubricL1(x.l1).every(Boolean)).length;
@@ -445,11 +497,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               STUDENT REGISTRATION &amp; DUPLICATE GUARD · ADMIN ({adminEmail})
             </div>
             <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[#20343d]">
-              학생 가입 신청 승인 · 기기(MAC)/IP 중복 관리
+              학생 가입 신청 승인 · 기기(MAC 주소) 중복 관리
             </h2>
             <p className="mt-1 text-sm text-[#65747c]">
               학생이 <strong>학교 / 학년 / 반 / 번호 / 생년월일 / 이름</strong>으로 가입을 신청하면 이곳에 실시간으로 표시됩니다.
-              관리자가 <strong>[가입 승인]</strong>을 누른 학생만 활동지에 입장할 수 있습니다.
+              학교 공용 네트워크 환경을 고려하여 IP는 검사하지 않으며, <strong>기기 고유 MAC 주소 식별자</strong> 기준으로만 중복을 식별합니다.
             </p>
           </div>
 
@@ -508,6 +560,14 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 대기 학생 일괄 승인 ({pendingCount}명)
               </button>
             )}
+            <button
+              type="button"
+              onClick={handleManualRefreshRegistrations}
+              className="inline-flex items-center gap-1 rounded-xl border border-[#b8cac4] bg-white px-3 py-2 text-xs font-extrabold text-[#295763] hover:bg-[#f4f2ec]"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              목록 새로고침
+            </button>
           </div>
         </div>
 
@@ -519,14 +579,13 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 <th className="py-3 px-3 text-left">학교 / 학년 / 반 / 번호</th>
                 <th className="py-3 px-3 text-left">이름</th>
                 <th className="py-3 px-3 text-left">생년월일</th>
-                <th className="py-3 px-3 text-left">기기 MAC 식별자 · 공인 IP (중복 점검)</th>
+                <th className="py-3 px-3 text-left">기기 고유 MAC 주소 식별자 (중복 점검)</th>
                 <th className="py-3 px-3 text-left">관리자 승인 처리</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e6ebf1]">
               {filteredRegistrations.length > 0 ? (
                 filteredRegistrations.map((reg) => {
-                  const isDupIp = reg.ipAddress && reg.ipAddress !== 'local-network' && ipCounts[reg.ipAddress] > 1;
                   const isDupDev = reg.deviceHash && deviceCounts[reg.deviceHash] > 1;
                   return (
                     <tr key={reg.studentKey} className="hover:bg-[#f9fbf9]">
@@ -558,14 +617,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           <span>MAC: {formatDeviceHashAsMac(reg.deviceHash)}</span>
                           {isDupDev && (
                             <span className="inline-flex items-center gap-0.5 text-[#af4550] font-bold">
-                              <ShieldAlert className="h-3.5 w-3.5" /> 동일기기 중복
+                              <ShieldAlert className="h-3.5 w-3.5" /> 동일 MAC 중복 ({deviceCounts[reg.deviceHash]}명)
                             </span>
-                          )}
-                        </div>
-                        <div className="text-[#65747c] mt-0.5">
-                          IP: {reg.ipAddress}{' '}
-                          {isDupIp && (
-                            <span className="text-[#945e18] font-semibold">(동일 네트워크 {ipCounts[reg.ipAddress]}명)</span>
                           )}
                         </div>
                       </td>

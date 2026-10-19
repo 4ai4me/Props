@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
+  query,
+  where,
   writeBatch,
   serverTimestamp,
   onSnapshot,
@@ -10,11 +14,14 @@ import { signInWithPopup, signOut, User } from 'firebase/auth';
 import { db, auth, googleProvider, handleFirestoreError, OperationType } from '../firebase';
 import {
   ADMIN_TEACHER_EMAIL,
+  STUDENT_PASSWORD_FEATURE_ENABLED,
   StudentIdentityInput,
   buildSafeStudentKey,
   formatDeviceHashAsMac,
   isAuthorizedAdminEmail,
+  isSameBirthDate,
   normalizeBirthDate,
+  validateStudentPassword,
   validateStudentRegistrationInput,
 } from '../utils/authLogic';
 import { ClientNetworkIdentity, getClientNetworkIdentity } from '../utils/deviceFingerprint';
@@ -29,8 +36,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Fingerprint,
-  Wifi,
   RefreshCw,
+  KeyRound,
 } from 'lucide-react';
 
 export interface FirestoreStudentRegistrationDoc {
@@ -76,11 +83,12 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
     studentNum: '',
     birthDate: '',
     name: '',
+    password: '',
   });
 
   const [netInfo, setNetInfo] = useState<ClientNetworkIdentity>({
     deviceHash: 'DEV_LOADING00000',
-    ipAddress: '확인 중...',
+    ipAddress: 'mac-only',
     userAgent: '',
   });
 
@@ -172,12 +180,12 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       }
 
       if (deviceSnap && deviceSnap.exists()) {
-        const lockData = deviceSnap.data() as { studentKey?: string; ipAddress?: string };
+        const lockData = deviceSnap.data() as { studentKey?: string };
         if (lockData.studentKey && lockData.studentKey !== sKey) {
           setStatusMsg({
-            text: `중복 가입 방지: 현재 기기(MAC 식별자 ${formatDeviceHashAsMac(
+            text: `중복 가입 방지: 현재 기기(MAC 주소 식별자 ${formatDeviceHashAsMac(
               latestNet.deviceHash
-            )} / IP ${latestNet.ipAddress})에는 이미 다른 학생의 가입 신청 내역이 등록되어 있습니다. 교사에게 문의하세요.`,
+            )})에는 이미 다른 학생의 가입 신청 내역이 등록되어 있습니다. 교사에게 문의하세요.`,
             type: 'warn',
           });
           setLoading(false);
@@ -197,8 +205,8 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       if (regSnap && regSnap.exists()) {
         const existing = regSnap.data() as FirestoreStudentRegistrationDoc;
         if (
-          existing.name === form.name.trim() &&
-          existing.birthDate === normalizedBirth
+          existing.name.trim() === form.name.trim() &&
+          isSameBirthDate(existing.birthDate, normalizedBirth)
         ) {
           try {
             localStorage.setItem(SAVED_STUDENT_KEY_STORAGE, sKey);
@@ -267,7 +275,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
         text: '가입 신청이 정상 접수되었습니다! 관리자(교사) 승인 후 즉시 활동지가 열립니다.',
         type: 'good',
       });
-    } catch (err) {
+    } catch {
       setStatusMsg({
         text: '가입 신청 처리 중 오류가 발생했습니다. 입력 정보를 다시 확인해 주세요.',
         type: 'warn',
@@ -300,7 +308,38 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
         handleFirestoreError(err, OperationType.GET, `student_registrations/${sKey}`);
       }
 
-      if (!snap || !snap.exists()) {
+      let matchedDoc: FirestoreStudentRegistrationDoc | null =
+        snap && snap.exists() ? (snap.data() as FirestoreStudentRegistrationDoc) : null;
+
+      // Fallback search by (grade, classNum, studentNum, name, birthDate) in case school name was abbreviated during sign-up
+      if (!matchedDoc) {
+        try {
+          const q = query(
+            collection(db, 'student_registrations'),
+            where('status', 'in', ['pending', 'approved', 'rejected'])
+          );
+          const listSnap = await getDocs(q);
+          const targetG = String(parseInt(form.grade.trim(), 10));
+          const targetC = String(parseInt(form.classNum.trim(), 10));
+          const targetN = String(parseInt(form.studentNum.trim(), 10));
+          listSnap.forEach((d) => {
+            const item = d.data() as FirestoreStudentRegistrationDoc;
+            if (
+              String(parseInt(item.grade, 10)) === targetG &&
+              String(parseInt(item.classNum, 10)) === targetC &&
+              String(parseInt(item.studentNum, 10)) === targetN &&
+              item.name.trim() === form.name.trim() &&
+              isSameBirthDate(item.birthDate, normalizedBirth)
+            ) {
+              matchedDoc = item;
+            }
+          });
+        } catch {
+          // ignore fallback error
+        }
+      }
+
+      if (!matchedDoc) {
         setStatusMsg({
           text: '일치하는 가입 신청 내역이 없습니다. 먼저 [학생 신규 가입 신청] 탭에서 가입을 신청해 주세요.',
           type: 'warn',
@@ -309,8 +348,10 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
         return;
       }
 
-      const data = snap.data() as FirestoreStudentRegistrationDoc;
-      if (data.name !== form.name.trim() || data.birthDate !== normalizedBirth) {
+      if (
+        matchedDoc.name.trim() !== form.name.trim() ||
+        !isSameBirthDate(matchedDoc.birthDate, normalizedBirth)
+      ) {
         setStatusMsg({
           text: '이름 또는 생년월일이 등록된 정보와 일치하지 않습니다.',
           type: 'warn',
@@ -320,16 +361,16 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       }
 
       try {
-        localStorage.setItem(SAVED_STUDENT_KEY_STORAGE, sKey);
+        localStorage.setItem(SAVED_STUDENT_KEY_STORAGE, matchedDoc.studentKey);
       } catch {}
-      setActiveStudentKey(sKey);
+      setActiveStudentKey(matchedDoc.studentKey);
 
-      if (data.status === 'pending') {
+      if (matchedDoc.status === 'pending') {
         setStatusMsg({
           text: '현재 관리자(교사)의 가입 승인을 기다리고 있습니다. 교사가 승인하면 자동으로 입장됩니다.',
           type: 'warn',
         });
-      } else if (data.status === 'rejected') {
+      } else if (matchedDoc.status === 'rejected') {
         setStatusMsg({
           text: '가입 신청이 반려되었습니다. 담당 교사에게 문의해 주세요.',
           type: 'warn',
@@ -381,6 +422,8 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       setLoading(false);
     }
   };
+
+  const pwdValidation = validateStudentPassword(form.password || '');
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
@@ -459,7 +502,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                   {pendingDoc.classNum}반 {pendingDoc.studentNum}번 <strong>{pendingDoc.name}</strong> (생년월일: {pendingDoc.birthDate})
                 </div>
                 <div className="text-xs text-[#65747c] mono">
-                  등록 기기 MAC 식별자: {formatDeviceHashAsMac(pendingDoc.deviceHash)} · 등록 IP: {pendingDoc.ipAddress}
+                  등록 기기 MAC 주소 식별자: {formatDeviceHashAsMac(pendingDoc.deviceHash)}
                 </div>
               </div>
               <p className="mt-3 text-xs sm:text-sm text-[#705012]">
@@ -528,7 +571,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
             <p className="mt-1 text-xs sm:text-sm text-[#65747c]">
               {studentSubTab === 'login'
                 ? '가입 신청 후 교사(관리자)의 승인이 완료된 학생은 아래 정보를 입력하여 활동지를 시작하세요.'
-                : '학교, 학년, 반, 번호, 생년월일, 이름을 입력해 가입을 신청하세요. 기기 고유 식별값(MAC) 및 IP가 함께 기록되어 중복 가입이 방지되며, 관리자 승인 후 가입 처리됩니다.'}
+                : '학교, 학년, 반, 번호, 생년월일, 이름을 입력해 가입을 신청하세요. 기기 고유 MAC 주소 식별자가 함께 기록되어 중복 가입이 방지되며, 관리자 승인 후 가입 처리됩니다.'}
             </p>
           </div>
 
@@ -548,7 +591,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                   maxLength={40}
                   value={form.school}
                   onChange={(e) => setForm((p) => ({ ...p, school: e.target.value }))}
-                  placeholder="예: 대한고등학교"
+                  placeholder="예: 수일고등학교"
                   className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base"
                 />
               </div>
@@ -601,7 +644,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                   maxLength={5}
                   value={form.classNum}
                   onChange={(e) => setForm((p) => ({ ...p, classNum: e.target.value.replace(/[^0-9]/g, '') }))}
-                  placeholder="예: 3"
+                  placeholder="예: 9"
                   className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base mono font-semibold placeholder:font-normal"
                 />
               </div>
@@ -636,27 +679,77 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                 maxLength={12}
                 value={form.birthDate}
                 onChange={(e) => setForm((p) => ({ ...p, birthDate: e.target.value }))}
-                placeholder="예: 20090512 또는 2009-05-12"
+                placeholder="예: 20100212 또는 100212"
                 className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base mono font-semibold placeholder:font-normal"
               />
             </div>
 
-            {/* Device / MAC & IP Duplicate Guard Info Box */}
+            {/* Password Input Field (Created per requirement: Upper, Lower, Number, Special, 8~32 chars — Currently in Disabled Mode) */}
+            <div className="rounded-xl border border-[#d5dbd6] bg-[#f8f9f7] p-3.5 space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label
+                  htmlFor="stu-password"
+                  className="inline-flex items-center gap-1.5 text-sm font-bold text-[#20343d]"
+                >
+                  <KeyRound className="h-4 w-4 text-[#65747c]" />
+                  비밀번호 (대문자·소문자·숫자·특수문자 포함 8~32자리)
+                </label>
+                <span className="rounded-md bg-[#e6ebe8] px-2.5 py-0.5 text-[11px] font-extrabold text-[#516b69]">
+                  {STUDENT_PASSWORD_FEATURE_ENABLED ? '활성화됨' : '현재 비활성화 모드 (입력 불필요)'}
+                </span>
+              </div>
+
+              <input
+                id="stu-password"
+                type="password"
+                disabled={!STUDENT_PASSWORD_FEATURE_ENABLED}
+                minLength={8}
+                maxLength={32}
+                value={form.password || ''}
+                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                placeholder={
+                  STUDENT_PASSWORD_FEATURE_ENABLED
+                    ? '대문자, 소문자, 숫자, 특수문자 포함 8~32자리 입력'
+                    : '비활성화 모드 — 비밀번호 입력 없이 학적 정보만으로 신청·입장 가능합니다'
+                }
+                className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base disabled:bg-[#eef1ee] disabled:text-[#7c8a86] disabled:cursor-not-allowed"
+              />
+
+              <div className="flex flex-wrap gap-1.5 text-[11px] font-semibold text-[#65747c]">
+                {[
+                  ['8~32자리', pwdValidation.checks.length],
+                  ['대문자(A-Z)', pwdValidation.checks.upper],
+                  ['소문자(a-z)', pwdValidation.checks.lower],
+                  ['숫자(0-9)', pwdValidation.checks.digit],
+                  ['특수문자(!@# 등)', pwdValidation.checks.special],
+                ].map(([ruleLabel, ok]) => (
+                  <span
+                    key={String(ruleLabel)}
+                    className={`rounded-md border px-2 py-0.5 ${
+                      STUDENT_PASSWORD_FEATURE_ENABLED && ok
+                        ? 'border-[#9cd6c1] bg-[#e5f5ed] text-[#075e49]'
+                        : 'border-[#d5dbd6] bg-white text-[#65747c]'
+                    }`}
+                  >
+                    규격: {ruleLabel}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Device / MAC Duplicate Guard Info Box (MAC-only, no IP check) */}
             <div className="rounded-xl border border-[#d2e3dc] bg-[#f3f8f5] p-3.5 text-xs text-[#365249] space-y-1">
               <div className="font-bold flex items-center gap-1.5 text-[#184f44]">
                 <Fingerprint className="h-4 w-4" />
-                중복 가입 방지용 기기(MAC 식별자) · 네트워크 IP 자동 인증
+                중복 가입 방지용 기기 고유 MAC 주소 식별자 자동 인증
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mono text-[11px] sm:text-xs">
                 <span>
-                  기기 MAC 식별값: <strong>{formatDeviceHashAsMac(netInfo.deviceHash)}</strong>
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Wifi className="h-3.5 w-3.5" /> 공인 IP: <strong>{netInfo.ipAddress}</strong>
+                  기기 MAC 주소 식별값: <strong>{formatDeviceHashAsMac(netInfo.deviceHash)}</strong>
                 </span>
               </div>
               <p className="text-[11px] text-[#516b69]">
-                * 동일 기기 및 동일 학번으로 중복 신청하는 것을 방지하며, 교사 승인 시 위 기기 정보가 함께 대조됩니다.
+                * 학교 공용 네트워크(동일 IP) 환경을 고려하여 IP는 검사하지 않으며, 기기 고유 MAC 주소 식별자 및 학번 기준으로만 중복 신청을 방지합니다.
               </p>
             </div>
 
@@ -695,7 +788,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
           </div>
 
           <div className="rounded-xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 text-xs sm:text-sm text-[#3c544f] space-y-1.5">
-            <div>• <strong>가입 신청 학생 승인 관리:</strong> 학생이 신청한 학교/학년/반/번호/생년월일/이름과 기기 MAC 식별값·IP 중복 여부를 확인한 후 <strong>[승인]</strong> 또는 <strong>[반려]</strong> 처리합니다.</div>
+            <div>• <strong>가입 신청 학생 승인 관리:</strong> 학생이 신청한 학교/학년/반/번호/생년월일/이름과 기기 MAC 주소 식별값 중복 여부를 확인한 후 <strong>[승인]</strong> 또는 <strong>[반려]</strong> 처리합니다.</div>
             <div>• <strong>실시간 수사 기록실 연동:</strong> 승인된 학생들이 작성하는 1·2차시 탐구 답안과 루브릭 평정, 피드백 PDF 인쇄, CSV 내려받기를 통합 관리합니다.</div>
           </div>
 

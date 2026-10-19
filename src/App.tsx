@@ -526,8 +526,7 @@ export default function App() {
                     {approvedProfile && (
                       <div className="text-xs text-[#65747c] mono mt-0.5">
                         생년월일: {approvedProfile.birthDate} · 등록 기기 MAC:{' '}
-                        {formatDeviceHashAsMac(approvedProfile.deviceHash)} · IP:{' '}
-                        {approvedProfile.ipAddress}
+                        {formatDeviceHashAsMac(approvedProfile.deviceHash)}
                       </div>
                     )}
                   </div>
