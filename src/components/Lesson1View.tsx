@@ -436,25 +436,9 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
             </div>
 
             <div className="border-t border-slate-100 pt-5">
-              <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
-                <label htmlFor="l1claim" className="block text-sm font-bold text-slate-800">
-                  ② 수사 가설을 한 문장의 명제로 표현하기
-                </label>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onUpdate((prev) => ({
-                      ...prev,
-                      scope: 'all',
-                      claim: '모든 홀수 n에 대하여 n을 제곱한 수를 8로 나눈 나머지는 1이다.',
-                      claimChecked: false,
-                    }))
-                  }
-                  className="text-xs font-bold text-blue-600 underline hover:text-blue-800"
-                >
-                  예시 문장 틀 채우기
-                </button>
-              </div>
+              <label htmlFor="l1claim" className="block text-sm font-bold text-slate-800 mb-1.5">
+                ② 수사 가설을 한 문장의 명제로 표현하기
+              </label>
               <textarea
                 id="l1claim"
                 rows={3}
@@ -748,23 +732,7 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
           </div>
 
           <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">나의 말로 쓰는 최종 증명 보고서</h3>
-              <button
-                type="button"
-                onClick={() =>
-                  onUpdate((prev) => ({
-                    ...prev,
-                    proofText:
-                      prev.proofText ||
-                      '임의의 홀수 n을 n=2k+1 (k는 정수)이라고 놓으면, n²-1 = (2k+1)²-1 = 4k(k+1)이다. 이때 k와 k+1은 연속한 두 정수이므로 적어도 하나는 짝수이다. 따라서 k(k+1)=2t (t는 정수)로 놓을 수 있으므로 n²-1 = 8t가 되어 8의 배수이다. 그러므로 모든 홀수 n에 대하여 n²을 8로 나눈 나머지는 항상 1이다.',
-                  }))
-                }
-                className="text-xs font-bold text-blue-600 underline hover:text-blue-800"
-              >
-                4단계 연결 문장 예시 불러오기
-              </button>
-            </div>
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1.5">나의 말로 쓰는 최종 증명 보고서</h3>
             <label htmlFor="l1proof" className="block text-xs sm:text-sm text-slate-500 mb-2">
               위에서 확인한 네 단계를 연결하여 완결된 수학적 문장으로 서술해 보세요. (35자 이상)
             </label>

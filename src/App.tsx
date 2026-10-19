@@ -15,7 +15,6 @@ import {
   ensureTeacherEval,
   evaluateLevel1Completion,
   evaluateLevel2Completion,
-  filenameSafe,
 } from './utils/mathLogic';
 import {
   ADMIN_TEACHER_EMAIL,
@@ -27,8 +26,6 @@ import { Lesson2View } from './components/Lesson2View';
 import { TeacherView } from './components/TeacherView';
 import { AuthGateView, FirestoreStudentRegistrationDoc } from './components/AuthGateView';
 import {
-  Upload,
-  Download,
   Printer,
   CheckCircle2,
   AlertTriangle,
@@ -39,7 +36,16 @@ import {
 
 export default function App() {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
-  const [sessionMode, setSessionMode] = useState<'gate' | 'student' | 'teacher'>('gate');
+  const [sessionMode, setSessionMode] = useState<'gate' | 'student' | 'teacher'>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const m = params.get('mode');
+      if (m === 'student' || m === 'teacher') return m;
+    } catch {
+      // ignore
+    }
+    return 'gate';
+  });
   const [approvedProfile, setApprovedProfile] =
     useState<FirestoreStudentRegistrationDoc | null>(null);
 
@@ -88,7 +94,6 @@ export default function App() {
     onConfirm: () => void;
   } | null>(null);
 
-  const resumeFileInputRef = useRef<HTMLInputElement | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track Firebase Auth state
@@ -191,62 +196,6 @@ export default function App() {
     setApprovedProfile(null);
     setSessionMode('gate');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleExportStudentJson = () => {
-    const payload: StudentRecord = {
-      ...student,
-      updatedAt: new Date().toISOString(),
-    };
-    setStudent(payload);
-    const jsonStr = JSON.stringify(payload, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `수학탐정단_1-2차시_${filenameSafe(payload.group)}_${filenameSafe(payload.code)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('사건 파일(JSON)을 내려받았습니다.', 'good');
-  };
-
-  const handleResumeJsonUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    e.target.value = '';
-    if (!f) return;
-
-    try {
-      if (f.size > 2_000_000) throw new Error('파일이 너무 큽니다 (2MB 이하만 가능).');
-      const text = await f.text();
-      const parsed = cleanStudentState(JSON.parse(text));
-
-      const applyLoaded = () => {
-        if (approvedProfile) {
-          parsed.group = `${approvedProfile.school} ${approvedProfile.grade}학년 ${approvedProfile.classNum}반`.slice(0, 25);
-          parsed.code = `${approvedProfile.grade}${String(approvedProfile.classNum).padStart(2, '0')}${String(
-            approvedProfile.studentNum
-          ).padStart(2, '0')}_${approvedProfile.name}`.slice(0, 25);
-        }
-        setStudent(parsed);
-        setSteps({ 1: 0, 2: 0 });
-        showToast('이전 탐구 결과를 불러왔습니다.', 'good');
-      };
-
-      if (student.l1.examples.length > 0 || student.l2.examples.length > 0) {
-        requestConfirm(
-          '이전 결과 덮어쓰기 확인',
-          '현재 작성 중인 내용을 불러온 JSON 파일 내용으로 바꿀까요?',
-          applyLoaded
-        );
-      } else {
-        applyLoaded();
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : '올바른 JSON 파일이 아닙니다.';
-      showToast(`불러오기 실패: ${msg}`, 'warn');
-    }
   };
 
   const handleChangeTopic2 = (nextTopic: TopicId) => {
@@ -400,60 +349,85 @@ export default function App() {
               </div>
             </div>
 
-            {/* In Student Mode: Show ONLY Lesson 1 & Lesson 2 Segmented Tabs */}
+            {/* In Student Mode: Show Lesson Tabs on Left, Progress & Print Feature on Right */}
             {sessionMode === 'student' && (
               <div
                 role="tablist"
-                aria-label="학생 차시 선택"
-                className="no-print mt-7 pt-5 border-t border-white/10 flex flex-wrap gap-2.5"
+                aria-label="학생 차시 선택 및 수사 진행 현황"
+                className="no-print mt-7 pt-5 border-t border-white/10 flex flex-wrap items-center justify-between gap-4"
               >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeLessonTab === 1}
-                  onClick={() => {
-                    setActiveLessonTab(1);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`min-h-[44px] rounded-xl px-5 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
-                    activeLessonTab === 1
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
-                  }`}
-                >
-                  <span
-                    className={`mr-2 mono text-xs font-extrabold ${
-                      activeLessonTab === 1 ? 'text-blue-600' : 'text-sky-300'
+                {/* Left Side: Lesson 1 & Lesson 2 Tabs */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeLessonTab === 1}
+                    onClick={() => {
+                      setActiveLessonTab(1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`min-h-[44px] rounded-xl px-5 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
+                      activeLessonTab === 1
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
                     }`}
                   >
-                    01
-                  </span>
-                  패턴의 비밀 (1차시)
-                </button>
+                    <span
+                      className={`mr-2 mono text-xs font-extrabold ${
+                        activeLessonTab === 1 ? 'text-blue-600' : 'text-sky-300'
+                      }`}
+                    >
+                      01
+                    </span>
+                    패턴의 비밀 (1차시)
+                  </button>
 
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeLessonTab === 2}
-                  onClick={() => {
-                    setActiveLessonTab(2);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`min-h-[44px] rounded-xl px-5 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
-                    activeLessonTab === 2
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
-                  }`}
-                >
-                  <span
-                    className={`mr-2 mono text-xs font-extrabold ${
-                      activeLessonTab === 2 ? 'text-blue-600' : 'text-sky-300'
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeLessonTab === 2}
+                    onClick={() => {
+                      setActiveLessonTab(2);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`min-h-[44px] rounded-xl px-5 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
+                      activeLessonTab === 2
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
                     }`}
                   >
-                    02
-                  </span>
-                  진실의 증명 (2차시)
-                </button>
+                    <span
+                      className={`mr-2 mono text-xs font-extrabold ${
+                        activeLessonTab === 2 ? 'text-blue-600' : 'text-sky-300'
+                      }`}
+                    >
+                      02
+                    </span>
+                    진실의 증명 (2차시)
+                  </button>
+                </div>
+
+                {/* Right Side: 나의 수사 진행 현황 (h3 class) with Print Button */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2">
+                    <h3 className="text-sm sm:text-base font-extrabold text-white whitespace-nowrap">
+                      나의 수사 진행 현황
+                    </h3>
+                    <span className="mono text-xs font-bold text-sky-200 bg-sky-950/70 border border-sky-400/30 px-2 py-0.5 rounded-md whitespace-nowrap">
+                      1차시 {done1.filter(Boolean).length}/5 · 2차시 {done2.filter(Boolean).length}/5 완료
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-white/20 transition-all whitespace-nowrap shrink-0 shadow-xs"
+                    title="현재 수사 활동지 화면 인쇄 / PDF 저장"
+                  >
+                    <Printer className="h-4 w-4 text-sky-300" />
+                    <span>현재 화면 인쇄 / PDF</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -519,22 +493,9 @@ export default function App() {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <input
-                      ref={resumeFileInputRef}
-                      type="file"
-                      accept=".json,application/json"
-                      onChange={handleResumeJsonUpload}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => resumeFileInputRef.current?.click()}
-                      className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs sm:text-sm font-bold text-slate-700 hover:bg-slate-100 whitespace-nowrap shrink-0"
-                    >
-                      <Upload className="h-4 w-4 text-slate-500" />
-                      백업 JSON 불러오기
-                    </button>
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-100/90 border border-slate-200/80 px-3.5 py-2 rounded-xl">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>실시간 탐구 기록 보관 중</span>
                   </div>
                 </div>
 
@@ -647,44 +608,9 @@ export default function App() {
                       }))
                     }
                     onChangeTopic={handleChangeTopic2}
-                    onExportStudentJson={handleExportStudentJson}
                     onRequestConfirm={requestConfirm}
                   />
                 )}
-              </section>
-
-              {/* Bottom Student Status & Export Footer */}
-              <section className="no-print rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900">나의 수사 진행 현황</h3>
-                    <p className="mt-0.5 text-xs sm:text-sm text-slate-500">
-                      작성 내용은 교사(관리자) 기록실에 실시간으로 자동 저장되며, 백업용 JSON 파일로도 내려받을 수 있습니다.
-                    </p>
-                  </div>
-                  <div className="mono text-xs sm:text-sm font-bold text-slate-700">
-                    1차시 {done1.filter(Boolean).length}/5 · 2차시 {done2.filter(Boolean).length}/5 완료
-                  </div>
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={handleExportStudentJson}
-                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800 whitespace-nowrap shrink-0"
-                  >
-                    <Download className="h-4 w-4" />
-                    사건 파일 백업·저장 (JSON)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0"
-                  >
-                    <Printer className="h-4 w-4" />
-                    현재 화면 인쇄 / PDF
-                  </button>
-                </div>
               </section>
             </section>
           )}

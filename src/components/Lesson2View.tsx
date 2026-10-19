@@ -15,7 +15,6 @@ import {
   HelpCircle,
   Trash2,
   Shuffle,
-  Download,
   Plus,
 } from 'lucide-react';
 
@@ -25,7 +24,6 @@ interface Lesson2ViewProps {
   onStepChange: (nextStep: number) => void;
   onUpdate: (updater: (prev: Lesson2State) => Lesson2State) => void;
   onChangeTopic: (nextTopic: TopicId) => void;
-  onExportStudentJson: () => void;
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
 
@@ -35,7 +33,6 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
   onStepChange,
   onUpdate,
   onChangeTopic,
-  onExportStudentJson,
   onRequestConfirm,
 }) => {
   const [numInputStr, setNumInputStr] = useState<string>('3');
@@ -1055,21 +1052,14 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
             </div>
           </div>
 
-          <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50/60 p-5">
-            <h3 className="text-lg font-extrabold text-slate-900">01 + 02차시 최종 사건 파일 저장</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              학생 JSON 파일 하나에 1차시와 2차시의 모든 응답이 함께 저장됩니다. 제출 전 이름 대신 학생 식별코드를 입력했는지 확인하세요.
-            </p>
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={onExportStudentJson}
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
-              >
-                <Download className="h-4 w-4" />
-                최종 사건 파일(JSON) 내려받기
-              </button>
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+              <h3 className="text-lg font-extrabold text-emerald-950">01 + 02차시 수사 완료 · 실시간 자동 제출</h3>
             </div>
+            <p className="mt-1.5 text-sm text-emerald-800">
+              작성하신 모든 수사 기록은 교사용 대시보드에 실시간으로 안전하게 자동 제출되었습니다. 상단의 <strong>[현재 화면 인쇄 / PDF]</strong> 기능을 통해 자신의 활동지를 인쇄하거나 파일로 보관할 수 있습니다.
+            </p>
           </div>
         </div>
       )}
