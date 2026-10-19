@@ -1,4 +1,13 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import {
   StudentRecord,
   TOPICS,
@@ -13,18 +22,35 @@ import {
   evaluateRubricL2,
   studentKey,
 } from '../utils/mathLogic';
-import { Upload, Download, Trash2, Printer, Users, Sparkles } from 'lucide-react';
+import { formatDeviceHashAsMac } from '../utils/authLogic';
+import { FirestoreStudentRegistrationDoc } from './AuthGateView';
+import {
+  Upload,
+  Download,
+  Trash2,
+  Printer,
+  Users,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ShieldAlert,
+  UserCheck,
+  Fingerprint,
+} from 'lucide-react';
 
 interface TeacherViewProps {
+  adminEmail: string;
   records: StudentRecord[];
   selectedKey: string;
   onSelectStudent: (key: string) => void;
-  onUpdateRecords: (next: StudentRecord[]) => void;
+  onUpdateRecords: React.Dispatch<React.SetStateAction<StudentRecord[]>>;
   onPrintStudentReport: (student: StudentRecord) => void;
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
 
 export const TeacherView: React.FC<TeacherViewProps> = ({
+  adminEmail,
   records,
   selectedKey,
   onSelectStudent,
@@ -34,10 +60,126 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const detailRef = useRef<HTMLDivElement | null>(null);
+
+  const [cloudRegistrations, setCloudRegistrations] = useState<FirestoreStudentRegistrationDoc[]>([]);
+  const [approvalFilter, setApprovalFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [notice, setNotice] = useState<{ text: string; type: 'good' | 'warn' | 'info' }>({
-    text: '학번 대신 식별코드를 사용해도 됩니다. 학생 파일은 교사가 직접 수합해야 하며, 수합된 자료와 메모는 이 브라우저에 저장됩니다.',
+    text: '학생 가입 신청 내역과 승인된 학생들의 실시간 탐구 답안이 자동으로 동기화됩니다.',
     type: 'info',
   });
+
+  // Real-time Firestore listener for student_registrations (Admin only)
+  useEffect(() => {
+    const colRef = collection(db, 'student_registrations');
+    const unsub = onSnapshot(
+      colRef,
+      (snap) => {
+        const docs: FirestoreStudentRegistrationDoc[] = [];
+        const approvedWorksheets: StudentRecord[] = [];
+
+        snap.forEach((d) => {
+          const data = d.data() as FirestoreStudentRegistrationDoc;
+          docs.push(data);
+          if (data.status === 'approved' && data.worksheetJson) {
+            try {
+              const parsed = cleanStudentState(JSON.parse(data.worksheetJson));
+              parsed.group = `${data.school} ${data.grade}학년 ${data.classNum}반`.slice(0, 25);
+              parsed.code = `${data.grade}${String(data.classNum).padStart(2, '0')}${String(data.studentNum).padStart(2, '0')}_${data.name}`.slice(0, 25);
+              approvedWorksheets.push(parsed);
+            } catch {
+              // ignore malformed worksheet
+            }
+          }
+        });
+
+        setCloudRegistrations(docs);
+
+        if (approvedWorksheets.length > 0) {
+          onUpdateRecords((prevRecords) => {
+            const merged = [...prevRecords];
+            for (const cw of approvedWorksheets) {
+              const k = studentKey(cw);
+              const idx = merged.findIndex((item) => studentKey(item) === k);
+              if (idx >= 0) {
+                const old = merged[idx];
+                cw.teacherMemo = cw.teacherMemo || old.teacherMemo || '';
+                cw.evaluation = cw.evaluation || old.evaluation;
+                merged[idx] = cw;
+              } else {
+                merged.push(cw);
+              }
+            }
+            return merged;
+          });
+        }
+      },
+      (error) => {
+        console.error('Admin registration listener error:', error);
+      }
+    );
+    return () => unsub();
+  }, [onUpdateRecords]);
+
+  const handleUpdateStudentStatus = async (
+    reg: FirestoreStudentRegistrationDoc,
+    nextStatus: 'approved' | 'rejected' | 'pending'
+  ) => {
+    const ref = doc(db, 'student_registrations', reg.studentKey);
+    try {
+      await updateDoc(ref, {
+        status: nextStatus,
+        updatedAt: serverTimestamp(),
+      });
+      setNotice({
+        text: `${reg.school} ${reg.grade}학년 ${reg.classNum}반 ${reg.studentNum}번 ${reg.name} 학생을 [${
+          nextStatus === 'approved' ? '가입 승인' : nextStatus === 'rejected' ? '반려' : '대기'
+        }] 처리했습니다.`,
+        type: nextStatus === 'approved' ? 'good' : 'info',
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `student_registrations/${reg.studentKey}`);
+    }
+  };
+
+  const handleBulkApprovePending = async () => {
+    const pendings = cloudRegistrations.filter((r) => r.status === 'pending');
+    if (!pendings.length) return;
+    try {
+      for (const reg of pendings) {
+        await updateDoc(doc(db, 'student_registrations', reg.studentKey), {
+          status: 'approved',
+          updatedAt: serverTimestamp(),
+        });
+      }
+      setNotice({
+        text: `승인 대기 중이던 학생 ${pendings.length}명을 일괄 승인 처리했습니다.`,
+        type: 'good',
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'student_registrations');
+    }
+  };
+
+  const handleDeleteStudentRegistration = (reg: FirestoreStudentRegistrationDoc) => {
+    onRequestConfirm(
+      '가입 신청 및 기기 잠금 삭제',
+      `${reg.school} ${reg.grade}-${reg.classNum}-${reg.studentNum} ${reg.name} 학생의 가입 기록과 기기 중복 방지 잠금(MAC ${formatDeviceHashAsMac(
+        reg.deviceHash
+      )})을 모두 삭제할까요?`,
+      async () => {
+        try {
+          await deleteDoc(doc(db, 'student_registrations', reg.studentKey));
+          await deleteDoc(doc(db, 'device_locks', reg.deviceHash));
+          setNotice({
+            text: `${reg.name} 학생의 가입 기록 및 기기 잠금이 해제되었습니다.`,
+            type: 'info',
+          });
+        } catch (err) {
+          handleFirestoreError(err, OperationType.DELETE, `student_registrations/${reg.studentKey}`);
+        }
+      }
+    );
+  };
 
   const handleUploadFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -61,7 +203,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           const old = nextList[existingIdx];
           if ((x.updatedAt || '') >= (old.updatedAt || '')) {
             x.teacherMemo = old.teacherMemo || '';
-            x.evaluation = old.evaluation || { scores: [null, null, null, null], feedback: '', nextStep: '' };
+            x.evaluation =
+              old.evaluation || { scores: [null, null, null, null], feedback: '', nextStep: '' };
             nextList[existingIdx] = x;
           }
         } else {
@@ -105,7 +248,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
   const handleExportCSV = () => {
     if (!records.length) {
-      setNotice({ text: '먼저 학생 JSON 파일을 불러오거나 예시 데이터를 추가해 주세요.', type: 'warn' });
+      setNotice({ text: '먼저 승인된 학생 답안이나 JSON 파일을 불러와 주세요.', type: 'warn' });
       return;
     }
     const headers = [
@@ -189,6 +332,22 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  // Detect duplicate IP or deviceHash across registrations for teacher warning badge
+  const ipCounts: Record<string, number> = {};
+  const deviceCounts: Record<string, number> = {};
+  for (const r of cloudRegistrations) {
+    if (r.ipAddress) ipCounts[r.ipAddress] = (ipCounts[r.ipAddress] || 0) + 1;
+    if (r.deviceHash) deviceCounts[r.deviceHash] = (deviceCounts[r.deviceHash] || 0) + 1;
+  }
+
+  const pendingCount = cloudRegistrations.filter((r) => r.status === 'pending').length;
+  const approvedCount = cloudRegistrations.filter((r) => r.status === 'approved').length;
+  const rejectedCount = cloudRegistrations.filter((r) => r.status === 'rejected').length;
+
+  const filteredRegistrations = cloudRegistrations.filter((r) =>
+    approvalFilter === 'all' ? true : r.status === approvalFilter
+  );
+
   const count = records.length;
   const complete1 = records.filter((x) => evaluateRubricL1(x.l1).every(Boolean)).length;
   const complete2 = records.filter((x) => evaluateRubricL2(x.l2).every(Boolean)).length;
@@ -206,12 +365,30 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
   const selectedStudent = records.find((v) => studentKey(v) === selectedKey) || null;
 
-  const updateSelectedStudent = (updater: (item: StudentRecord) => StudentRecord) => {
+  const updateSelectedStudent = async (updater: (item: StudentRecord) => StudentRecord) => {
     if (!selectedStudent) return;
+    const updatedItem = updater({ ...selectedStudent });
     const next = records.map((item) =>
-      studentKey(item) === selectedKey ? updater({ ...item }) : item
+      studentKey(item) === selectedKey ? updatedItem : item
     );
     onUpdateRecords(next);
+
+    // Also sync teacher evaluation to Firestore if this student exists in cloudRegistrations
+    const matchCloud = cloudRegistrations.find((r) => {
+      const g = `${r.school} ${r.grade}학년 ${r.classNum}반`.slice(0, 25);
+      const c = `${r.grade}${String(r.classNum).padStart(2, '0')}${String(r.studentNum).padStart(2, '0')}_${r.name}`.slice(0, 25);
+      return `${g}::${c}` === selectedKey;
+    });
+    if (matchCloud) {
+      try {
+        await updateDoc(doc(db, 'student_registrations', matchCloud.studentKey), {
+          worksheetJson: JSON.stringify(updatedItem),
+          updatedAt: serverTimestamp(),
+        });
+      } catch {
+        // local fallback already updated
+      }
+    }
   };
 
   // Analytics calculations
@@ -233,9 +410,9 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     ['미작성', records.filter((x) => !x.l2.decision).length, '#426cc1'],
   ];
 
-  const topicRows: [string, number][] = (Object.entries(TOPICS) as [TopicId, typeof TOPICS[TopicId]][]).map(
-    ([id, v]) => [v.tag, records.filter((x) => x.l2.topic === id).length]
-  );
+  const topicRows: [string, number][] = (
+    Object.entries(TOPICS) as [TopicId, typeof TOPICS[TopicId]][]
+  ).map(([id, v]) => [v.tag, records.filter((x) => x.l2.topic === id).length]);
 
   const rated = records.filter((x) => ensureTeacherEval(x).scores.some((v) => v !== null));
   const means = EVAL_CRITERIA.map((t, i) => {
@@ -249,7 +426,6 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     };
   });
 
-  // Conic gradient for donut
   let cum = 0;
   const slices = decisions
     .map(([, n, color]) => {
@@ -261,14 +437,191 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header & Controls Card */}
+      {/* SECTION 1: Student Registration Approval Management (Admin Only) */}
+      <div className="rounded-2xl border border-[#c8d8ce] bg-[#fffefb] p-5 sm:p-7 shadow-sm">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <div className="text-xs font-extrabold tracking-widest text-[#187361] uppercase">
+              STUDENT REGISTRATION &amp; DUPLICATE GUARD · ADMIN ({adminEmail})
+            </div>
+            <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[#20343d]">
+              학생 가입 신청 승인 · 기기(MAC)/IP 중복 관리
+            </h2>
+            <p className="mt-1 text-sm text-[#65747c]">
+              학생이 <strong>학교 / 학년 / 반 / 번호 / 생년월일 / 이름</strong>으로 가입을 신청하면 이곳에 실시간으로 표시됩니다.
+              관리자가 <strong>[가입 승인]</strong>을 누른 학생만 활동지에 입장할 수 있습니다.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setApprovalFilter('all')}
+              className={`rounded-xl px-3.5 py-2 text-xs font-extrabold ${
+                approvalFilter === 'all'
+                  ? 'bg-[#183541] text-white'
+                  : 'bg-[#f4f2ec] text-[#20343d]'
+              }`}
+            >
+              전체 ({cloudRegistrations.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setApprovalFilter('pending')}
+              className={`rounded-xl px-3.5 py-2 text-xs font-extrabold ${
+                approvalFilter === 'pending'
+                  ? 'bg-[#945e18] text-white'
+                  : 'bg-[#fff4da] text-[#705012]'
+              }`}
+            >
+              승인 대기 ({pendingCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setApprovalFilter('approved')}
+              className={`rounded-xl px-3.5 py-2 text-xs font-extrabold ${
+                approvalFilter === 'approved'
+                  ? 'bg-[#187361] text-white'
+                  : 'bg-[#e5f5ed] text-[#075e49]'
+              }`}
+            >
+              승인 완료 ({approvedCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setApprovalFilter('rejected')}
+              className={`rounded-xl px-3.5 py-2 text-xs font-extrabold ${
+                approvalFilter === 'rejected'
+                  ? 'bg-[#af4550] text-white'
+                  : 'bg-[#fff1f1] text-[#873640]'
+              }`}
+            >
+              반려됨 ({rejectedCount})
+            </button>
+            {pendingCount > 0 && (
+              <button
+                type="button"
+                onClick={handleBulkApprovePending}
+                className="inline-flex items-center gap-1 rounded-xl bg-[#167561] px-3.5 py-2 text-xs font-extrabold text-white hover:brightness-110"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                대기 학생 일괄 승인 ({pendingCount}명)
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-5 overflow-x-auto rounded-xl border border-[#e6ebf1] bg-white">
+          <table className="w-full min-w-[820px] border-collapse text-sm">
+            <thead>
+              <tr className="bg-[#f5f8fd] text-[#53627c] text-xs font-extrabold border-b border-[#e6ebf1]">
+                <th className="py-3 px-3 text-left">상태</th>
+                <th className="py-3 px-3 text-left">학교 / 학년 / 반 / 번호</th>
+                <th className="py-3 px-3 text-left">이름</th>
+                <th className="py-3 px-3 text-left">생년월일</th>
+                <th className="py-3 px-3 text-left">기기 MAC 식별자 · 공인 IP (중복 점검)</th>
+                <th className="py-3 px-3 text-left">관리자 승인 처리</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e6ebf1]">
+              {filteredRegistrations.length > 0 ? (
+                filteredRegistrations.map((reg) => {
+                  const isDupIp = reg.ipAddress && reg.ipAddress !== 'local-network' && ipCounts[reg.ipAddress] > 1;
+                  const isDupDev = reg.deviceHash && deviceCounts[reg.deviceHash] > 1;
+                  return (
+                    <tr key={reg.studentKey} className="hover:bg-[#f9fbf9]">
+                      <td className="py-3 px-3">
+                        {reg.status === 'pending' && (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-[#fff0d7] px-2.5 py-1 text-xs font-extrabold text-[#91601c]">
+                            <Clock className="h-3.5 w-3.5" /> 승인 대기
+                          </span>
+                        )}
+                        {reg.status === 'approved' && (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-[#def3ea] px-2.5 py-1 text-xs font-extrabold text-[#116951]">
+                            <UserCheck className="h-3.5 w-3.5" /> 승인됨
+                          </span>
+                        )}
+                        {reg.status === 'rejected' && (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-[#fff1f1] px-2.5 py-1 text-xs font-extrabold text-[#873640]">
+                            <XCircle className="h-3.5 w-3.5" /> 반려됨
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 font-semibold">
+                        {reg.school} {reg.grade}학년 {reg.classNum}반 {reg.studentNum}번
+                      </td>
+                      <td className="py-3 px-3 font-extrabold text-[#20343d]">{reg.name}</td>
+                      <td className="py-3 px-3 mono text-xs">{reg.birthDate}</td>
+                      <td className="py-3 px-3 mono text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <Fingerprint className="h-3.5 w-3.5 text-[#1e5661]" />
+                          <span>MAC: {formatDeviceHashAsMac(reg.deviceHash)}</span>
+                          {isDupDev && (
+                            <span className="inline-flex items-center gap-0.5 text-[#af4550] font-bold">
+                              <ShieldAlert className="h-3.5 w-3.5" /> 동일기기 중복
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[#65747c] mt-0.5">
+                          IP: {reg.ipAddress}{' '}
+                          {isDupIp && (
+                            <span className="text-[#945e18] font-semibold">(동일 네트워크 {ipCounts[reg.ipAddress]}명)</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {reg.status !== 'approved' && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStudentStatus(reg, 'approved')}
+                              className="inline-flex items-center gap-1 rounded-lg bg-[#167561] px-3 py-1.5 text-xs font-bold text-white hover:brightness-110"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              가입 승인
+                            </button>
+                          )}
+                          {reg.status !== 'rejected' && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStudentStatus(reg, 'rejected')}
+                              className="inline-flex items-center gap-1 rounded-lg border border-[#e2b4b9] bg-[#fff1f1] px-2.5 py-1.5 text-xs font-bold text-[#873640] hover:bg-[#fde2e4]"
+                            >
+                              반려
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteStudentRegistration(reg)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-[#c9d2d1] bg-white px-2.5 py-1.5 text-xs font-bold text-[#65747c] hover:bg-[#f4f2ec]"
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={6} className="py-6 px-4 text-center text-[#65747c]">
+                    현재 해당 상태의 학생 가입 신청 내역이 없습니다.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* SECTION 2: Header & Controls Card */}
       <div className="rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-5 sm:p-7 shadow-sm">
         <div className="text-xs font-extrabold tracking-widest text-[#ad7b37] uppercase">
           DETECTIVE HQ · TEACHER&apos;S DESK
         </div>
         <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold text-[#20343d]">교사용 수사 기록실</h2>
         <p className="mt-1 text-sm sm:text-base text-[#65747c]">
-          학생들이 제출한 JSON 수사 기록을 한꺼번에 불러오면, 두 차시의 단서 수집·가설·반례·증명 내용을 나란히 확인할 수 있습니다. 별도 서버나 실시간 수집 기능 없이 브라우저에서 안전하게 작동합니다.
+          승인된 학생들이 작성한 1·2차시 탐구 기록이 실시간으로 연동되며, 외부 JSON 파일을 추가로 불러오거나 CSV로 내려받을 수도 있습니다.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-2.5">
@@ -312,19 +665,19 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               type="button"
               onClick={() =>
                 onRequestConfirm(
-                  '수합 목록 지우기',
-                  '현재 브라우저의 교사용 수합 자료와 메모를 모두 삭제할까요? (학생 원본 파일은 영향받지 않습니다.)',
+                  '로컬 수합 목록 지우기',
+                  '현재 브라우저의 로컬 수합 목록을 비울까요? (클라우드에 승인된 학생 기록은 유지됩니다.)',
                   () => {
                     onUpdateRecords([]);
                     onSelectStudent('');
-                    setNotice({ text: '수합 목록을 모두 비웠습니다.', type: 'info' });
+                    setNotice({ text: '로컬 수합 목록을 비웠습니다.', type: 'info' });
                   }
                 )
               }
               className="inline-flex min-h-[45px] items-center gap-1.5 rounded-xl border border-[#e2b4b9] bg-[#fff1f1] px-4 py-2.5 text-sm font-bold text-[#873640] hover:bg-[#fde2e4]"
             >
               <Trash2 className="h-4 w-4" />
-              수합 목록 지우기
+              로컬 수합 목록 지우기
             </button>
           )}
         </div>
@@ -361,7 +714,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
         </div>
       </div>
 
-      {/* Analytics Dashboard */}
+      {/* SECTION 3: Analytics Dashboard */}
       <div className="rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-5 sm:p-7 shadow-sm">
         <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
           <h3 className="text-lg sm:text-xl font-extrabold text-[#20343d]">학급 탐구 역량 대시보드</h3>
@@ -372,11 +725,10 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
         {count === 0 ? (
           <div className="rounded-xl border border-dashed border-[#c9d2d1] p-8 text-center text-sm text-[#65747c]">
-            학생 결과 파일(JSON)을 불러오거나 상단의 <strong>[예시 학생 데이터(2명) 체험하기]</strong> 버튼을 누르면 학급별 탐구 지표 그래프가 나타납니다.
+            승인된 학생이 활동을 시작하거나 상단의 <strong>[예시 학생 데이터(2명) 체험하기]</strong> 버튼을 누르면 학급별 탐구 지표 그래프가 나타납니다.
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Panel 1 */}
             <div className="rounded-xl border border-[#dbe4ee] bg-white p-4">
               <h4 className="font-bold text-sm sm:text-base text-[#20343d] mb-3">활동 완료 현황</h4>
               <div className="space-y-2.5">
@@ -405,7 +757,6 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               </p>
             </div>
 
-            {/* Panel 2 */}
             <div className="rounded-xl border border-[#dbe4ee] bg-white p-4">
               <h4 className="font-bold text-sm sm:text-base text-[#20343d] mb-3">2차시 학생 판단 분포</h4>
               <div className="flex items-center gap-6 flex-wrap">
@@ -436,7 +787,6 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               </p>
             </div>
 
-            {/* Panel 3 */}
             <div className="rounded-xl border border-[#dbe4ee] bg-white p-4">
               <h4 className="font-bold text-sm sm:text-base text-[#20343d] mb-3">2차시 탐구주제 선택 현황</h4>
               <div className="space-y-2.5">
@@ -462,7 +812,6 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               </div>
             </div>
 
-            {/* Panel 4 */}
             <div className="rounded-xl border border-[#dbe4ee] bg-white p-4">
               <h4 className="font-bold text-sm sm:text-base text-[#20343d] mb-3">교사 평정 평균 (0~3점)</h4>
               <div className="space-y-2.5">
@@ -491,7 +840,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
         )}
       </div>
 
-      {/* Student Records Table & Detail View */}
+      {/* SECTION 4: Student Records Table & Detail View */}
       <div className="rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-5 sm:p-7 shadow-sm">
         <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
           <h3 className="text-lg sm:text-xl font-extrabold text-[#20343d] flex items-center gap-2">
@@ -499,7 +848,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             탐정별 사건 기록
           </h3>
           <span className="text-xs text-[#65747c]">
-            동일 학급·코드라면 저장 시각이 더 최신인 파일을 유지합니다.
+            승인된 학생 답안 및 불러온 파일이 함께 표시됩니다.
           </span>
         </div>
 
@@ -508,7 +857,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             <thead>
               <tr className="bg-[#f5f8fd] text-[#53627c] text-xs font-extrabold border-b border-[#e6ebf1]">
                 <th className="py-3 px-3 text-left">학급</th>
-                <th className="py-3 px-3 text-left">식별코드</th>
+                <th className="py-3 px-3 text-left">식별코드(학번·이름)</th>
                 <th className="py-3 px-3 text-left">1차시 사례</th>
                 <th className="py-3 px-3 text-left">1차시 증명</th>
                 <th className="py-3 px-3 text-left">2차시 주제</th>
@@ -572,7 +921,6 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           </table>
         </div>
 
-        {/* Selected Student Detail & Evaluation */}
         {selectedStudent && (
           <div ref={detailRef} className="mt-6 pt-6 border-t border-[#dcded7] space-y-5">
             <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -590,7 +938,6 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              {/* Lesson 1 Summary */}
               <div className="rounded-xl border border-[#e0e3dd] bg-white p-4 space-y-3">
                 <div className="text-xs font-extrabold text-[#1e5661]">1차시 · 교사 안내형 수사</div>
                 {[
@@ -609,7 +956,6 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 ))}
               </div>
 
-              {/* Lesson 2 Summary */}
               <div className="rounded-xl border border-[#e0e3dd] bg-white p-4 space-y-3">
                 <div className="text-xs font-extrabold text-[#187361]">2차시 · 학생 주도형 수사</div>
                 {[
@@ -649,11 +995,10 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               </div>
             </div>
 
-            {/* Teacher Observation & Rubric Scoring */}
             <div className="rounded-2xl border border-[#e0e3dd] bg-[#f7f9f5] p-4 sm:p-6 space-y-5">
               <div>
                 <label htmlFor="teacherMemo" className="block text-sm font-bold text-[#20343d] mb-1">
-                  학습 변화 관찰 메모 (교사용 브라우저에만 저장)
+                  학습 변화 관찰 메모
                 </label>
                 <textarea
                   id="teacherMemo"

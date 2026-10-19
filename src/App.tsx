@@ -1,4 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from './firebase';
 import {
   STORAGE_KEY_STUDENT,
   STORAGE_KEY_TEACHER,
@@ -14,25 +17,38 @@ import {
   evaluateLevel2Completion,
   filenameSafe,
 } from './utils/mathLogic';
+import {
+  ADMIN_TEACHER_EMAIL,
+  formatDeviceHashAsMac,
+  isAuthorizedAdminEmail,
+} from './utils/authLogic';
 import { Lesson1View } from './components/Lesson1View';
 import { Lesson2View } from './components/Lesson2View';
 import { TeacherView } from './components/TeacherView';
+import { AuthGateView, FirestoreStudentRegistrationDoc } from './components/AuthGateView';
 import {
   Upload,
-  UserPlus,
   Download,
   Printer,
   CheckCircle2,
   AlertTriangle,
+  LogOut,
+  ShieldCheck,
+  UserCheck,
 } from 'lucide-react';
 
 export default function App() {
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [sessionMode, setSessionMode] = useState<'gate' | 'student' | 'teacher'>('gate');
+  const [approvedProfile, setApprovedProfile] =
+    useState<FirestoreStudentRegistrationDoc | null>(null);
+
   const [student, setStudent] = useState<StudentRecord>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_STUDENT);
       if (raw) return cleanStudentState(JSON.parse(raw));
     } catch {
-      // Fallback to fresh initial state if corrupted
+      // ignore
     }
     return createInitialStudentState();
   });
@@ -60,12 +76,11 @@ export default function App() {
     return [];
   });
 
-  const [activeTab, setActiveTab] = useState<1 | 2 | 't'>(1);
+  const [activeLessonTab, setActiveLessonTab] = useState<1 | 2>(1);
   const [steps, setSteps] = useState<{ 1: number; 2: number }>({ 1: 0, 2: 0 });
   const [selectedTeacherKey, setSelectedTeacherKey] = useState<string>('');
   const [printingStudent, setPrintingStudent] = useState<StudentRecord | null>(null);
 
-  // Non-blocking toast & confirmation dialog state (safe for iOS/Android/iPadOS/Galaxy Tab/iFrame)
   const [toast, setToast] = useState<{ text: string; type: 'good' | 'warn' } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     title: string;
@@ -74,16 +89,41 @@ export default function App() {
   } | null>(null);
 
   const resumeFileInputRef = useRef<HTMLInputElement | null>(null);
-  const codeInputRef = useRef<HTMLInputElement | null>(null);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync student state to localStorage
+  // Track Firebase Auth state
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setFirebaseUser(u);
+      if (u && isAuthorizedAdminEmail(u.email, u.emailVerified)) {
+        setSessionMode('teacher');
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // Sync student state to localStorage and debounced Firestore update when approved
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_STUDENT, JSON.stringify(student));
     } catch {
-      // storage quota or private mode
+      // ignore
     }
-  }, [student]);
+
+    if (sessionMode === 'student' && approvedProfile?.studentKey) {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = setTimeout(async () => {
+        try {
+          await updateDoc(doc(db, 'student_registrations', approvedProfile.studentKey), {
+            worksheetJson: JSON.stringify(student),
+            updatedAt: serverTimestamp(),
+          });
+        } catch {
+          // local storage already saved
+        }
+      }, 900);
+    }
+  }, [student, sessionMode, approvedProfile]);
 
   // Sync teacher state to localStorage
   useEffect(() => {
@@ -114,13 +154,46 @@ export default function App() {
     setConfirmDialog({ title, message, onConfirm });
   };
 
-  const handleExportStudentJson = () => {
-    if (!student.code.trim()) {
-      showToast('저장할 때 사용할 학생 식별코드를 상단 입력창에 먼저 입력해 주세요.', 'warn');
-      codeInputRef.current?.focus();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
+  const handleStudentApprovedLogin = useCallback(
+    (regDoc: FirestoreStudentRegistrationDoc, worksheet: StudentRecord) => {
+      const groupLabel = `${regDoc.school} ${regDoc.grade}학년 ${regDoc.classNum}반`.slice(0, 25);
+      const codeLabel = `${regDoc.grade}${String(regDoc.classNum).padStart(2, '0')}${String(
+        regDoc.studentNum
+      ).padStart(2, '0')}_${regDoc.name}`.slice(0, 25);
+
+      const hydrated: StudentRecord = {
+        ...worksheet,
+        group: groupLabel,
+        code: codeLabel,
+      };
+      setApprovedProfile(regDoc);
+      setStudent(hydrated);
+      setSessionMode('student');
+    },
+    []
+  );
+
+  const handleAdminTeacherLogin = useCallback(() => {
+    setSessionMode('teacher');
+  }, []);
+
+  const handleExitMode = async () => {
+    if (sessionMode === 'teacher') {
+      try {
+        await signOut(auth);
+      } catch {
+        // ignore
+      }
     }
+    try {
+      localStorage.removeItem('math_detective_active_student_key_v1');
+    } catch {}
+    setApprovedProfile(null);
+    setSessionMode('gate');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleExportStudentJson = () => {
     const payload: StudentRecord = {
       ...student,
       updatedAt: new Date().toISOString(),
@@ -136,7 +209,7 @@ export default function App() {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('사건 파일(JSON)을 내려받았습니다. 교사에게 제출하거나 다른 기기에서 이어 할 수 있습니다.', 'good');
+    showToast('사건 파일(JSON)을 내려받았습니다.', 'good');
   };
 
   const handleResumeJsonUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,9 +223,15 @@ export default function App() {
       const parsed = cleanStudentState(JSON.parse(text));
 
       const applyLoaded = () => {
+        if (approvedProfile) {
+          parsed.group = `${approvedProfile.school} ${approvedProfile.grade}학년 ${approvedProfile.classNum}반`.slice(0, 25);
+          parsed.code = `${approvedProfile.grade}${String(approvedProfile.classNum).padStart(2, '0')}${String(
+            approvedProfile.studentNum
+          ).padStart(2, '0')}_${approvedProfile.name}`.slice(0, 25);
+        }
         setStudent(parsed);
         setSteps({ 1: 0, 2: 0 });
-        showToast(`${parsed.code || '학생'}의 이전 탐구 결과를 성공적으로 불러왔습니다.`, 'good');
+        showToast('이전 탐구 결과를 불러왔습니다.', 'good');
       };
 
       if (student.l1.examples.length > 0 || student.l2.examples.length > 0) {
@@ -168,20 +247,6 @@ export default function App() {
       const msg = err instanceof Error ? err.message : '올바른 JSON 파일이 아닙니다.';
       showToast(`불러오기 실패: ${msg}`, 'warn');
     }
-  };
-
-  const handleNewStudent = () => {
-    requestConfirm(
-      '새 학생으로 초기화',
-      '현재 브라우저의 학생 활동 내용을 비우고 새 학생으로 시작할까요? 먼저 JSON 결과를 저장했는지 확인해 주세요.',
-      () => {
-        const fresh = createInitialStudentState();
-        setStudent(fresh);
-        setSteps({ 1: 0, 2: 0 });
-        setActiveTab(1);
-        showToast('새 학생 활동지로 초기화되었습니다.', 'good');
-      }
-    );
   };
 
   const handleChangeTopic2 = (nextTopic: TopicId) => {
@@ -224,8 +289,8 @@ export default function App() {
 
   const done1 = evaluateLevel1Completion(student.l1);
   const done2 = evaluateLevel2Completion(student.l2);
-  const activeDone = activeTab === 1 ? done1 : done2;
-  const activeStep = activeTab === 1 ? steps[1] : steps[2];
+  const activeDone = activeLessonTab === 1 ? done1 : done2;
+  const activeStep = activeLessonTab === 1 ? steps[1] : steps[2];
 
   return (
     <>
@@ -236,15 +301,45 @@ export default function App() {
             <div className="grid gap-6 lg:grid-cols-[1fr_220px] items-center">
               {/* Hero Copy */}
               <div>
-                <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-[#d4ddd8]">
-                  <span className="inline-grid h-7 w-7 place-items-center rounded-full bg-[#c99f57] font-serif text-xs font-black text-[#162f39]">
-                    M
-                  </span>
-                  <span>COMMON MATH 2</span>
-                  <span className="text-[#849e9c]">/</span>
-                  <span>명제의 증명</span>
-                  <span className="text-[#849e9c]">/</span>
-                  <span>2차시 탐구</span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-[#d4ddd8]">
+                    <span className="inline-grid h-7 w-7 place-items-center rounded-full bg-[#c99f57] font-serif text-xs font-black text-[#162f39]">
+                      M
+                    </span>
+                    <span>COMMON MATH 2</span>
+                    <span className="text-[#849e9c]">/</span>
+                    <span>명제의 증명</span>
+                    <span className="text-[#849e9c]">/</span>
+                    <span>2차시 탐구</span>
+                  </div>
+
+                  {sessionMode !== 'gate' && (
+                    <div className="no-print flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-bold text-[#f7d59b]">
+                        {sessionMode === 'teacher' ? (
+                          <>
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            교사(관리자) 모드 · {firebaseUser?.email || ADMIN_TEACHER_EMAIL}
+                          </>
+                        ) : (
+                          <>
+                            <UserCheck className="h-3.5 w-3.5" />
+                            학생 모드 · {approvedProfile?.school} {approvedProfile?.grade}-
+                            {approvedProfile?.classNum}-{approvedProfile?.studentNum}{' '}
+                            {approvedProfile?.name}
+                          </>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleExitMode}
+                        className="inline-flex items-center gap-1 rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/20"
+                      >
+                        <LogOut className="h-3.5 w-3.5" />
+                        로그아웃 / 모드 전환
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 flex items-center gap-2.5 text-xs font-extrabold tracking-[2px] text-[#deb87a]">
@@ -261,11 +356,11 @@ export default function App() {
                 </p>
                 <p className="mt-2 text-xs sm:text-sm text-[#c7d9d6] max-w-2xl leading-relaxed">
                   규칙이라는 단서를 수집하고, 반례를 수색하고, 누구나 납득할 수 있는{' '}
-                  <strong className="text-[#f0dfb9]">증명 보고서</strong>를 완성해 보세요. (PC · iPad · 갤럭시탭 · 스마트폰 호환)
+                  <strong className="text-[#f0dfb9]">증명 보고서</strong>를 완성해 보세요.
                 </p>
               </div>
 
-              {/* Hero Right Emblem (Visible on Tablet Landscape & Desktop) */}
+              {/* Hero Right Emblem */}
               <div className="hidden lg:flex flex-col items-center justify-center gap-3 text-center">
                 <div className="flex flex-col items-center opacity-95" aria-hidden="true">
                   <svg
@@ -318,75 +413,67 @@ export default function App() {
               </div>
             </div>
 
-            {/* Top Mode Tabs */}
-            <div
-              role="tablist"
-              aria-label="활동 화면 선택"
-              className="no-print mt-5 pt-4 border-t border-white/20 grid grid-cols-2 sm:flex sm:flex-wrap gap-2"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 1}
-                onClick={() => {
-                  setActiveTab(1);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className={`min-h-[46px] rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all whitespace-nowrap ${
-                  activeTab === 1
-                    ? 'bg-[#f5ebd5] text-[#27404b] border border-[#f1d8ae] shadow-sm'
-                    : 'bg-white/10 text-[#e7ece4] border border-white/25 hover:bg-white/20'
-                }`}
+            {/* In Student Mode: Show ONLY Lesson 1 & Lesson 2 Tabs (Teacher Mode strictly separated) */}
+            {sessionMode === 'student' && (
+              <div
+                role="tablist"
+                aria-label="학생 차시 선택"
+                className="no-print mt-5 pt-4 border-t border-white/20 grid grid-cols-2 sm:flex sm:flex-wrap gap-2"
               >
-                <span className={`mr-1.5 text-xs font-black ${activeTab === 1 ? 'text-[#98621d]' : 'text-[#e5bd84]'}`}>
-                  01
-                </span>
-                패턴의 비밀 (1차시)
-              </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeLessonTab === 1}
+                  onClick={() => {
+                    setActiveLessonTab(1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`min-h-[46px] rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all whitespace-nowrap ${
+                    activeLessonTab === 1
+                      ? 'bg-[#f5ebd5] text-[#27404b] border border-[#f1d8ae] shadow-sm'
+                      : 'bg-white/10 text-[#e7ece4] border border-white/25 hover:bg-white/20'
+                  }`}
+                >
+                  <span
+                    className={`mr-1.5 text-xs font-black ${
+                      activeLessonTab === 1 ? 'text-[#98621d]' : 'text-[#e5bd84]'
+                    }`}
+                  >
+                    01
+                  </span>
+                  패턴의 비밀 (1차시)
+                </button>
 
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 2}
-                onClick={() => {
-                  setActiveTab(2);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className={`min-h-[46px] rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all whitespace-nowrap ${
-                  activeTab === 2
-                    ? 'bg-[#f5ebd5] text-[#27404b] border border-[#f1d8ae] shadow-sm'
-                    : 'bg-white/10 text-[#e7ece4] border border-white/25 hover:bg-white/20'
-                }`}
-              >
-                <span className={`mr-1.5 text-xs font-black ${activeTab === 2 ? 'text-[#98621d]' : 'text-[#e5bd84]'}`}>
-                  02
-                </span>
-                진실의 증명 (2차시)
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 't'}
-                onClick={() => {
-                  setActiveTab('t');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className={`col-span-2 sm:col-span-1 min-h-[46px] rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all whitespace-nowrap ${
-                  activeTab === 't'
-                    ? 'bg-[#f5ebd5] text-[#27404b] border border-[#f1d8ae] shadow-sm'
-                    : 'bg-white/10 text-[#e7ece4] border border-white/25 hover:bg-white/20'
-                }`}
-              >
-                교사용 기록실
-              </button>
-            </div>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeLessonTab === 2}
+                  onClick={() => {
+                    setActiveLessonTab(2);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`min-h-[46px] rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all whitespace-nowrap ${
+                    activeLessonTab === 2
+                      ? 'bg-[#f5ebd5] text-[#27404b] border border-[#f1d8ae] shadow-sm'
+                      : 'bg-white/10 text-[#e7ece4] border border-white/25 hover:bg-white/20'
+                  }`}
+                >
+                  <span
+                    className={`mr-1.5 text-xs font-black ${
+                      activeLessonTab === 2 ? 'text-[#98621d]' : 'text-[#e5bd84]'
+                    }`}
+                  >
+                    02
+                  </span>
+                  진실의 증명 (2차시)
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
         {/* Main Workspace Container */}
         <main className="mx-auto w-full max-w-[1120px] flex-1 px-3.5 sm:px-6 py-5">
-          {/* Non-blocking Toast Banner */}
           {toast && (
             <div
               role="status"
@@ -414,57 +501,38 @@ export default function App() {
             </div>
           )}
 
-          {activeTab !== 't' ? (
+          {sessionMode === 'gate' && (
+            <AuthGateView
+              currentUser={firebaseUser}
+              onStudentApprovedLogin={handleStudentApprovedLogin}
+              onAdminTeacherLogin={handleAdminTeacherLogin}
+            />
+          )}
+
+          {sessionMode === 'student' && (
             <section aria-label="학생 탐구 활동 영역" className="space-y-4">
-              {/* Student Identity Toolbar — Responsive for Mobile, iPad, Galaxy Tab, and Desktop */}
+              {/* Approved Student Identity Bar */}
               <div className="no-print rounded-2xl border border-[#e0ddd1] bg-[#fffcf6] p-4 sm:p-5 shadow-xs">
-                <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-[220px_220px_1fr] items-end">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <label htmlFor="group" className="block text-xs sm:text-sm font-extrabold text-[#20343d] mb-1">
-                      학급 / 모둠
-                    </label>
-                    <input
-                      id="group"
-                      type="text"
-                      maxLength={25}
-                      autoComplete="off"
-                      value={student.group}
-                      onChange={(e) =>
-                        setStudent((prev) => ({
-                          ...prev,
-                          group: e.target.value.slice(0, 25),
-                          updatedAt: new Date().toISOString(),
-                        }))
-                      }
-                      placeholder="예: 1학년 3반"
-                      className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base"
-                    />
+                    <div className="text-xs font-extrabold text-[#187361]">
+                      ✓ 관리자 승인 완료 · 학생 전용 모드 (실시간 자동 저장)
+                    </div>
+                    <div className="mt-0.5 text-sm sm:text-base font-extrabold text-[#20343d]">
+                      {approvedProfile
+                        ? `${approvedProfile.school} ${approvedProfile.grade}학년 ${approvedProfile.classNum}반 ${approvedProfile.studentNum}번 ${approvedProfile.name}`
+                        : `${student.group} ${student.code}`}
+                    </div>
+                    {approvedProfile && (
+                      <div className="text-xs text-[#65747c] mono mt-0.5">
+                        생년월일: {approvedProfile.birthDate} · 등록 기기 MAC:{' '}
+                        {formatDeviceHashAsMac(approvedProfile.deviceHash)} · IP:{' '}
+                        {approvedProfile.ipAddress}
+                      </div>
+                    )}
                   </div>
 
-                  <div>
-                    <label htmlFor="code" className="block text-xs sm:text-sm font-extrabold text-[#20343d] mb-1">
-                      학생 식별코드
-                    </label>
-                    <input
-                      ref={codeInputRef}
-                      id="code"
-                      type="text"
-                      maxLength={25}
-                      autoComplete="off"
-                      value={student.code}
-                      onChange={(e) =>
-                        setStudent((prev) => ({
-                          ...prev,
-                          code: e.target.value.slice(0, 25),
-                          updatedAt: new Date().toISOString(),
-                        }))
-                      }
-                      placeholder="학번·식별코드 (예: 10315)"
-                      className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base mono placeholder:font-sans placeholder:font-normal font-semibold"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2 lg:col-span-1 flex flex-wrap items-center lg:justify-end gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <input
                       ref={resumeFileInputRef}
                       type="file"
@@ -475,24 +543,12 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => resumeFileInputRef.current?.click()}
-                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[#b8cac4] bg-white px-3.5 py-2 text-xs sm:text-sm font-bold text-[#295763] hover:bg-[#e8f2f1] whitespace-nowrap"
+                      className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl border border-[#b8cac4] bg-white px-3.5 py-2 text-xs sm:text-sm font-bold text-[#295763] hover:bg-[#e8f2f1] whitespace-nowrap"
                     >
                       <Upload className="h-4 w-4" />
-                      이전 결과 불러오기
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleNewStudent}
-                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[#b8cac4] bg-white px-3.5 py-2 text-xs sm:text-sm font-bold text-[#295763] hover:bg-[#e8f2f1] whitespace-nowrap"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      새 학생 시작
+                      백업 JSON 불러오기
                     </button>
                   </div>
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-[#e8e6dc] text-xs text-[#516b69]">
-                  작성 내용은 현재 브라우저(iPad, 갤럭시탭, PC 등)에 자동 저장됩니다. 다른 기기에서 이어 하거나 교사에게 제출하려면 하단의 <strong>[사건 파일 저장·제출]</strong>을 눌러 JSON 파일을 저장하세요.
                 </div>
               </div>
 
@@ -500,7 +556,7 @@ export default function App() {
               <div className="print-card relative overflow-hidden rounded-2xl border border-[#c8d8ce] bg-gradient-to-r from-[#ebf3ef] to-[#f8f7ee] p-5 sm:p-6">
                 <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
                   <span className="font-extrabold text-[#1b505a] tracking-wide">
-                    CASE {activeTab === 1 ? '01 · 교사 안내형 수사' : '02 · 학생 주도형 수사'}
+                    CASE {activeLessonTab === 1 ? '01 · 교사 안내형 수사' : '02 · 학생 주도형 수사'}
                   </span>
                   <span className="text-[#516b69] font-semibold">
                     권장 시간 50분 · 증거 확보 {activeDone.filter(Boolean).length} / 5 단계
@@ -508,12 +564,12 @@ export default function App() {
                 </div>
 
                 <h2 className="mt-2 text-xl sm:text-2xl font-extrabold text-[#20343d]">
-                  {activeTab === 1
+                  {activeLessonTab === 1
                     ? '패턴의 비밀을 찾아라!'
                     : '반례를 찾아라! 진실을 증명하라!'}
                 </h2>
                 <p className="mt-1 text-xs sm:text-sm text-[#516b69]">
-                  {activeTab === 1
+                  {activeLessonTab === 1
                     ? '홀수의 제곱에서 발견한 단서는 우연일까요, 필연일까요?'
                     : '새롭게 만든 명제는 진실일까요? 반례와 증명으로 사건을 해결해 보세요.'}
                 </p>
@@ -526,12 +582,12 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 5-Stage Step Navigation (Optimized for Mobile, iPad, Galaxy Tab & PC) */}
+              {/* 5-Stage Step Navigation */}
               <nav
                 aria-label="수사 단계 이동"
                 className="no-print grid grid-cols-5 gap-1.5 sm:gap-2.5"
               >
-                {STAGE_TITLES[activeTab].map((title, idx) => {
+                {STAGE_TITLES[activeLessonTab].map((title, idx) => {
                   const isCurrent = activeStep === idx;
                   const isComplete = activeDone[idx];
                   return (
@@ -540,7 +596,7 @@ export default function App() {
                       type="button"
                       aria-current={isCurrent ? 'step' : undefined}
                       onClick={() => {
-                        setSteps((prev) => ({ ...prev, [activeTab]: idx }));
+                        setSteps((prev) => ({ ...prev, [activeLessonTab]: idx }));
                       }}
                       className={`min-h-[68px] sm:min-h-[76px] rounded-xl border p-1.5 sm:p-2.5 flex flex-col items-center justify-center text-center transition-all ${
                         isCurrent
@@ -566,7 +622,7 @@ export default function App() {
                 aria-live="polite"
                 className="print-card rounded-2xl border border-[#d9dfda] bg-[#fffefb] p-4 sm:p-7 shadow-sm"
               >
-                {activeTab === 1 ? (
+                {activeLessonTab === 1 ? (
                   <Lesson1View
                     state={student.l1}
                     step={steps[1]}
@@ -583,7 +639,7 @@ export default function App() {
                     }
                     onGoToLesson2={() => {
                       setSteps((prev) => ({ ...prev, 2: 0 }));
-                      setActiveTab(2);
+                      setActiveLessonTab(2);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     onRequestConfirm={requestConfirm}
@@ -616,7 +672,7 @@ export default function App() {
                   <div>
                     <h3 className="text-base font-extrabold text-[#20343d]">나의 수사 진행 현황</h3>
                     <p className="text-xs text-[#65747c]">
-                      작성 내용은 자동 저장됩니다. 차시 간 이동해도 기록이 유지됩니다.
+                      작성 내용은 교사(관리자) 기록실에 실시간으로 자동 저장되며, 백업용 JSON 파일로도 내려받을 수 있습니다.
                     </p>
                   </div>
                   <div className="text-xs sm:text-sm font-extrabold text-[#1f6165]">
@@ -631,7 +687,7 @@ export default function App() {
                     className="inline-flex min-h-[45px] items-center gap-2 rounded-xl bg-[#167561] px-4 py-2.5 text-sm font-bold text-white hover:brightness-110"
                   >
                     <Download className="h-4 w-4" />
-                    사건 파일 저장·제출 (JSON)
+                    사건 파일 백업·저장 (JSON)
                   </button>
                   <button
                     type="button"
@@ -644,9 +700,12 @@ export default function App() {
                 </div>
               </section>
             </section>
-          ) : (
+          )}
+
+          {sessionMode === 'teacher' && (
             <section aria-label="교사용 수사 기록실 영역">
               <TeacherView
+                adminEmail={firebaseUser?.email || ADMIN_TEACHER_EMAIL}
                 records={teacherRecords}
                 selectedKey={selectedTeacherKey}
                 onSelectStudent={setSelectedTeacherKey}
@@ -665,10 +724,10 @@ export default function App() {
           </span>{' '}
           · 우연일까, 필연일까? · 관찰 → 추측 → 반례 → 증명
           <br />
-          공통수학2 · 명제의 증명 | iOS · iPadOS · Android · 갤럭시탭 · PC 호환 통합 활동지
+          공통수학2 · 명제의 증명 | 학생 모드 · 교사(관리자 {ADMIN_TEACHER_EMAIL}) 승인제 통합 플랫폼
         </footer>
 
-        {/* Custom Confirmation Modal (replaces window.confirm for mobile & iframe compatibility) */}
+        {/* Custom Confirmation Modal */}
         {confirmDialog && (
           <div
             className="no-print fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs"
@@ -719,7 +778,9 @@ export default function App() {
             <div className="text-xs tracking-[2px] text-[#516780] font-bold">
               MATH DETECTIVE · INDIVIDUAL FEEDBACK
             </div>
-            <h2 className="text-2xl font-extrabold">우연일까, 필연일까? — 수학 탐정단 개별 탐구 피드백</h2>
+            <h2 className="text-2xl font-extrabold">
+              우연일까, 필연일까? — 수학 탐정단 개별 탐구 피드백
+            </h2>
             <div className="border-b border-[#ccd5df] py-2 text-sm">
               <strong>학급/모둠:</strong> {printingStudent.group || '—'} &nbsp;&nbsp;|&nbsp;&nbsp;{' '}
               <strong>학생 식별코드:</strong> {printingStudent.code || '—'} &nbsp;&nbsp;|&nbsp;&nbsp;{' '}

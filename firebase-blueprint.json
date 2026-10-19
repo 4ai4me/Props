@@ -1,0 +1,147 @@
+{
+  "entities": {
+    "StudentRegistration": {
+      "title": "StudentRegistration",
+      "description": "Student sign-up application with school/grade/class/number/birthDate/name, device/MAC fingerprint and IP duplicate protection, and teacher approval workflow.",
+      "type": "object",
+      "properties": {
+        "studentKey": {
+          "type": "string",
+          "description": "Normalized unique student roster key (school_grade_class_number)",
+          "minLength": 3,
+          "maxLength": 120,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "school": {
+          "type": "string",
+          "description": "School name",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "grade": {
+          "type": "string",
+          "description": "Grade number (1~6)",
+          "minLength": 1,
+          "maxLength": 5
+        },
+        "classNum": {
+          "type": "string",
+          "description": "Class number",
+          "minLength": 1,
+          "maxLength": 10
+        },
+        "studentNum": {
+          "type": "string",
+          "description": "Student roster number",
+          "minLength": 1,
+          "maxLength": 10
+        },
+        "birthDate": {
+          "type": "string",
+          "description": "Student birth date (YYYY-MM-DD or YYMMDD)",
+          "minLength": 6,
+          "maxLength": 12
+        },
+        "name": {
+          "type": "string",
+          "description": "Student full name",
+          "minLength": 2,
+          "maxLength": 25
+        },
+        "deviceHash": {
+          "type": "string",
+          "description": "Device hardware / pseudo-MAC identifier for duplicate registration prevention",
+          "minLength": 6,
+          "maxLength": 80
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "Client public IP address captured at registration",
+          "minLength": 3,
+          "maxLength": 64
+        },
+        "userAgent": {
+          "type": "string",
+          "description": "Client browser/OS summary",
+          "minLength": 1,
+          "maxLength": 250
+        },
+        "status": {
+          "type": "string",
+          "description": "Approval state managed by admin teacher (liha1634@gmail.com)",
+          "enum": ["pending", "approved", "rejected"]
+        },
+        "worksheetJson": {
+          "type": "string",
+          "description": "Serialized proof2lesson-v1 worksheet progress and teacher evaluation",
+          "minLength": 2,
+          "maxLength": 150000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of initial registration"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest update"
+        }
+      },
+      "required": [
+        "studentKey",
+        "school",
+        "grade",
+        "classNum",
+        "studentNum",
+        "birthDate",
+        "name",
+        "deviceHash",
+        "ipAddress",
+        "userAgent",
+        "status",
+        "worksheetJson",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "DeviceLock": {
+      "title": "DeviceLock",
+      "description": "Maps a device/MAC hash to a registered studentKey to prevent duplicate sign-ups from the same device.",
+      "type": "object",
+      "properties": {
+        "deviceHash": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 80,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "studentKey": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "ipAddress": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["deviceHash", "studentKey", "ipAddress", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/student_registrations/{studentKey}": {
+      "schema": { "$ref": "#/entities/StudentRegistration" },
+      "description": "Stores student registration requests, approval status, and worksheet records."
+    },
+    "/device_locks/{deviceHash}": {
+      "schema": { "$ref": "#/entities/DeviceLock" },
+      "description": "Enforces one-device-one-registration duplicate prevention."
+    }
+  }
+}

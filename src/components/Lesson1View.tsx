@@ -184,7 +184,7 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
                     value={oddInputStr}
                     onChange={(e) => setOddInputStr(e.target.value)}
                     placeholder="예: -3, 5, 11"
-                    className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base font-semibold text-[#20343d] mono placeholder:font-sans placeholder:font-normal"
+                    className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base font-semibold text-[#20343d] mono placeholder:font-normal"
                   />
                   {/* Mobile friendly sign toggle & +/-2 buttons for iOS/Android */}
                   <button

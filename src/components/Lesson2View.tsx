@@ -847,7 +847,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                         value={state.counter}
                         onChange={(e) => onUpdate((prev) => ({ ...prev, counter: e.target.value }))}
                         placeholder="반례 숫자를 입력 (예: 3)"
-                        className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base font-semibold mono placeholder:font-sans placeholder:font-normal"
+                        className="w-full rounded-xl border border-[#c9d2d1] bg-white px-3.5 py-2.5 text-base font-semibold mono placeholder:font-normal"
                       />
                       <button
                         type="button"

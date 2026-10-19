@@ -38,6 +38,7 @@ body {
   font-size: 16px;
   line-height: 1.65;
   letter-spacing: -0.01em;
+  word-break: keep-all;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
@@ -68,7 +69,7 @@ button:disabled {
 
 .mono {
   font-variant-numeric: tabular-nums;
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Pretendard Variable", Pretendard, "Noto Sans KR", sans-serif;
+  font-family: "Pretendard Variable", Pretendard, ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Noto Sans KR", sans-serif;
 }
 
 .hero-bg {

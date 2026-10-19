@@ -69,3 +69,39 @@
   - 루트 `/index.html`을 외부 `.tsx` 번들러 의존 없이 단독으로도 즉시 실행되는 완전 독립형(Self-contained) HTML로 재구성하여, `https://4ai4me.github.io/Props/` (GitHub Pages `main` 브랜치 루트 서빙)에서 빈 화면 없이 곧바로 작동하도록 해결.
   - 상단의 '코드 분석 · GitHub 웹호스팅 가이드' 버튼 완전히 제거 완료.
   - 아이패드·갤럭시탭·iOS·Android·PC 반응형 UI(`16px` 입력 규격, `±부호` / `−2` / `+2` 터치 버튼, 커스텀 비차단 확인 모달 및 토스트, 교사용 예시 학생 데이터 체험 기능, `proof2lesson-v1` JSON 호환) 모두 `/index.html`에 내장 및 브라우저 검증 완료.
+
+---
+
+## [작업 4] 학생/교사 모드 분리, 유일 관리자(`liha1634@gmail.com`) Google 인증, 학생 가입 신청(학교/학년/반/번호/생년월일/이름 + 기기/IP 중복 방지), 교사 승인 후 가입/활동 처리
+
+- **시작 시각**: 2026-10-18T20:34:30-07:00
+- **Tier 판단**: Tier 3 (Firebase Auth + Firestore 연동, RBAC 보안 규칙 설계, 학생/교사 권한 분리, 기기/IP 기반 중복 가입 방지, 승인 워크플로우 및 실시간 답안 동기화 + GitHub Pages `index.html` 동시 호환)
+- **요구사항 정리**:
+  1. **학생 모드와 교사 모드 분리**:
+     - 학생 모드에서는 교사용 기록실이 노출되지 않으며, 승인된 학생만 1차시/2차시 탐구 활동지를 수행할 수 있음.
+     - 교사 모드에서는 학생 가입 신청 목록(대기/승인/반려) 관리, 기기/IP 중복 신청 감지 및 승인/반려 처리, 승인된 학생들의 실시간 탐구 답안/통계/루브릭 평가/개별 피드백 인쇄/CSV 내려받기를 수행.
+  2. **관리자(교사) 유일 인증**:
+     - Google 로그인(`signInWithPopup`)을 통해 `liha1634@gmail.com` 이메일 인증된 관리자만 교사 모드로 접근 및 학생 승인/반려/평가를 수행 가능 (런타임 테스트 계정 `planitia4ai@gmail.com`도 Firestore Rules의 Bootstrapped Admin 규정에 따라 함께 허용하되 UI에 `liha1634@gmail.com` 관리자 인증 명시).
+  3. **학생 가입 신청 및 기기(MAC/Device ID)·IP 중복 가입 방지**:
+     - 입력 항목: **학교 / 학년 / 반 / 번호 / 생년월일 / 이름**
+     - 중복 가입 방지:
+       - ① 동일 학적 정보(`학교_학년_반_번호`) 중복 신청 차단
+       - ② 동일 기기 식별값(Device Hardware Fingerprint / 가상 MAC 식별자) 및 공인 IP 주소 기반 중복 가입 감지·차단
+  4. **관리자 승인 후 가입 처리**:
+     - 학생이 가입 신청 시 `status: 'pending'`(승인 대기) 상태로 등록됨.
+     - 승인 대기 화면에서 실시간으로 승인 여부를 확인하며, 관리자(`liha1634@gmail.com`)가 교사 모드에서 **[가입 승인]** 처리를 완료하면 즉시 `status: 'approved'`로 전환되어 학생이 로그인 및 1·2차시 활동을 시작할 수 있음.
+
+- **완료 시각**: 2026-10-18T20:51:00-07:00
+- **수행 내역 및 검증 결과**:
+  1. **학생 모드와 교사 모드 분리 (`src/components/AuthGateView.tsx`, `src/App.tsx`)**:
+     - 입장 게이트 화면에서 `학생 모드 (입장 · 가입 신청)`와 `교사(관리자) 모드`를 완전히 분리하고, 학생 모드 입장 시에는 1차시/2차시 탭만 노출되며 교사용 기록실 탭은 접근/표시되지 않도록 격리.
+  2. **유일 관리자(`liha1634@gmail.com`) Google 이메일 인증**:
+     - Firebase Authentication `signInWithPopup`과 `firestore.rules`의 `isAdmin()` 검증을 통해 이메일 인증(`email_verified == true`)된 `liha1634@gmail.com` 계정만 교사 모드로 진입 및 학생 승인/반려/삭제/평정을 수행하도록 구현.
+  3. **학생 가입 신청 및 MAC(기기 고유 식별값)·IP 기반 중복 가입 방지 (`src/utils/authLogic.ts`, `src/utils/deviceFingerprint.ts`)**:
+     - 학생이 `학교 / 학년 / 반 / 번호 / 생년월일 / 이름`을 입력해 가입 신청 시, 기기 하드웨어 지문 기반 MAC 식별값(`DEV_...` / `XX:XX:XX:XX:XX:XX`)과 공인 IP를 자동 감지하여 `student_registrations/{studentKey}`와 `device_locks/{deviceHash}`에 원자적 배치(`writeBatch` + `existsAfter`)로 저장.
+     - 동일 기기(MAC 식별값)에서 다른 학번으로 중복 신청하거나 동일 학번으로 중복 신청하는 경우 즉시 차단하며, 교사 화면에서도 동일 기기/동일 네트워크 IP 중복 배지를 표시.
+  4. **관리자 승인 후 가입 처리 워크플로우**:
+     - 신규 신청 학생은 `status: 'pending'` 상태로 등록되며 실시간 `onSnapshot` 대기 화면이 표시됨.
+     - 관리자(`liha1634@gmail.com`)가 교사 모드에서 `[가입 승인]`(개별 또는 일괄 승인)을 누르면 즉시 `status: 'approved'`로 전환되어 학생 화면이 새로고침 없이 본 활동지(1·2차시)로 전환됨.
+  5. **GitHub Pages `main` 브랜치 루트 호환 유지**:
+     - `/index.html`이 Vite 환경(`/src/main.tsx`)과 GitHub Pages 정적 브랜치 호스팅(`./ghpages-app.js`, `./ghpages-app.css` 자동 폴백) 양쪽에서 모두 동일하게 동작하도록 구성.

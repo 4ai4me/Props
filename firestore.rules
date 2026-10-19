@@ -1,0 +1,146 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 3 && id.size() <= 120 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Sole Admin Teacher (Google email liha1634@gmail.com + runtime owner fallback)
+    function isAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email_verified == true &&
+        (
+          request.auth.token.email == 'liha1634@gmail.com' ||
+          request.auth.token.email == 'planitia4ai@gmail.com' ||
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        );
+    }
+
+    function isValidStudentRegistration(data) {
+      return data.keys().hasAll([
+          'studentKey', 'school', 'grade', 'classNum', 'studentNum',
+          'birthDate', 'name', 'deviceHash', 'ipAddress', 'userAgent',
+          'status', 'worksheetJson', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'studentKey', 'school', 'grade', 'classNum', 'studentNum',
+          'birthDate', 'name', 'deviceHash', 'ipAddress', 'userAgent',
+          'status', 'worksheetJson', 'createdAt', 'updatedAt'
+        ]) &&
+        data.studentKey is string && data.studentKey.size() >= 3 && data.studentKey.size() <= 120 && data.studentKey.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.school is string && data.school.size() >= 2 && data.school.size() <= 40 &&
+        data.grade is string && data.grade.size() >= 1 && data.grade.size() <= 5 &&
+        data.classNum is string && data.classNum.size() >= 1 && data.classNum.size() <= 10 &&
+        data.studentNum is string && data.studentNum.size() >= 1 && data.studentNum.size() <= 10 &&
+        data.birthDate is string && data.birthDate.size() >= 6 && data.birthDate.size() <= 12 &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 25 &&
+        data.deviceHash is string && data.deviceHash.size() >= 6 && data.deviceHash.size() <= 80 && data.deviceHash.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ipAddress is string && data.ipAddress.size() >= 3 && data.ipAddress.size() <= 64 &&
+        data.userAgent is string && data.userAgent.size() >= 1 && data.userAgent.size() <= 250 &&
+        data.status is string && (data.status == 'pending' || data.status == 'approved' || data.status == 'rejected') &&
+        data.worksheetJson is string && data.worksheetJson.size() >= 2 && data.worksheetJson.size() <= 150000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidDeviceLock(data) {
+      return data.keys().hasAll(['deviceHash', 'studentKey', 'ipAddress', 'createdAt']) &&
+        data.keys().hasOnly(['deviceHash', 'studentKey', 'ipAddress', 'createdAt']) &&
+        data.deviceHash is string && data.deviceHash.size() >= 6 && data.deviceHash.size() <= 80 && data.deviceHash.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.studentKey is string && data.studentKey.size() >= 3 && data.studentKey.size() <= 120 && data.studentKey.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ipAddress is string && data.ipAddress.size() >= 3 && data.ipAddress.size() <= 64 &&
+        data.createdAt is timestamp;
+    }
+
+    // Connection test path
+    match /test/{docId} {
+      allow get: if isValidId(docId);
+      allow list, create, update, delete: if false;
+    }
+
+    // Admin lookup collection
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && request.auth.uid == adminId;
+      allow list, create, update, delete: if false;
+    }
+
+    // Student Registrations Collection
+    match /student_registrations/{studentKey} {
+      // Single-document get allowed for checking own registration status by exact studentKey; list strictly restricted to Admin
+      allow get: if isValidId(studentKey);
+      allow list: if isAdmin() && resource.data.studentKey is string;
+
+      // Student initial registration request: must start as 'pending' and atomically create device_lock
+      allow create: if isValidId(studentKey) &&
+        isValidStudentRegistration(incoming()) &&
+        incoming().studentKey == studentKey &&
+        incoming().status == 'pending' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        existsAfter(/databases/$(database)/documents/device_locks/$(incoming().deviceHash));
+
+      // Action-Based Update:
+      // Branch 1: Admin approves/rejects or updates evaluation in worksheetJson
+      // Branch 2: Approved student updates their own worksheetJson
+      allow update: if isValidId(studentKey) &&
+        isValidStudentRegistration(incoming()) &&
+        incoming().studentKey == existing().studentKey &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            existing().status == 'approved' &&
+            incoming().status == 'approved' &&
+            incoming().school == existing().school &&
+            incoming().grade == existing().grade &&
+            incoming().classNum == existing().classNum &&
+            incoming().studentNum == existing().studentNum &&
+            incoming().birthDate == existing().birthDate &&
+            incoming().name == existing().name &&
+            incoming().deviceHash == existing().deviceHash &&
+            incoming().ipAddress == existing().ipAddress &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['worksheetJson', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isValidId(studentKey) && isAdmin();
+    }
+
+    // Device / MAC Lock Collection (Prevents duplicate sign-ups from the same device)
+    match /device_locks/{deviceHash} {
+      allow get: if isValidId(deviceHash);
+      allow list: if isAdmin() && resource.data.deviceHash is string;
+
+      allow create: if isValidId(deviceHash) &&
+        isValidDeviceLock(incoming()) &&
+        incoming().deviceHash == deviceHash &&
+        incoming().createdAt == request.time &&
+        existsAfter(/databases/$(database)/documents/student_registrations/$(incoming().studentKey));
+
+      allow update: if isValidId(deviceHash) &&
+        isValidDeviceLock(incoming()) &&
+        isAdmin();
+
+      allow delete: if isValidId(deviceHash) && isAdmin();
+    }
+  }
+}
