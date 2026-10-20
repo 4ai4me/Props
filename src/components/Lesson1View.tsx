@@ -9,6 +9,7 @@ import {
   evaluateLevel1Completion,
 } from '../utils/mathLogic';
 import { CheckCircle2, AlertCircle, HelpCircle, Trash2, Shuffle, ArrowRight, Plus } from 'lucide-react';
+import { CharCountBadge, getCharCountBorderClass } from './CharCountBadge';
 
 interface Lesson1ViewProps {
   state: Lesson1State;
@@ -436,16 +437,22 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
             </div>
 
             <div className="border-t border-slate-100 pt-5">
-              <label htmlFor="l1claim" className="block text-sm font-bold text-slate-800 mb-1.5">
-                ② 수사 가설을 한 문장의 명제로 표현하기
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                <label htmlFor="l1claim" className="block text-sm font-bold text-slate-800">
+                  ② 수사 가설을 한 문장의 명제로 표현하기 (12자 이상)
+                </label>
+                <CharCountBadge current={state.claim.trim().length} min={12} />
+              </div>
               <textarea
                 id="l1claim"
                 rows={3}
                 value={state.claim}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, claim: e.target.value, claimChecked: false }))}
-                placeholder="예: 모든 홀수 n에 대하여 n을 제곱한 수를 8로 나눈 나머지는 항상 1이다."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900"
+                placeholder="모든(또는 어떤) …에 대하여 …한 수를 …로 나눈 나머지는 항상 …이다."
+                className={`w-full rounded-xl border bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                  state.claim.trim().length,
+                  12
+                )}`}
               />
               <p className="mt-1.5 text-xs text-slate-500">
                 관찰한 사실과 아직 증명하지 않은 추측을 구별해 적어 보세요. (‘홀수’, ‘제곱’, ‘8’ 키워드 포함)
@@ -605,16 +612,22 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
             </div>
 
             <div>
-              <label htmlFor="l1limits" className="block text-sm font-bold text-slate-800 mb-1.5">
-                모든 단서가 일치해도, 왜 최종 증명이 필요할까요? (12자 이상)
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                <label htmlFor="l1limits" className="block text-sm font-bold text-slate-800">
+                  모든 단서가 일치해도, 왜 최종 증명이 필요할까요? (12자 이상)
+                </label>
+                <CharCountBadge current={state.limits.trim().length} min={12} />
+              </div>
               <textarea
                 id="l1limits"
                 rows={3}
                 value={state.limits}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, limits: e.target.value }))}
-                placeholder="사례 확인의 한계를 자신의 말로 설명해 보세요. (예: 홀수는 무한히 많아서 모든 수를 하나씩 대입해 볼 수 없기 때문이다.)"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900"
+                placeholder="사례 확인의 한계를 자신의 말로 설명해 보세요. (…의 개수는 …하므로 모든 경우를 직접 …할 수 없다.)"
+                className={`w-full rounded-xl border bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                  state.limits.trim().length,
+                  12
+                )}`}
               />
             </div>
           </div>
