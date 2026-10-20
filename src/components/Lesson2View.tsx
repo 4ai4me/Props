@@ -17,6 +17,7 @@ import {
   Shuffle,
   Plus,
 } from 'lucide-react';
+import { CharCountBadge, getCharCountBorderClass } from './CharCountBadge';
 
 interface Lesson2ViewProps {
   state: Lesson2State;
@@ -303,29 +304,41 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
           {state.topic === 'd' && (
             <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6 space-y-4">
               <div>
-                <label htmlFor="customStatement" className="block text-sm font-bold text-slate-800 mb-1.5">
-                  내가 만든 명제 (10자 이상)
-                </label>
+                <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                  <label htmlFor="customStatement" className="block text-sm font-bold text-slate-800">
+                    내가 만든 명제 (10자 이상)
+                  </label>
+                  <CharCountBadge current={state.customStatement.trim().length} min={10} />
+                </div>
                 <textarea
                   id="customStatement"
                   rows={3}
                   value={state.customStatement}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, customStatement: e.target.value }))}
-                  placeholder="예: 모든 정수 n에 대하여 n(n+1)은 2의 배수이다."
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
+                  placeholder="모든(또는 어떤) …에 대하여 …은(는) …이다."
+                  className={`w-full rounded-xl border bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                    state.customStatement.trim().length,
+                    10
+                  )}`}
                 />
               </div>
               <div>
-                <label htmlFor="customScope" className="block text-sm font-bold text-slate-800 mb-1.5">
-                  대상과 조건 (2자 이상)
-                </label>
+                <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                  <label htmlFor="customScope" className="block text-sm font-bold text-slate-800">
+                    대상과 조건 (2자 이상)
+                  </label>
+                  <CharCountBadge current={state.customScope.trim().length} min={2} />
+                </div>
                 <input
                   id="customScope"
                   type="text"
                   value={state.customScope}
                   onChange={(e) => onUpdate((prev) => ({ ...prev, customScope: e.target.value }))}
-                  placeholder="예: 모든 정수 / 양의 홀수"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900"
+                  placeholder="탐구 대상과 조건 (…의 정수, …인 수 등)"
+                  className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                    state.customScope.trim().length,
+                    2
+                  )}`}
                 />
               </div>
               <p className="text-xs text-slate-500">
@@ -444,7 +457,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                         type="text"
                         value={obsInputStr}
                         onChange={(e) => setObsInputStr(e.target.value)}
-                        placeholder="예: n=1일 때 식의 값이 2이므로 성립함"
+                        placeholder="…일 때 식의 값이 …이므로 성립함"
                         className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900"
                       />
                     </div>
@@ -843,7 +856,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                         inputMode="numeric"
                         value={state.counter}
                         onChange={(e) => onUpdate((prev) => ({ ...prev, counter: e.target.value }))}
-                        placeholder="반례 숫자를 입력 (예: 3)"
+                        placeholder="반례 숫자 입력 (정수)"
                         className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base font-semibold mono text-slate-900 placeholder:font-normal"
                       />
                       <button
@@ -864,16 +877,22 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                   </div>
 
                   <div>
-                    <label htmlFor="l2reason" className="block text-sm font-bold text-slate-800 mb-1.5">
-                      이 수가 반례임을 계산과 문장으로 설명하세요. (25자 이상)
-                    </label>
+                    <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                      <label htmlFor="l2reason" className="block text-sm font-bold text-slate-800">
+                        이 수가 반례임을 계산과 문장으로 설명하세요. (25자 이상)
+                      </label>
+                      <CharCountBadge current={state.counterReason.trim().length} min={25} />
+                    </div>
                     <textarea
                       id="l2reason"
                       rows={5}
                       value={state.counterReason}
                       onChange={(e) => onUpdate((prev) => ({ ...prev, counterReason: e.target.value }))}
                       placeholder="가정이 성립하고, …을 계산하면 … 이므로 결론이 성립하지 않는다."
-                      className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
+                      className={`w-full rounded-xl border bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                        state.counterReason.trim().length,
+                        25
+                      )}`}
                     />
                   </div>
 
@@ -900,12 +919,15 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                 </div>
               ) : (
                 <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6 space-y-3">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                    {state.decision === 'unknown'
-                      ? '아직 증명하지 못한 이유 설명하기'
-                      : '나의 말로 증명 보고서 작성하기'}
-                  </h3>
-                  <label htmlFor="l2proof" className="block text-xs sm:text-sm text-slate-500">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                      {state.decision === 'unknown'
+                        ? '아직 증명하지 못한 이유 설명하기'
+                        : '나의 말로 증명 보고서 작성하기'}
+                    </h3>
+                    <CharCountBadge current={state.proofText.trim().length} min={40} />
+                  </div>
+                  <label htmlFor="l2proof" className="block text-xs sm:text-sm text-slate-600 font-semibold">
                     {state.decision === 'unknown'
                       ? '현재까지 확인한 사실, 증명에 부족한 점, 다음 시도를 적어 보세요. (40자 이상)'
                       : '임의의 정수(또는 대상)를 문자로 나타내고 수학적 근거를 연결하세요. (40자 이상)'}
@@ -916,7 +938,10 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
                     value={state.proofText}
                     onChange={(e) => onUpdate((prev) => ({ ...prev, proofText: e.target.value }))}
                     placeholder="임의의 …에 대해 …이므로 …이다. 따라서 …"
-                    className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
+                    className={`w-full rounded-xl border bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                      state.proofText.trim().length,
+                      40
+                    )}`}
                   />
                 </div>
               )}
@@ -1024,30 +1049,42 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
 
           <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6 space-y-4">
             <div>
-              <label htmlFor="l2reflection" className="block text-sm font-bold text-slate-800 mb-1.5">
-                2. 1차시와 비교했을 때, 내가 달라진 점은 무엇인가요? (20자 이상)
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                <label htmlFor="l2reflection" className="block text-sm font-bold text-slate-800">
+                  2. 1차시와 비교했을 때, 내가 달라진 점은 무엇인가요? (20자 이상)
+                </label>
+                <CharCountBadge current={state.reflection.trim().length} min={20} />
+              </div>
               <textarea
                 id="l2reflection"
                 rows={4}
                 value={state.reflection}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, reflection: e.target.value }))}
-                placeholder="사례 확인 / 반례 탐색 / 증명 구성에서 변화한 점을 적어 보세요."
-                className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
+                placeholder="1차시와 비교하여 … 탐구 과정에서 … 점이 달라졌고 …을 배웠다."
+                className={`w-full rounded-xl border bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                  state.reflection.trim().length,
+                  20
+                )}`}
               />
             </div>
 
             <div>
-              <label htmlFor="l2next" className="block text-sm font-bold text-slate-800 mb-1.5">
-                3. 다음에 탐구해 보고 싶은 명제 또는 질문 (10자 이상)
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                <label htmlFor="l2next" className="block text-sm font-bold text-slate-800">
+                  3. 다음에 탐구해 보고 싶은 명제 또는 질문 (10자 이상)
+                </label>
+                <CharCountBadge current={state.nextQuestion.trim().length} min={10} />
+              </div>
               <textarea
                 id="l2next"
                 rows={3}
                 value={state.nextQuestion}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, nextQuestion: e.target.value }))}
-                placeholder="명제의 조건을 하나 더 바꾸면 어떤 문제가 생길까요?"
-                className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
+                placeholder="다음에는 … 조건의 명제를 탐구해 보고 싶으며, 궁금한 점은 …이다."
+                className={`w-full rounded-xl border bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                  state.nextQuestion.trim().length,
+                  10
+                )}`}
               />
             </div>
           </div>

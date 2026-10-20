@@ -745,8 +745,11 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
           </div>
 
           <div className="mt-5 rounded-2xl border border-slate-200/90 bg-slate-50/60 p-5 sm:p-6">
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1.5">나의 말로 쓰는 최종 증명 보고서</h3>
-            <label htmlFor="l1proof" className="block text-xs sm:text-sm text-slate-500 mb-2">
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">나의 말로 쓰는 최종 증명 보고서</h3>
+              <CharCountBadge current={state.proofText.trim().length} min={35} />
+            </div>
+            <label htmlFor="l1proof" className="block text-xs sm:text-sm text-slate-600 font-semibold mb-2">
               위에서 확인한 네 단계를 연결하여 완결된 수학적 문장으로 서술해 보세요. (35자 이상)
             </label>
             <textarea
@@ -755,7 +758,10 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
               value={state.proofText}
               onChange={(e) => onUpdate((prev) => ({ ...prev, proofText: e.target.value }))}
               placeholder="임의의 홀수 n을 2k+1(k는 정수)이라 놓으면, n²-1 = ... 따라서 모든 홀수 n에 대하여 ..."
-              className="w-full rounded-xl border border-slate-200 bg-white p-3.5 text-base text-slate-900"
+              className={`w-full rounded-xl border bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                state.proofText.trim().length,
+                35
+              )}`}
             />
             <p className="mt-2 text-xs text-slate-500">
               선택형 단계 확인과 별개로, 서술한 증명이 논리적으로 타당한지는 교사·동료와 함께 확인합니다.
@@ -778,30 +784,42 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
 
           <div className="mt-5 space-y-5">
             <div>
-              <label htmlFor="l1reflection" className="block text-sm font-bold text-slate-800 mb-1.5">
-                1. 사례를 여러 개 확인하는 것과 일반적인 증명은 어떤 차이가 있을까요? (20자 이상)
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                <label htmlFor="l1reflection" className="block text-sm font-bold text-slate-800">
+                  1. 사례를 여러 개 확인하는 것과 일반적인 증명은 어떤 차이가 있을까요? (20자 이상)
+                </label>
+                <CharCountBadge current={state.reflection.trim().length} min={20} />
+              </div>
               <textarea
                 id="l1reflection"
                 rows={4}
                 value={state.reflection}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, reflection: e.target.value }))}
-                placeholder="구체적인 숫자를 대입한 결과와 임의의 수(문자 k)에 대한 설명을 비교해 적어 보세요."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900"
+                placeholder="구체적인 수를 대입했을 때와 임의의 문자(k)로 설명할 때의 차이는 …이다."
+                className={`w-full rounded-xl border bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                  state.reflection.trim().length,
+                  20
+                )}`}
               />
             </div>
 
             <div>
-              <label htmlFor="l1bridge" className="block text-sm font-bold text-slate-800 mb-1.5">
-                2. 8 대신 16으로 나누어도 규칙이 성립할까요? 나의 예상과 이유를 적어 보세요. (10자 이상)
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                <label htmlFor="l1bridge" className="block text-sm font-bold text-slate-800">
+                  2. 8 대신 16으로 나누어도 규칙이 성립할까요? 나의 예상과 이유를 적어 보세요. (10자 이상)
+                </label>
+                <CharCountBadge current={state.bridge.trim().length} min={10} />
+              </div>
               <textarea
                 id="l1bridge"
                 rows={3}
                 value={state.bridge}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, bridge: e.target.value }))}
-                placeholder="정답을 찾기보다 2차시에서 확인하고 싶은 나의 예상과 이유를 적어 보세요."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900"
+                placeholder="16으로 나눌 때 규칙이 성립할지 여부에 대해 …라고 생각하며, 이유는 …이다."
+                className={`w-full rounded-xl border bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
+                  state.bridge.trim().length,
+                  10
+                )}`}
               />
             </div>
           </div>
