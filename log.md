@@ -281,3 +281,16 @@
 - [x] `node --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts` — 20개 단위 테스트(3·4차시 완료 판정, 루브릭 채점, 구버전 JSON 하위 호환성 포함) 100% 통과 확인.
 - [x] `compile_applet` 및 `lint_applet` — TypeScript 컴파일 및 프로덕션 빌드 무결성 확인.
 - [x] `playwright-cli` 실제 브라우저 렌더링 검증 — 데스크톱(1440×900) 및 모바일(390×844) 뷰포트에서 3차시·4차시 탭, 문제 1·2 전환, 힌트 및 글자수 배지, Hero 다이어그램 기호 렌더링 깨짐 수정 및 확인 완료.
+
+---
+
+## [Task 8] GitHub Pages (`https://4ai4me.github.io/Props/`) 3·4차시 미표시 원인 해결 (`ghpages-app.js` / `ghpages-app.css` 정적 번들 최신화 및 캐시 무효화)
+
+- **원인 분석**:
+  1. GitHub Pages(`github.io`) 접속 시 `index.html`은 정적 빌드 번들인 `./ghpages-app.js`와 `./ghpages-app.css`를 로드하도록 설계되어 있음.
+  2. 직전 작업에서 `src/*` 소스 코드는 3·4차시로 업데이트되었으나, 루트 경로의 `ghpages-app.js` 및 `ghpages-app.css` 파일이 이전 빌드(1·2차시 버전) 상태로 남아 있었음.
+  3. 또한 AI Studio에서 수정된 파일(`index.html`, `ghpages-app.js`, `ghpages-app.css` 등)은 GitHub 저장소(`4ai4me/Props`)로 내보내기(Push/Commit)해야 실제 `https://4ai4me.github.io/Props/` 서버에 반영됨.
+- **해결 조치**:
+  1. `package.json`의 `"build"` 스크립트를 `"vite build && cp dist/assets/index-*.js ghpages-app.js && cp dist/assets/index-*.css ghpages-app.css"`로 수정하여 빌드할 때마다 루트 정적 번들이 100% 자동 동기화되도록 개선.
+  2. `index.html`의 정적 번들 로드 경로에 캐시 무효화 쿼리(`?v=20261021-4lessons`)를 추가하여 브라우저 캐시로 인해 구버전이 남는 현상 방지.
+  3. 최신 3·4차시가 포함된 `ghpages-app.js` 및 `ghpages-app.css` 생성 및 포함 여부 검증 완료.
