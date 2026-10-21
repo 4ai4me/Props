@@ -15,6 +15,8 @@ import {
   ensureTeacherEval,
   evaluateLevel1Completion,
   evaluateLevel2Completion,
+  evaluateLevel3Completion,
+  evaluateLevel4Completion,
 } from './utils/mathLogic';
 import {
   ADMIN_TEACHER_EMAIL,
@@ -23,6 +25,8 @@ import {
 } from './utils/authLogic';
 import { Lesson1View } from './components/Lesson1View';
 import { Lesson2View } from './components/Lesson2View';
+import { Lesson3View } from './components/Lesson3View';
+import { Lesson4View } from './components/Lesson4View';
 import { TeacherView } from './components/TeacherView';
 import { AuthGateView, FirestoreStudentRegistrationDoc } from './components/AuthGateView';
 import {
@@ -82,8 +86,27 @@ export default function App() {
     return [];
   });
 
-  const [activeLessonTab, setActiveLessonTab] = useState<1 | 2>(1);
-  const [steps, setSteps] = useState<{ 1: number; 2: number }>({ 1: 0, 2: 0 });
+  const [activeLessonTab, setActiveLessonTab] = useState<1 | 2 | 3 | 4>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const l = Number(params.get('lesson'));
+      if (l === 1 || l === 2 || l === 3 || l === 4) return l;
+    } catch {
+      // ignore
+    }
+    return 1;
+  });
+  const [steps, setSteps] = useState<{ 1: number; 2: number; 3: number; 4: number }>(() => {
+    let initialStep = 0;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const s = Number(params.get('step'));
+      if (Number.isInteger(s) && s >= 0 && s <= 4) initialStep = s;
+    } catch {
+      // ignore
+    }
+    return { 1: initialStep, 2: initialStep, 3: initialStep, 4: initialStep };
+  });
   const [selectedTeacherKey, setSelectedTeacherKey] = useState<string>('');
   const [printingStudent, setPrintingStudent] = useState<StudentRecord | null>(null);
 
@@ -238,8 +261,11 @@ export default function App() {
 
   const done1 = evaluateLevel1Completion(student.l1);
   const done2 = evaluateLevel2Completion(student.l2);
-  const activeDone = activeLessonTab === 1 ? done1 : done2;
-  const activeStep = activeLessonTab === 1 ? steps[1] : steps[2];
+  const done3 = evaluateLevel3Completion(student.l3);
+  const done4 = evaluateLevel4Completion(student.l4);
+  const doneMap = { 1: done1, 2: done2, 3: done3, 4: done4 } as const;
+  const activeDone = doneMap[activeLessonTab];
+  const activeStep = steps[activeLessonTab];
 
   return (
     <>
@@ -305,9 +331,9 @@ export default function App() {
               {/* Hero Copy */}
               <div>
                 <div className="flex items-center gap-2 text-xs font-semibold text-sky-400">
-                  <span>01 — 02차시 통합 탐구 프로젝트</span>
+                  <span>01 — 04차시 통합 탐구 프로젝트</span>
                   <span aria-hidden="true" className="text-slate-600">/</span>
-                  <span className="text-slate-300">대수적 정당화와 반례 탐색</span>
+                  <span className="text-slate-300">직접 증명 · 반례 탐색 · 대우법 · 귀류법</span>
                 </div>
 
                 <h1
@@ -317,10 +343,10 @@ export default function App() {
                   우연일까, <span className="text-sky-300">필연일까?</span>
                 </h1>
                 <p className="mt-3 text-base sm:text-xl text-slate-200 font-semibold">
-                  수학 탐정단의 참·거짓 추리 프로젝트
+                  수학 탐정단의 참·거짓 추리 및 증명 프로젝트
                 </p>
                 <p className="mt-2 text-sm sm:text-base text-slate-400 max-w-2xl leading-relaxed">
-                  구체적인 숫자의 단서를 수집하고, 가설을 의심하여 반례를 수색한 뒤, 임의의 수에서 성립하는 논리적 증명 보고서를 완성해 보세요.
+                  구체적인 숫자의 단서를 수집하고, 반례 수색과 대수적 증명(1·2차시)부터 대우를 이용한 증명(3차시), 귀류법 증명(4차시)까지 단계별 힌트와 함께 완성해 보세요.
                 </p>
               </div>
 
@@ -328,93 +354,83 @@ export default function App() {
               <div className="hidden lg:flex flex-col items-end justify-center">
                 <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xs">
                   <div className="flex items-center justify-between text-xs text-slate-400 pb-3 border-b border-white/10">
-                    <span className="font-semibold text-slate-200">탐구 모델</span>
-                    <span className="mono text-sky-300">n = 2k + 1</span>
+                    <span className="font-semibold text-slate-200">핵심 증명 기법</span>
+                    <span className="mono text-sky-300">01 — 04차시</span>
                   </div>
                   <div className="py-3 space-y-2 mono text-xs">
                     <div className="flex items-center justify-between gap-3 text-slate-300 whitespace-nowrap">
-                      <span>홀수의 제곱</span>
-                      <span className="text-white font-semibold">(2k + 1)² = 4k(k + 1) + 1</span>
+                      <span>직접·반례</span>
+                      <span className="text-white font-semibold">(2k+1)² ≡ 1 (mod 8)</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 text-slate-300 whitespace-nowrap">
+                      <span>대우법</span>
+                      <span className="text-sky-300 font-semibold">p → q ⇔ ~q → ~p</span>
                     </div>
                     <div className="flex items-center justify-between gap-3 text-slate-400 whitespace-nowrap">
-                      <span>나머지 합동</span>
-                      <span className="text-emerald-300 font-semibold">n² ≡ 1 (mod 8)</span>
+                      <span>귀류법</span>
+                      <span className="text-emerald-300 font-semibold">√2, 1+√2 ≠ n/m</span>
                     </div>
                   </div>
                   <div className="pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-                    <span>관찰 → 추측 → 반례 → 증명</span>
-                    <span className="mono text-slate-300">01 / 02</span>
+                    <span>관찰 → 추측 → 대우 → 귀류법</span>
+                    <span className="mono text-slate-300">01 / 02 / 03 / 04</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* In Student Mode: Show Lesson Tabs on Left, Progress & Print Feature on Right */}
+            {/* In Student Mode: Show Lesson 1~4 Tabs on Left, Progress & Print Feature on Right */}
             {sessionMode === 'student' && (
               <div
                 role="tablist"
                 aria-label="학생 차시 선택 및 수사 진행 현황"
                 className="no-print mt-7 pt-5 border-t border-white/10 flex flex-wrap items-center justify-between gap-4"
               >
-                {/* Left Side: Lesson 1 & Lesson 2 Tabs */}
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={activeLessonTab === 1}
-                    onClick={() => {
-                      setActiveLessonTab(1);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className={`min-h-[44px] rounded-xl px-5 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
-                      activeLessonTab === 1
-                        ? 'bg-white text-slate-900 shadow-sm'
-                        : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
-                    }`}
-                  >
-                    <span
-                      className={`mr-2 mono text-xs font-extrabold ${
-                        activeLessonTab === 1 ? 'text-blue-600' : 'text-sky-300'
+                {/* Left Side: Lesson 1 ~ 4 Tabs */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {(
+                    [
+                      [1, '01', '패턴의 비밀 (1차시)'],
+                      [2, '02', '진실의 증명 (2차시)'],
+                      [3, '03', '대우법 추리 (3차시)'],
+                      [4, '04', '귀류법 추리 (4차시)'],
+                    ] as const
+                  ).map(([tabNum, badge, label]) => (
+                    <button
+                      key={tabNum}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeLessonTab === tabNum}
+                      onClick={() => {
+                        setActiveLessonTab(tabNum);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className={`min-h-[44px] rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
+                        activeLessonTab === tabNum
+                          ? 'bg-white text-slate-900 shadow-sm'
+                          : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
                       }`}
                     >
-                      01
-                    </span>
-                    패턴의 비밀 (1차시)
-                  </button>
-
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={activeLessonTab === 2}
-                    onClick={() => {
-                      setActiveLessonTab(2);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className={`min-h-[44px] rounded-xl px-5 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
-                      activeLessonTab === 2
-                        ? 'bg-white text-slate-900 shadow-sm'
-                        : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
-                    }`}
-                  >
-                    <span
-                      className={`mr-2 mono text-xs font-extrabold ${
-                        activeLessonTab === 2 ? 'text-blue-600' : 'text-sky-300'
-                      }`}
-                    >
-                      02
-                    </span>
-                    진실의 증명 (2차시)
-                  </button>
+                      <span
+                        className={`mr-1.5 mono text-xs font-extrabold ${
+                          activeLessonTab === tabNum ? 'text-blue-600' : 'text-sky-300'
+                        }`}
+                      >
+                        {badge}
+                      </span>
+                      {label}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Right Side: 나의 수사 진행 현황 (h3 class) with Print Button */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2">
+                  <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2">
                     <h3 className="text-sm sm:text-base font-extrabold text-white whitespace-nowrap">
                       나의 수사 진행 현황
                     </h3>
-                    <span className="mono text-xs font-bold text-sky-200 bg-sky-950/70 border border-sky-400/30 px-2 py-0.5 rounded-md whitespace-nowrap">
-                      1차시 {done1.filter(Boolean).length}/5 · 2차시 {done2.filter(Boolean).length}/5 완료
+                    <span className="mono text-xs font-bold text-sky-200 bg-sky-950/70 border border-sky-400/30 px-2 py-0.5 rounded-md">
+                      1차시 {done1.filter(Boolean).length}/5 · 2차시 {done2.filter(Boolean).length}/5 · 3차시 {done3.filter(Boolean).length}/5 · 4차시 {done4.filter(Boolean).length}/5
                     </span>
                   </div>
 
@@ -503,7 +519,10 @@ export default function App() {
                 <div className="pt-5">
                   <div className="flex items-center justify-between gap-2 flex-wrap text-xs text-slate-500">
                     <span className="font-bold text-blue-600">
-                      {activeLessonTab === 1 ? '01차시 · 교사 안내형 수사' : '02차시 · 학생 주도형 수사'}
+                      {activeLessonTab === 1 && '01차시 · 교사 안내형 수사 (직접 증명)'}
+                      {activeLessonTab === 2 && '02차시 · 학생 주도형 수사 (반례와 정당화)'}
+                      {activeLessonTab === 3 && '03차시 · 힌트 안내형 수사 (대우를 이용한 증명)'}
+                      {activeLessonTab === 4 && '04차시 · 힌트 안내형 수사 (귀류법을 이용한 증명)'}
                     </span>
                     <span className="font-semibold mono text-slate-600">
                       권장 시간 50분 · 단계 완료 {activeDone.filter(Boolean).length} / 5
@@ -511,14 +530,16 @@ export default function App() {
                   </div>
 
                   <h2 className="mt-1.5 text-xl sm:text-2xl font-extrabold text-slate-900">
-                    {activeLessonTab === 1
-                      ? '패턴의 비밀을 찾아라!'
-                      : '반례를 찾아라! 진실을 증명하라!'}
+                    {activeLessonTab === 1 && '패턴의 비밀을 찾아라!'}
+                    {activeLessonTab === 2 && '반례를 찾아라! 진실을 증명하라!'}
+                    {activeLessonTab === 3 && '대우(~q → ~p)로 숨겨진 진실을 증명하라!'}
+                    {activeLessonTab === 4 && '모순을 포착하라! 귀류법으로 무리수를 증명하라!'}
                   </h2>
                   <p className="mt-1 text-xs sm:text-sm text-slate-600">
-                    {activeLessonTab === 1
-                      ? '홀수의 제곱에서 발견한 단서는 우연일까요, 필연일까요?'
-                      : '새롭게 만든 명제는 진실일까요? 반례와 증명으로 사건을 해결해 보세요.'}
+                    {activeLessonTab === 1 && '홀수의 제곱에서 발견한 단서는 우연일까요, 필연일까요?'}
+                    {activeLessonTab === 2 && '새롭게 만든 명제는 진실일까요? 반례와 증명으로 사건을 해결해 보세요.'}
+                    {activeLessonTab === 3 && '직접 증명하기 까다로운 두 사건(짝수·홀수, 3의 배수)을 대우 명제와 단계별 힌트로 해결해 보세요.'}
+                    {activeLessonTab === 4 && '결론을 부정했을 때 발생하는 논리적 모순을 추적하여 √2와 1+√2가 유리수가 아님을 증명해 보세요.'}
                   </p>
 
                   <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
@@ -570,7 +591,7 @@ export default function App() {
                 aria-live="polite"
                 className="print-card rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-8 shadow-xs"
               >
-                {activeLessonTab === 1 ? (
+                {activeLessonTab === 1 && (
                   <Lesson1View
                     state={student.l1}
                     step={steps[1]}
@@ -592,7 +613,9 @@ export default function App() {
                     }}
                     onRequestConfirm={requestConfirm}
                   />
-                ) : (
+                )}
+
+                {activeLessonTab === 2 && (
                   <Lesson2View
                     state={student.l2}
                     step={steps[2]}
@@ -608,6 +631,54 @@ export default function App() {
                       }))
                     }
                     onChangeTopic={handleChangeTopic2}
+                    onGoToLesson3={() => {
+                      setSteps((prev) => ({ ...prev, 3: 0 }));
+                      setActiveLessonTab(3);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onRequestConfirm={requestConfirm}
+                  />
+                )}
+
+                {activeLessonTab === 3 && (
+                  <Lesson3View
+                    state={student.l3}
+                    step={steps[3]}
+                    onStepChange={(next) => {
+                      setSteps((prev) => ({ ...prev, 3: next }));
+                      window.scrollTo({ top: 180, behavior: 'smooth' });
+                    }}
+                    onUpdate={(updater) =>
+                      setStudent((prev) => ({
+                        ...prev,
+                        updatedAt: new Date().toISOString(),
+                        l3: updater(prev.l3),
+                      }))
+                    }
+                    onGoToLesson4={() => {
+                      setSteps((prev) => ({ ...prev, 4: 0 }));
+                      setActiveLessonTab(4);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onRequestConfirm={requestConfirm}
+                  />
+                )}
+
+                {activeLessonTab === 4 && (
+                  <Lesson4View
+                    state={student.l4}
+                    step={steps[4]}
+                    onStepChange={(next) => {
+                      setSteps((prev) => ({ ...prev, 4: next }));
+                      window.scrollTo({ top: 180, behavior: 'smooth' });
+                    }}
+                    onUpdate={(updater) =>
+                      setStudent((prev) => ({
+                        ...prev,
+                        updatedAt: new Date().toISOString(),
+                        l4: updater(prev.l4),
+                      }))
+                    }
                     onRequestConfirm={requestConfirm}
                   />
                 )}
@@ -726,6 +797,18 @@ export default function App() {
               {printingStudent.l2.decision === 'false'
                 ? `반례 n=${printingStudent.l2.counter}: ${printingStudent.l2.counterReason}`
                 : printingStudent.l2.proofText || '미작성'}
+            </div>
+            <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+              <strong>3차시 대우법 [문제 1·짝수]:</strong> {printingStudent.l3?.prob1ProofText || '미작성'}
+            </div>
+            <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+              <strong>3차시 대우법 [문제 2·3의 배수]:</strong> {printingStudent.l3?.prob2ProofText || '미작성'}
+            </div>
+            <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+              <strong>4차시 귀류법 [문제 1·√2]:</strong> {printingStudent.l4?.prob1ProofText || '미작성'}
+            </div>
+            <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+              <strong>4차시 귀류법 [문제 2·1+√2]:</strong> {printingStudent.l4?.prob2ProofText || '미작성'}
             </div>
 
             <h3 className="text-lg font-bold pt-2">2. 교사 평가 (4개 영역, 각 0~3점)</h3>

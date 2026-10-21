@@ -122,6 +122,56 @@ export interface Lesson2ViewProps {
 
   /** 시스템 위험 작업 전 사용자 확인 다이얼로그 호출 함수 */
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
+
+  /** 2차시 완료 후 3차시 대우법 탐구로 이동 핸들러 */
+  onGoToLesson3: () => void;
+}
+```
+
+### 4.4 `Lesson3View`
+3차시 대우를 이용한 증명법(2문항: $n^2$이 짝수이면 $n$도 짝수 / $n^2$이 3의 배수이면 $n$도 3의 배수) 인터랙티브 활동지 컴포넌트입니다.
+
+```typescript
+export interface Lesson3ViewProps {
+  /** 3차시 활동지 전체 데이터 상태 */
+  state: Lesson3State;
+
+  /** 현재 열려 있는 탐구 단계 (0: 비교/원리, 1: 문제 1, 2: 문제 2, 3: 성찰) */
+  step: number;
+
+  /** 단계 전환 핸들러 */
+  onStepChange: (nextStep: number) => void;
+
+  /** 3차시 상태 변경 업데이트 함수 */
+  onUpdate: (updater: (prev: Lesson3State) => Lesson3State) => void;
+
+  /** 시스템 위험 작업 전 사용자 확인 다이얼로그 호출 함수 */
+  onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
+
+  /** 3차시 완료 후 4차시 귀류법 탐구로 이동 핸들러 */
+  onGoToLesson4: () => void;
+}
+```
+
+### 4.5 `Lesson4View`
+4차시 귀류법(2문항: $\sqrt{2}$는 유리수가 아니다 / $1+\sqrt{2}$는 무리수이다) 인터랙티브 활동지 컴포넌트입니다.
+
+```typescript
+export interface Lesson4ViewProps {
+  /** 4차시 활동지 전체 데이터 상태 */
+  state: Lesson4State;
+
+  /** 현재 열려 있는 탐구 단계 (0: 귀류법 원리, 1: 문제 1, 2: 문제 2, 3: 성찰) */
+  step: number;
+
+  /** 단계 전환 핸들러 */
+  onStepChange: (nextStep: number) => void;
+
+  /** 4차시 상태 변경 업데이트 함수 */
+  onUpdate: (updater: (prev: Lesson4State) => Lesson4State) => void;
+
+  /** 시스템 위험 작업 전 사용자 확인 다이얼로그 호출 함수 */
+  onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
 ```
 
@@ -228,6 +278,37 @@ export interface Lesson2State {
   nextQuestion: string;         // 후속 탐구 질문
 }
 
+// 3차시 상태 모델 (대우를 이용한 증명법)
+export interface Lesson3State {
+  examples: L3Example[];        // 0단계 관찰 사례 목록 (n, n², 짝홀/3의 배수 여부)
+  whyHard: string;              // 직접 증명이 막히는 이유 서술 (30자 이상)
+  p1Choices: (number | null)[]; // 문제 1 (짝수 명제) 4단계 빈칸 선택값
+  p1Verified: boolean[];        // 문제 1 단계별 검증 완료 여부
+  p1Hints: number[];            // 문제 1 단계별 힌트 열람 횟수
+  p1ProofText: string;          // 문제 1 나의 말로 쓰는 대우 증명 (45자 이상)
+  p2Choices: (number | null)[]; // 문제 2 (3의 배수 명제) 4단계 빈칸 선택값
+  p2Verified: boolean[];        // 문제 2 단계별 검증 완료 여부
+  p2Hints: number[];            // 문제 2 단계별 힌트 열람 횟수
+  p2ProofText: string;          // 문제 2 나의 말로 쓰는 대우 증명 (50자 이상)
+  reflection: string;           // 3차시 탐구 성찰 (35자 이상)
+  bridge: string;               // 4차시 연결 후속 질문 (20자 이상)
+}
+
+// 4차시 상태 모델 (귀류법)
+export interface Lesson4State {
+  whyIndirect: string;          // 귀류법(결론 부정)이 필요한 이유 서술 (30자 이상)
+  p1Choices: (number | null)[]; // 문제 1 (√2 무리수 증명) 4단계 빈칸 선택값
+  p1Verified: boolean[];        // 문제 1 단계별 검증 완료 여부
+  p1Hints: number[];            // 문제 1 단계별 힌트 열람 횟수
+  p1ProofText: string;          // 문제 1 나의 말로 쓰는 귀류법 증명 (50자 이상)
+  p2Choices: (number | null)[]; // 문제 2 (1+√2 무리수 증명) 4단계 빈칸 선택값
+  p2Verified: boolean[];        // 문제 2 단계별 검증 완료 여부
+  p2Hints: number[];            // 문제 2 단계별 힌트 열람 횟수
+  p2ProofText: string;          // 문제 2 나의 말로 쓰는 귀류법 증명 (45자 이상)
+  methodCompare: string;        // 직접증명 vs 대우법 vs 귀류법 비교 서술 (35자 이상)
+  reflection: string;           // 4차시 탐구 성찰 (35자 이상)
+}
+
 // 교사 평정 모델 (4대 영역)
 export interface TeacherEvaluation {
   scores: (number | null)[];    // 4개 루브릭 영역 (각 0~3점)
@@ -244,6 +325,8 @@ export interface StudentRecord {
   updatedAt: string;            // 수정 일시 (ISO-8601)
   l1: Lesson1State;             // 1차시 데이터
   l2: Lesson2State;             // 2차시 데이터
+  l3?: Lesson3State;            // 3차시 데이터 (구버전 레코드 로드 시 기본값 자동 보정)
+  l4?: Lesson4State;            // 4차시 데이터 (구버전 레코드 로드 시 기본값 자동 보정)
   teacherMemo?: string;         // 교사용 관찰 메모
   evaluation?: TeacherEvaluation; // 교사 평정 및 피드백
 }
@@ -262,9 +345,12 @@ export interface StudentRecord {
 │   ├── main.tsx                    # React 진입점
 │   ├── components/
 │   │   ├── AuthGateView.tsx        # 학생 가입/로그인 및 교사 인증 게이트웨이
-│   │   ├── Lesson1View.tsx         # 1차시 활동지 (증명 4단계 인터랙션)
+│   │   ├── CharCountBadge.tsx      # 실시간 글자수 카운터 및 최소 분량 검증 배지
+│   │   ├── Lesson1View.tsx         # 1차시 활동지 (직접 증명 4단계 인터랙션)
 │   │   ├── Lesson2View.tsx         # 2차시 활동지 (반례 검사 및 정당화)
-│   │   └── TeacherView.tsx         # 교사용 기록실, 필터, 비모달 비교창, 대시보드
+│   │   ├── Lesson3View.tsx         # 3차시 활동지 (대우를 이용한 증명 2문항 & 단계별 힌트)
+│   │   ├── Lesson4View.tsx         # 4차시 활동지 (귀류법 증명 2문항 & 단계별 힌트)
+│   │   └── TeacherView.tsx         # 교사용 기록실, 필터, 비모달 비교창, 1~4차시 대시보드
 │   └── utils/
 │       ├── authLogic.ts            # MAC 식별자 해시 및 관리자 권한 로직
 │       ├── mathLogic.ts            # 순수 수학 판정, 루브릭 평가, JSON 정제

@@ -23,6 +23,8 @@ import {
   ensureTeacherEval,
   evaluateRubricL1,
   evaluateRubricL2,
+  evaluateRubricL3,
+  evaluateRubricL4,
   studentKey,
 } from '../utils/mathLogic';
 import { formatDeviceHashAsMac } from '../utils/authLogic';
@@ -353,6 +355,18 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
       '2차시 수정',
       '2차시 성찰',
       '2차시 다음 질문',
+      '3차시 대우법 문제1 단계확인',
+      '3차시 대우법 문제1 증명서술',
+      '3차시 대우법 문제2 단계확인',
+      '3차시 대우법 문제2 증명서술',
+      '3차시 성찰1',
+      '3차시 성찰2',
+      '4차시 귀류법 문제1 단계확인',
+      '4차시 귀류법 문제1 증명서술',
+      '4차시 귀류법 문제2 단계확인',
+      '4차시 귀류법 문제2 증명서술',
+      '4차시 성찰1',
+      '4차시 성찰2',
       '교사 메모',
       ...EVAL_CRITERIA.map((t) => `교사 평정_${t}`),
       '학생 피드백',
@@ -362,6 +376,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     const rows = records.map((x) => {
       const a = x.l1;
       const b = x.l2;
+      const c = x.l3;
+      const d = x.l4;
       const ev = ensureTeacherEval(x);
       const tDef = b.topic ? TOPICS[b.topic as TopicId] : null;
       return [
@@ -389,6 +405,18 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
         b.revision,
         b.reflection,
         b.nextQuestion,
+        c?.prob1Verified?.filter(Boolean).length ?? 0,
+        c?.prob1ProofText || '',
+        c?.prob2Verified?.filter(Boolean).length ?? 0,
+        c?.prob2ProofText || '',
+        c?.reflection1 || '',
+        c?.reflection2 || '',
+        d?.prob1Verified?.filter(Boolean).length ?? 0,
+        d?.prob1ProofText || '',
+        d?.prob2Verified?.filter(Boolean).length ?? 0,
+        d?.prob2ProofText || '',
+        d?.reflection1 || '',
+        d?.reflection2 || '',
         x.teacherMemo || '',
         ...ev.scores.map((v) => (v === null ? '' : v)),
         ev.feedback,
@@ -402,7 +430,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '수학탐정단_1-2차시_학급응답.csv';
+    a.download = '수학탐정단_1-4차시_학급응답.csv';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -506,9 +534,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   const count = records.length;
   const complete1 = records.filter((x) => evaluateRubricL1(x.l1).every(Boolean)).length;
   const complete2 = records.filter((x) => evaluateRubricL2(x.l2).every(Boolean)).length;
-  const bothReflected = records.filter(
-    (x) => x.l1.reflection.trim() && x.l2.reflection.trim()
-  ).length;
+  const complete3 = records.filter((x) => x.l3 && evaluateRubricL3(x.l3).every(Boolean)).length;
+  const complete4 = records.filter((x) => x.l4 && evaluateRubricL4(x.l4).every(Boolean)).length;
 
   const selectedStudent = records.find((v) => studentKey(v) === selectedKey) || null;
 
@@ -542,12 +569,9 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   const checkRows: [string, number][] = [
     ['1차시 사례 4개 이상', records.filter((x) => x.l1.examples.length >= 4).length],
     ['1차시 증명 4단계 확인', records.filter((x) => x.l1.proofVerified.every(Boolean)).length],
-    ['2차시 반례 검사 2회 이상', records.filter((x) => x.l2.checks.length >= 2).length],
     ['2차시 정당화 기록', records.filter((x) => evaluateRubricL2(x.l2)[4]).length],
-    [
-      '두 차시 성찰 작성',
-      records.filter((x) => x.l1.reflection.trim() && x.l2.reflection.trim()).length,
-    ],
+    ['3차시 대우법(문제 1·2) 완료', complete3],
+    ['4차시 귀류법(문제 1·2) 완료', complete4],
   ];
 
   const decisions: [string, number, string][] = [
@@ -856,7 +880,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 교사용 수사 기록실
                 {!isControlsOpen && (
                   <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
-                    수합 학생 {count}명 (1차시 {complete1} · 2차시 {complete2} 완성)
+                    수합 학생 {count}명 (1차시 {complete1} · 2차시 {complete2} · 3차시 {complete3} · 4차시 {complete4} 완성)
                   </span>
                 )}
               </h2>
@@ -867,7 +891,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
         {isControlsOpen && (
           <div className="mt-4 pt-4 border-t border-slate-100">
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-              승인된 학생들이 작성한 1·2차시 탐구 기록이 실시간으로 연동되며, 외부 JSON 파일을 추가로 불러오거나 CSV로 내려받을 수도 있습니다.
+              승인된 학생들이 작성한 1~4차시(직접증명 · 반례 · 대우법 · 귀류법) 탐구 기록이 실시간으로 연동되며, 외부 JSON 파일을 추가로 불러오거나 CSV로 내려받을 수도 있습니다.
             </p>
 
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
@@ -942,12 +966,13 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             </div>
 
             {/* Summary KPI Tiles */}
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
               {[
                 [count, '수합 학생 (명)'],
-                [complete1, '1차시 주요 항목 완성'],
-                [complete2, '2차시 주요 항목 완성'],
-                [bothReflected, '두 차시 성찰 작성'],
+                [complete1, '1차시 완성'],
+                [complete2, '2차시 완성'],
+                [complete3, '3차시(대우법) 완성'],
+                [complete4, '4차시(귀류법) 완성'],
               ].map(([num, label], idx) => (
                 <div
                   key={idx}
@@ -1286,16 +1311,15 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
             {/* Table */}
             <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-              <table className="w-full min-w-[740px] border-collapse text-sm">
+              <table className="w-full min-w-[880px] border-collapse text-sm">
                 <thead>
                   <tr className="bg-slate-50 text-slate-600 text-xs font-bold border-b border-slate-200">
                     <th className="py-3 px-3.5 text-left">학급</th>
                     <th className="py-3 px-3.5 text-left">식별코드(학번·이름)</th>
-                    <th className="py-3 px-3.5 text-left">1차시 사례</th>
-                    <th className="py-3 px-3.5 text-left">1차시 증명</th>
-                    <th className="py-3 px-3.5 text-left">2차시 주제</th>
-                    <th className="py-3 px-3.5 text-left">2차시 판단</th>
-                    <th className="py-3 px-3.5 text-left">2차시 기록</th>
+                    <th className="py-3 px-3.5 text-left">1차시 사례/증명</th>
+                    <th className="py-3 px-3.5 text-left">2차시 주제/판단</th>
+                    <th className="py-3 px-3.5 text-left">3차시 대우법</th>
+                    <th className="py-3 px-3.5 text-left">4차시 귀류법</th>
                     <th className="py-3 px-3.5 text-left">비교 (비모달)</th>
                   </tr>
                 </thead>
@@ -1316,18 +1340,22 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                         >
                           <td className="py-3 px-3.5 text-slate-700">{x.group || '—'}</td>
                           <td className="py-3 px-3.5 font-bold mono text-slate-900">{x.code || '미입력'}</td>
-                          <td className="py-3 px-3.5 mono text-slate-700">{x.l1.examples.length}개</td>
                           <td className="py-3 px-3.5 mono text-slate-700">
-                            {x.l1.proofVerified.filter(Boolean).length}/4 + 서술
+                            사례 {x.l1.examples.length}개 · {x.l1.proofVerified.filter(Boolean).length}/4
                           </td>
-                          <td className="py-3 px-3.5 text-slate-700">{tDef?.tag || '미선택'}</td>
-                          <td className="py-3 px-3.5 font-semibold text-slate-900">
-                            {({ true: '참', false: '거짓', unknown: '미해결' } as Record<string, string>)[
-                              x.l2.decision
-                            ] || '미작성'}
+                          <td className="py-3 px-3.5 text-slate-700">
+                            {tDef?.tag || '미선택'} ·{' '}
+                            <strong className="text-slate-900">
+                              {({ true: '참', false: '거짓', unknown: '미해결' } as Record<string, string>)[
+                                x.l2.decision
+                              ] || '미작성'}
+                            </strong>
                           </td>
                           <td className="py-3 px-3.5 mono text-slate-700">
-                            {evaluateRubricL2(x.l2).filter(Boolean).length}/6
+                            {x.l3 ? evaluateRubricL3(x.l3).filter(Boolean).length : 0}/5
+                          </td>
+                          <td className="py-3 px-3.5 mono text-slate-700">
+                            {x.l4 ? evaluateRubricL4(x.l4).filter(Boolean).length : 0}/5
                           </td>
                           <td className="py-3 px-3.5">
                             <button
@@ -1351,7 +1379,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                     })
                   ) : (
                     <tr>
-                      <td colSpan={8} className="py-8 px-4 text-center text-slate-500">
+                      <td colSpan={7} className="py-8 px-4 text-center text-slate-500">
                         {isAnyRecordsFilterActive
                           ? '선택한 검색 및 필터 조건에 해당하는 학생 기록이 없습니다.'
                           : '불러온 학생 자료가 없습니다.'}
@@ -1367,7 +1395,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               <div ref={detailRef} className="mt-6 pt-6 border-t border-slate-200 space-y-4">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
-                    {selectedStudent.code || '미입력'} 학생의 1·2차시 비교 ({selectedStudent.group || '학급 미입력'})
+                    {selectedStudent.code || '미입력'} 학생의 1~4차시 종합 비교 ({selectedStudent.group || '학급 미입력'})
                   </h3>
                   <div className="flex items-center gap-2">
                     <button
@@ -1394,7 +1422,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
-                    <div className="text-xs font-bold text-blue-600">1차시 · 교사 안내형 수사</div>
+                    <div className="text-xs font-bold text-blue-600">1차시 · 교사 안내형 수사 (직접 증명)</div>
                     {[
                       ['추측한 명제', selectedStudent.l1.claim],
                       ['사례 확인의 한계', selectedStudent.l1.limits],
@@ -1412,7 +1440,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
-                    <div className="text-xs font-bold text-emerald-700">2차시 · 학생 주도형 수사</div>
+                    <div className="text-xs font-bold text-emerald-700">2차시 · 학생 주도형 수사 (반례와 정당화)</div>
                     {[
                       [
                         '선택한 명제',
@@ -1435,10 +1463,51 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           ? `반례 n=${selectedStudent.l2.counter || '(미작성)'}\n${selectedStudent.l2.counterReason}`
                           : selectedStudent.l2.proofText,
                       ],
-                      ['동료 피드백', selectedStudent.l2.peerComment],
-                      ['수정 사항', selectedStudent.l2.revision],
                       ['2차시 성찰', selectedStudent.l2.reflection],
-                      ['후속 탐구 질문', selectedStudent.l2.nextQuestion],
+                    ].map(([label, val]) => (
+                      <div key={label}>
+                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
+                          {val || '미작성'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
+                    <div className="text-xs font-bold text-indigo-700">3차시 · 대우법 수사 (문제 1·2)</div>
+                    {[
+                      [
+                        '문제 1 (n²이 짝수이면 n도 짝수) 증명',
+                        `단계 확인: ${selectedStudent.l3?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l3?.prob1ProofText || '미작성'}`,
+                      ],
+                      [
+                        '문제 2 (n²이 3의 배수이면 n도 3의 배수) 증명',
+                        `단계 확인: ${selectedStudent.l3?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l3?.prob2ProofText || '미작성'}`,
+                      ],
+                      ['3차시 성찰', selectedStudent.l3?.reflection1],
+                    ].map(([label, val]) => (
+                      <div key={label}>
+                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
+                          {val || '미작성'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
+                    <div className="text-xs font-bold text-purple-700">4차시 · 귀류법 수사 (문제 1·2)</div>
+                    {[
+                      [
+                        '문제 1 (√2는 유리수가 아니다) 증명',
+                        `단계 확인: ${selectedStudent.l4?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l4?.prob1ProofText || '미작성'}`,
+                      ],
+                      [
+                        '문제 2 (1+√2는 유리수가 아니다) 증명',
+                        `단계 확인: ${selectedStudent.l4?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l4?.prob2ProofText || '미작성'}`,
+                      ],
+                      ['4차시 성찰', selectedStudent.l4?.reflection1],
                     ].map(([label, val]) => (
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">{label}</div>
@@ -1567,7 +1636,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   </span>
                 </div>
 
-                {/* 1차시 & 2차시 Side by Side Comparison */}
+                {/* 1~4차시 Side by Side Comparison */}
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
                     <div className="text-xs font-bold text-blue-600 flex items-center gap-1.5">
@@ -1617,10 +1686,59 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           ? `반례 n=${selectedStudent.l2.counter || '(미작성)'}\n${selectedStudent.l2.counterReason}`
                           : selectedStudent.l2.proofText,
                       ],
-                      ['동료 피드백', selectedStudent.l2.peerComment],
-                      ['수정 사항', selectedStudent.l2.revision],
                       ['2차시 성찰', selectedStudent.l2.reflection],
-                      ['후속 탐구 질문', selectedStudent.l2.nextQuestion],
+                    ].map(([label, val]) => (
+                      <div key={label}>
+                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
+                          {val || '미작성'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                    <div className="text-xs font-bold text-indigo-700 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-indigo-600" />
+                      3차시 · 힌트 안내형 수사 (대우법 문제 1·2)
+                    </div>
+                    {[
+                      [
+                        '문제 1 (n²이 짝수 → n도 짝수)',
+                        `단계 확인: ${selectedStudent.l3?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l3?.prob1ProofText || '미작성'}`,
+                      ],
+                      [
+                        '문제 2 (n²이 3의 배수 → n도 3의 배수)',
+                        `단계 확인: ${selectedStudent.l3?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l3?.prob2ProofText || '미작성'}`,
+                      ],
+                      ['3차시 성찰 1', selectedStudent.l3?.reflection1],
+                      ['3차시 성찰 2', selectedStudent.l3?.reflection2],
+                    ].map(([label, val]) => (
+                      <div key={label}>
+                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
+                          {val || '미작성'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                    <div className="text-xs font-bold text-purple-700 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-purple-600" />
+                      4차시 · 힌트 안내형 수사 (귀류법 문제 1·2)
+                    </div>
+                    {[
+                      [
+                        '문제 1 (√2는 유리수가 아니다)',
+                        `단계 확인: ${selectedStudent.l4?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l4?.prob1ProofText || '미작성'}`,
+                      ],
+                      [
+                        '문제 2 (1+√2는 유리수가 아니다)',
+                        `단계 확인: ${selectedStudent.l4?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l4?.prob2ProofText || '미작성'}`,
+                      ],
+                      ['4차시 성찰 1', selectedStudent.l4?.reflection1],
+                      ['4차시 성찰 2', selectedStudent.l4?.reflection2],
                     ].map(([label, val]) => (
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">{label}</div>
