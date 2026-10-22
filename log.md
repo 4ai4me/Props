@@ -407,3 +407,23 @@
   3. **하위 호환성·단위 테스트·빌드·브라우저 검증 완료**:
      - `cleanStudentState`에서 기존 1~4차시 저장 데이터를 손실 없이 보존하면서 `l5`, `l6`, `l7` 기본 상태를 자동 병합.
      - `npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts` (20개 테스트 전부 통과), `npm run build` (`ghpages-app.js`, `ghpages-app.css` 동기화 완료), `compile_applet`, `lint_applet`, Playwright 데스크톱(`1440x900`) 및 모바일(`390x844`) 가로 스크롤 없음(`scrollWidth <= innerWidth: true`) 및 콘솔 에러 0건 확인 완료.
+
+---
+
+## [Task 16] `readme.md` 삭제 및 `README.md` 최신화 (2026-10-22)
+
+### 1. 작업 시작 전 점검 (Pre-check)
+- **요청 사항**:
+  1. 루트 디렉터리의 소문자 `/readme.md` 파일 삭제
+  2. 대문자 `/README.md` 내용을 현재 구현 상태(1~7차시 전체 커리큘럼, 5~7차시 절대부등식 1·2·3 추가, 힌트 토글, 교수자 모드 평가 진행율 표시, 이하연 수학 교실 브랜딩, GitHub Pages 정적 번들 동기화 등)에 맞게 최신화
+- **작업 Tier**: Tier 1 (문서 정리 및 최신화)
+- **영향 범위**: `/readme.md` (삭제), `/README.md` (업데이트), `/log.md`
+
+### 2. 구현 및 검증 결과 (Post-check)
+- **수행 내역**:
+  1. 루트 경로의 중복 파일 `/readme.md` 삭제 완료.
+  2. `/README.md`를 최신 1~7차시 커리큘럼(5차시 절대부등식1 예제3·문제3, 6차시 절대부등식2 예제4·문제4, 7차시 절대부등식3 예제5·문제5), 힌트 토글 기능, 교수자 모드 평가 진행율 표시, 이하연 수학 교실 브랜딩, `Lesson5View`~`Lesson7View` Props 및 상태 모델, GitHub Pages 정적 번들(`ghpages-app.js`/`ghpages-app.css`) 자동 동기화 가이드까지 반영하여 업데이트 완료.
+- **Definition of Done 확인**:
+  - [x] `/readme.md` 삭제 확인
+  - [x] `/README.md` 최신 스펙 반영 확인
+  - [x] 기존 빌드 및 기능 무결성 유지 확인

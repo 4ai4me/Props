@@ -1,17 +1,37 @@
-# 우연일까, 필연일까? — 수학 탐정단 (Props)
+# 우연일까, 필연일까? — 수학 탐정단 (Props) | 이하연 수학 교실
 
-> **2022 개정 교육과정 공통수학2 「명제의 증명」 교사·학생 통합 탐구 플랫폼**  
-> GitHub Repository: [https://4ai4me.github.io/Props/](https://4ai4me.github.io/Props/)
+> **2022 개정 교육과정 공통수학2 「명제와 절대부등식의 증명」 1~7차시 교사·학생 통합 탐구 플랫폼**  
+> GitHub Pages: [https://4ai4me.github.io/Props/](https://4ai4me.github.io/Props/)
 
 ---
 
 ## 1. 프로젝트 개요 (Overview)
 
-본 시스템(**Props**)은 고등학교 공통수학2 '명제와 증명' 단원에서 학생들이 규칙을 귀납적으로 관찰하고, 이를 일반적인 연역적 증명 또는 반례로 엄밀하게 정당화하는 수학적 탐구 활동을 지원하는 교육 웹 애플리케이션입니다.
+본 시스템(**Props — 이하연 수학 교실**)은 고등학교 공통수학2 '명제와 증명' 단원에서 학생들이 구체적인 수치를 대입해 규칙을 귀납적으로 관찰하고, 이를 연역적 증명(직접 증명, 대우법, 귀류법, 실수의 성질을 이용한 절대부등식 증명) 또는 반례로 엄밀하게 정당화하는 **1~7차시 수학적 탐구 활동**을 지원하는 교육 웹 애플리케이션입니다.
 
-- **1차시 (교사 안내형)**: 짝수 제곱을 8로 나눈 나머지 규칙 발견 → 사례의 한계 인식 → 4단계 빈칸 채우기를 통한 대수적 일반화 증명 서술
-- **2차시 (학생 주도형)**: 조건 변형 명제(A·B·C) 또는 자유 탐구 명제(D) 선택 → 반례 탐색 또는 대수적 정당화 → 동료 피드백 및 최종 수정
-- **교사용 수사 기록실 (관리자 모드)**: 학생 가입 신청 승인, 기기(MAC 주소) 중복 방지, 실시간 탐구 답안 동기화, 역량 대시보드, 다차원 필터링 및 **비모달(Modeless) 상세 비교 창**, 개별 학생 맞춤 피드백 PDF 인쇄
+### 전체 커리큘럼 (1차시 ~ 7차시)
+- **1차시 (교사 안내형 — 직접 증명)**: 짝수의 제곱을 8로 나눈 나머지 규칙 발견 → 사례 확인의 한계 인식 → 4단계 빈칸 채우기를 통한 대수적 일반화 증명 서술
+- **2차시 (학생 주도형 — 참/거짓 판별과 정당화)**: 조건 변형 명제(A·B·C) 또는 자유 탐구 명제(D) 선택 → 반례 탐색 또는 대수적 정당화 → 동료 피드백 및 최종 수정
+- **3차시 (대우를 이용한 증명법)**: 명제와 대우의 동치 관계 이해 → **문제 1**($n^2$이 짝수이면 $n$도 짝수) & **문제 2**($n^2$이 3의 배수이면 $n$도 3의 배수) 4단계 빈칸 추론 및 서술형 증명
+- **4차시 (귀류법)**: 결론을 부정하여 모순을 이끌어내는 간접 증명 원리 탐구 → **문제 1**($\sqrt{2}$는 무리수) & **문제 2**($1+\sqrt{2}$는 무리수) 4단계 빈칸 추론 및 서술형 증명
+- **5차시 (절대부등식 1 — 완전제곱식을 이용한 증명)**: 실수의 성질($A^2 \ge 0$)과 두 식의 차($A-B$)를 완전제곱식으로 변형하여 증명 및 등호 성립 조건 탐구
+  - **문제 1 (예제 3 변환)**: $a^2 + b^2 \ge ab$ 증명 (등호 조건: $a = b = 0$)
+  - **문제 2 (문제 3)**: `(1)` $(a + b)^2 \ge 4ab$, `(2)` $a^2 - 4ab + 5b^2 \ge 0$ 증명 및 등호 성립 조건 확인
+- **6차시 (절대부등식 2 — 산술평균과 기하평균의 관계)**: 양수 조건($a>0, b>0$)에서 $(\sqrt{a}-\sqrt{b})^2 \ge 0$을 이용한 산술·기하평균 부등식 증명 및 활용
+  - **문제 1 (예제 4 변환)**: $\dfrac{a + b}{2} \ge \sqrt{ab}$ 증명 (등호 조건: $a = b$)
+  - **문제 2 (문제 4)**: `(1)` $a + \dfrac{1}{a} \ge 2$, `(2)` $\sqrt{ab} \ge \dfrac{2ab}{a + b}$ 증명 및 등호 성립 조건 확인
+- **7차시 (절대부등식 3 — 절댓값 기호를 포함한 부등식)**: 절댓값의 성질($|a|^2 = a^2, |a||b| = |ab|, |a| \ge a$)과 양변 제곱의 차($|B|^2 - |A|^2 \ge 0$)를 이용한 증명
+  - **문제 1 (예제 5 변환)**: $|a + b| \le |a| + |b|$ 증명 (등호 조건: $ab \ge 0$)
+  - **문제 2 (문제 5)**: `(1)` $|a - b| \le |a| + |b|$, `(2)` $|a| - |b| \le |a - b|$ 증명 및 등호 성립 조건 확인
+
+### 주요 UX 및 교수·학습 지원 기능
+- **힌트 토글(열기/숨기기)**: 모든 차시의 단계별 힌트 버튼을 클릭하면 힌트가 표시되고, 다시 클릭하면 깔끔하게 숨겨집니다(최초 열람 시에만 힌트 열람 횟수 1회 기록).
+- **학생용 「평가 결과」 모달**: 상단 헤더의 `평가 결과` 버튼을 통해 1~7차시 완료 현황, 자동 루브릭 분석, 교수자 평정 점수(12점 만점) 및 맞춤 피드백을 실시간으로 확인하고 인쇄할 수 있습니다.
+- **교사용 수사 기록실 (관리자 모드)**:
+  - 학생 가입 신청 승인/반려 및 기기(MAC 해시) 잠금 초기화
+  - **학생별 평가 완료 여부 및 평가 진행율(%) 배지**: 학급 전체 평가 완료 현황(`평가 완료 N/M명 (P%)`)과 개별 학습자별 루브릭 채점·피드백 진행율(`평가 완료 100%`, `평가 중 X%`, `미평가 0%`)을 실시간 표시
+  - 다차원 열 필터링, 이름 검색, **비모달(Modeless) 상세 비교 창**, 개별 학생 맞춤 피드백 PDF 인쇄
+- **브랜딩**: 웹 화면 최상단 헤더와 최하단 푸터에 **「이하연 수학 교실」** 공식 타이틀이 표시되며, 인쇄/PDF 보고서에도 반영됩니다.
 
 ---
 
@@ -29,9 +49,10 @@
 │      학생 모드 (Student Mode)    │   │      교사 모드 (Teacher Mode)     │
 │  - 학교/학년/반/번호/생년월일 가입 │   │  - 관리자 구글 OAuth 인증        │
 │  - 기기 고유 MAC 주소 해시 식별  │   │  - 학생 가입 승인 / 반려 / 관리  │
-│  - 1·2차시 단계별 탐구 작성     │   │  - 접기/펼치기 메뉴 아코디언      │
+│  - 1~7차시 단계별 탐구 작성     │   │  - 학생별 평가 진행율(%) 배지    │
+│  - 힌트 토글 (열기/다시 숨기기)  │   │  - 접기/펼치기 메뉴 아코디언      │
 │  - 실시간 자동 저장 (Debounce)   │   │  - 학생 이름 검색 & 열 필터링   │
-│  - 인쇄 및 PDF 저장             │   │  - 비모달(Modeless) 상세 비교창  │
+│  - 평가 결과 모달 & PDF 인쇄    │   │  - 비모달(Modeless) 상세 비교창  │
 └────────────────┬────────────────┘   └────────────────┬─────────────────┘
                  │                                     │
                  ▼                                     ▼
@@ -48,8 +69,8 @@
 ## 3. 인증 및 기기 식별 보안 아키텍처
 
 ### 3.1 학교 공용 네트워크 환경 고려: MAC 주소 기반 식별
-- **문제 정의**: 학교 컴퓨터실이나 교실 공용 Wi-Fi 환경에서는 모든 학생의 공인 IP 주소가 동일하여 IP 기준 중복 검사 시 정상적인 학생 가입이 차단되는 치명적 문제가 발생합니다.
-- **해결 방안**: IP 주소 검사를 완전히 배제하고, Web Crypto API(SHA-256) 기반의 **기기 고유 MAC 주소 식별자(`deviceHash`)**만을 사용하여 기기 중복을 식별하고 방지합니다.
+- **문제 정의**: 학교 컴퓨터실이나 교실 공용 Wi-Fi 환경에서는 모든 학생의 공인 IP 주소가 동일하여 IP 기준 중복 검사 시 정상적인 학생 가입이 차단되는 문제가 발생합니다.
+- **해결 방안**: IP 주소 검사를 배제하고, Web Crypto API(SHA-256) 기반의 **기기 고유 식별자(`deviceHash`)**만을 사용하여 기기 중복을 식별하고 방지합니다.
 - **잠금 해제**: 다른 기기로 교체해야 하거나 잘못 신청된 경우, 교사가 대시보드에서 해당 학생의 기기 잠금을 안전하게 삭제/초기화할 수 있습니다.
 
 ### 3.2 교사(관리자) 인증
@@ -75,298 +96,179 @@ export interface AuthGateViewProps {
 }
 ```
 
-### 4.2 `Lesson1View`
-1차시 교사 안내형 수사 활동지 컴포넌트입니다.
+### 4.2 `Lesson1View` ~ `Lesson4View`
+1~4차시 명제와 증명(직접 증명, 반례와 정당화, 대우 증명, 귀류법) 활동지 컴포넌트입니다.
 
 ```typescript
 export interface Lesson1ViewProps {
-  /** 1차시 활동지 전체 데이터 상태 */
   state: Lesson1State;
-
-  /** 현재 열려 있는 탐구 단계 (1~5단계) */
   step: number;
-
-  /** 단계 전환 핸들러 */
   onStepChange: (nextStep: number) => void;
-
-  /** 1차시 상태 변경 업데이트 함수 */
   onUpdate: (updater: (prev: Lesson1State) => Lesson1State) => void;
-
-  /** 2차시 활동지로 이동하는 핸들러 */
   onGoToLesson2: () => void;
-
-  /** 시스템 위험 작업 전 사용자 확인 다이얼로그 호출 함수 */
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
-```
 
-### 4.3 `Lesson2View`
-2차시 학생 주도형 수사 활동지 컴포넌트입니다.
-
-```typescript
 export interface Lesson2ViewProps {
-  /** 2차시 활동지 전체 데이터 상태 */
   state: Lesson2State;
-
-  /** 현재 열려 있는 탐구 단계 (1~4단계) */
   step: number;
-
-  /** 단계 전환 핸들러 */
   onStepChange: (nextStep: number) => void;
-
-  /** 2차시 상태 변경 업데이트 함수 */
   onUpdate: (updater: (prev: Lesson2State) => Lesson2State) => void;
-
-  /** 2차시 탐구 주제(A, B, C, D) 변경 핸들러 */
   onChangeTopic: (nextTopic: TopicId) => void;
-
-  /** 시스템 위험 작업 전 사용자 확인 다이얼로그 호출 함수 */
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
-
-  /** 2차시 완료 후 3차시 대우법 탐구로 이동 핸들러 */
   onGoToLesson3: () => void;
 }
-```
 
-### 4.4 `Lesson3View`
-3차시 대우를 이용한 증명법(2문항: $n^2$이 짝수이면 $n$도 짝수 / $n^2$이 3의 배수이면 $n$도 3의 배수) 인터랙티브 활동지 컴포넌트입니다.
-
-```typescript
 export interface Lesson3ViewProps {
-  /** 3차시 활동지 전체 데이터 상태 */
   state: Lesson3State;
-
-  /** 현재 열려 있는 탐구 단계 (0: 비교/원리, 1: 문제 1, 2: 문제 2, 3: 성찰) */
   step: number;
-
-  /** 단계 전환 핸들러 */
   onStepChange: (nextStep: number) => void;
-
-  /** 3차시 상태 변경 업데이트 함수 */
   onUpdate: (updater: (prev: Lesson3State) => Lesson3State) => void;
-
-  /** 시스템 위험 작업 전 사용자 확인 다이얼로그 호출 함수 */
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
-
-  /** 3차시 완료 후 4차시 귀류법 탐구로 이동 핸들러 */
   onGoToLesson4: () => void;
+}
+
+export interface Lesson4ViewProps {
+  state: Lesson4State;
+  step: number;
+  onStepChange: (nextStep: number) => void;
+  onUpdate: (updater: (prev: Lesson4State) => Lesson4State) => void;
+  onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
+  onGoToLesson5?: () => void;
 }
 ```
 
-### 4.5 `Lesson4View`
-4차시 귀류법(2문항: $\sqrt{2}$는 유리수가 아니다 / $1+\sqrt{2}$는 무리수이다) 인터랙티브 활동지 컴포넌트입니다.
+### 4.3 `Lesson5View` ~ `Lesson7View` (절대부등식 1·2·3)
+5~7차시 절대부등식의 증명(완전제곱식, 산술·기하평균, 절댓값 부등식) 인터랙티브 활동지 컴포넌트입니다. 각 차시는 1차시와 동일한 4단계(0: 수치 실험과 원리 발견 → 1: 문제 1(예제 변환) → 2: 문제 2(소문항 (1)·(2)) → 3: 등호 성립 조건 정리 및 성찰) 스텝퍼 구조로 진행됩니다.
 
 ```typescript
-export interface Lesson4ViewProps {
-  /** 4차시 활동지 전체 데이터 상태 */
-  state: Lesson4State;
-
-  /** 현재 열려 있는 탐구 단계 (0: 귀류법 원리, 1: 문제 1, 2: 문제 2, 3: 성찰) */
+export interface Lesson5ViewProps {
+  state: Lesson5State;
   step: number;
-
-  /** 단계 전환 핸들러 */
   onStepChange: (nextStep: number) => void;
+  onUpdate: (updater: (prev: Lesson5State) => Lesson5State) => void;
+  onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
+  onGoToLesson6: () => void;
+}
 
-  /** 4차시 상태 변경 업데이트 함수 */
-  onUpdate: (updater: (prev: Lesson4State) => Lesson4State) => void;
+export interface Lesson6ViewProps {
+  state: Lesson6State;
+  step: number;
+  onStepChange: (nextStep: number) => void;
+  onUpdate: (updater: (prev: Lesson6State) => Lesson6State) => void;
+  onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
+  onGoToLesson7: () => void;
+}
 
-  /** 시스템 위험 작업 전 사용자 확인 다이얼로그 호출 함수 */
+export interface Lesson7ViewProps {
+  state: Lesson7State;
+  step: number;
+  onStepChange: (nextStep: number) => void;
+  onUpdate: (updater: (prev: Lesson7State) => Lesson7State) => void;
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
 ```
 
 ### 4.4 `TeacherView`
-교사용 수사 기록실, 실시간 수합 대시보드, 학생 가입 승인 및 사건 기록 비교 컴포넌트입니다.
+교사용 수사 기록실, 실시간 수합 대시보드, 학생 가입 승인, 평가 진행율 표시 및 사건 기록 비교 컴포넌트입니다.
 
 ```typescript
 export interface TeacherViewProps {
-  /** 로그인한 교사(관리자) 이메일 주소 */
   adminEmail: string;
-
-  /** 수합된 전체 학생 기록 배열 */
   records: StudentRecord[];
-
-  /** 현재 상세 비교 대상인 학생의 고유 식별 키 (`group::code`) */
   selectedKey: string;
-
-  /** 상세 비교 대상 학생 선택 핸들러 */
   onSelectStudent: (key: string) => void;
-
-  /** 교사 평가, 메모 수정 시 전체 레코드 상태를 갱신하는 React Dispatch 함수 */
   onUpdateRecords: React.Dispatch<React.SetStateAction<StudentRecord[]>>;
-
-  /** 선택한 학생의 개별 탐구 피드백 보고서 인쇄/PDF 저장 트리거 */
   onPrintStudentReport: (student: StudentRecord) => void;
-
-  /** 확인 다이얼로그 호출 함수 */
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
 ```
 
 ---
 
-## 5. 교사용 기록실 고도화 기능 명세
-
-### 5.1 접기 / 펼치기 아코디언 모드
-- **학생 가입 신청 승인 메뉴**: 전체 가입자 및 대기/승인/반려 현황 배지를 상단에 표시하며 한 번의 클릭으로 접기/펼치기 가능
-- **교사용 수사 기록실**: 데이터 불러오기/CSV 내보내기/KPI 지표 카드 영역을 접어서 화면을 넓게 활용 가능
-- **학급 탐구 역량 대시보드**: 활동 완료율, 판단 분포, 역량 평정 그래프 접기/펼치기
-- **탐정별 사건 기록**: 검색/필터 바 및 학생 테이블 접기/펼치기
-- **교사용 수사 체크리스트**: 4대 핵심 질문 체크리스트 접기/펼치기
-
-### 5.2 학생 이름 검색 기능
-- **가입 신청 승인 메뉴**: 수많은 신청자 중 이름 또는 학번으로 즉시 필터링
-- **탐정별 사건 기록**: 학생 이름(예: `김탐정`) 또는 식별코드로 실시간 검색 및 결과 표시
-
-### 5.3 다차원 열 필터링 (Column Filters)
-탐정별 사건 기록 테이블에서 다음 4가지 조건을 복합 적용할 수 있습니다:
-1. **학급/반 필터**: 수합된 데이터의 고유 학급(`group`) 목록 자동 추출 및 선택
-2. **1차시 사례 수 필터**: 전체 / 사례 4개 이상 (완료) / 1~3개 (진행 중) / 0개 (미작성)
-3. **2차시 탐구 주제 필터**: 전체 / 주제 A (세 자연수) / 주제 B (홀수 제곱 차) / 주제 C (소수 판정) / 자유 주제
-4. **2차시 판단 필터**: 전체 / 참 (증명) / 거짓 (반례) / 미해결 / 미작성
-- **필터 초기화 버튼**: 활성화된 모든 필터와 검색어를 원클릭으로 초기 상태 복원
-
-### 5.4 비모달(Modeless) 상세 비교 창 모드
-- **비모달(Modeless) 아키텍처**: 화면 전체를 어둡게 가리고 입력을 차단하는 모달(Modal)과 달리, **배경 화면 클릭 및 상호작용이 100% 유지**됩니다.
-- **실시간 학생 전환**: 비모달 창이 열려 있는 상태에서 테이블의 다른 학생 행을 클릭하면 비모달 창의 내용이 해당 학생의 1·2차시 기록으로 즉시 전환됩니다.
-- **창 제어 기능**:
-  - `최소화`: 우측 하단 콤팩트 칩으로 축소하여 테이블 열람 공간 확보
-  - `최대화`: 전체 화면으로 확장하여 긴 증명 서술을 한눈에 검토
-  - `닫기`: 비모달 창 종료 (테이블 하단 인라인 뷰 전환 가능)
-  - `PDF 인쇄`: 창 상단에서 바로 학생 개별 맞춤 피드백 인쇄 호출
-
----
-
-## 6. 핵심 데이터 모델 (Data Model Contract)
+## 5. 핵심 데이터 모델 (Data Model Contract)
 
 ```typescript
-// 1차시 상태 모델
-export interface Lesson1State {
-  examples: L1Example[];        // 관찰 사례 목록 (n, n², 나머지)
-  claim: string;                // 발견한 추측 명제 서술
-  scope: '' | 'some' | 'all';   // 명제 조건 범위 ('모든')
-  claimChecked: boolean;        // 가설 점검 완료 여부
-  checks: L1Example[];          // 반례/추가 검증 사례 목록
-  limits: string;               // 사례 확인의 한계 서술
-  proofChoices: (number | null)[]; // 4단계 증명 빈칸 선택값
-  proofVerified: boolean[];     // 각 단계별 정답 검증 여부
-  proofHints: number[];         // 단계별 힌트 열람 횟수
-  proofText: string;            // 나의 말로 쓰는 최종 일반적 증명
-  reflection: string;           // 1차시 탐구 성찰
-  bridge: string;               // 2차시 연결 후속 질문
+// 5차시(절대부등식 1), 6차시(절대부등식 2), 7차시(절대부등식 3) 상태 모델
+export interface Lesson5State {
+  examples: L5Example[];          // 수치 대입 실험 사례 목록 (a, b, 좌변, 우변, 차)
+  whyDifference: string;          // A - B >= 0 및 완전제곱식 변형 원리 서술 (30자 이상)
+  p1Choices: (number | null)[];   // 문제 1 (예제 3: a²+b² >= ab) 4단계 빈칸 선택값
+  p1Verified: boolean[];          // 문제 1 단계별 검증 완료 여부
+  p1Hints: number[];              // 문제 1 단계별 힌트 열람 횟수
+  p1ProofText: string;            // 문제 1 나의 말로 쓰는 증명 및 등호 조건 (45자 이상)
+  p2Choices: (number | null)[];   // 문제 2 (문제 3: (1) (a+b)²>=4ab, (2) a²-4ab+5b²>=0) 4단계 빈칸 선택값
+  p2Verified: boolean[];          // 문제 2 단계별 검증 완료 여부
+  p2Hints: number[];              // 문제 2 단계별 힌트 열람 횟수
+  p2ProofText: string;            // 문제 2 나의 말로 쓰는 증명 및 등호 조건 (50자 이상)
+  reflection: string;             // 5차시 탐구 성찰 (35자 이상)
+  bridge: string;                 // 6차시 연결 후속 질문 (20자 이상)
 }
 
-// 2차시 상태 모델
-export interface Lesson2State {
-  topic: '' | 'a' | 'b' | 'c' | 'd'; // 선택 주제 (A, B, C, D)
-  customStatement: string;      // D주제 선택 시 사용자 정의 명제
-  customScope: string;          // D주제 조건 범위
-  examples: L2Example[];        // 수집 사례 목록
-  checks: L2Check[];            // 추가 검증 및 반례 검사 목록
-  guess: string;                // 추측과 이유
-  decision: '' | 'true' | 'false' | 'unknown'; // 참/거짓/미해결 판단
-  decisionChecked: boolean;     // 판단 확정 여부
-  counter: string;              // 거짓일 때 제시한 반례 n 값
-  counterReason: string;        // 반례가 되는 이유
-  proofText: string;            // 참일 때 일반적 증명 서술
-  hintLevel: number;            // 힌트 단계
-  share: string;                // 모둠 공유 내용
-  peer: string;                 // 피드백을 주고받은 동료 이름
-  peerComment: string;          // 동료가 남겨준 피드백
-  revision: string;             // 피드백 반영 수정 사항
-  reflection: string;           // 2차시 탐구 성찰
-  nextQuestion: string;         // 후속 탐구 질문
-}
+export type Lesson6State = Lesson5State; // 산술평균과 기하평균 (예제 4, 문제 4)
+export type Lesson7State = Lesson5State; // 절댓값 부등식 (예제 5, 문제 5)
 
-// 3차시 상태 모델 (대우를 이용한 증명법)
-export interface Lesson3State {
-  examples: L3Example[];        // 0단계 관찰 사례 목록 (n, n², 짝홀/3의 배수 여부)
-  whyHard: string;              // 직접 증명이 막히는 이유 서술 (30자 이상)
-  p1Choices: (number | null)[]; // 문제 1 (짝수 명제) 4단계 빈칸 선택값
-  p1Verified: boolean[];        // 문제 1 단계별 검증 완료 여부
-  p1Hints: number[];            // 문제 1 단계별 힌트 열람 횟수
-  p1ProofText: string;          // 문제 1 나의 말로 쓰는 대우 증명 (45자 이상)
-  p2Choices: (number | null)[]; // 문제 2 (3의 배수 명제) 4단계 빈칸 선택값
-  p2Verified: boolean[];        // 문제 2 단계별 검증 완료 여부
-  p2Hints: number[];            // 문제 2 단계별 힌트 열람 횟수
-  p2ProofText: string;          // 문제 2 나의 말로 쓰는 대우 증명 (50자 이상)
-  reflection: string;           // 3차시 탐구 성찰 (35자 이상)
-  bridge: string;               // 4차시 연결 후속 질문 (20자 이상)
-}
-
-// 4차시 상태 모델 (귀류법)
-export interface Lesson4State {
-  whyIndirect: string;          // 귀류법(결론 부정)이 필요한 이유 서술 (30자 이상)
-  p1Choices: (number | null)[]; // 문제 1 (√2 무리수 증명) 4단계 빈칸 선택값
-  p1Verified: boolean[];        // 문제 1 단계별 검증 완료 여부
-  p1Hints: number[];            // 문제 1 단계별 힌트 열람 횟수
-  p1ProofText: string;          // 문제 1 나의 말로 쓰는 귀류법 증명 (50자 이상)
-  p2Choices: (number | null)[]; // 문제 2 (1+√2 무리수 증명) 4단계 빈칸 선택값
-  p2Verified: boolean[];        // 문제 2 단계별 검증 완료 여부
-  p2Hints: number[];            // 문제 2 단계별 힌트 열람 횟수
-  p2ProofText: string;          // 문제 2 나의 말로 쓰는 귀류법 증명 (45자 이상)
-  methodCompare: string;        // 직접증명 vs 대우법 vs 귀류법 비교 서술 (35자 이상)
-  reflection: string;           // 4차시 탐구 성찰 (35자 이상)
-}
-
-// 교사 평정 모델 (4대 영역)
-export interface TeacherEvaluation {
-  scores: (number | null)[];    // 4개 루브릭 영역 (각 0~3점)
-  feedback: string;             // 구체적인 학생 맞춤 피드백
-  nextStep: string;             // 다음 탐구를 위한 제안
-}
-
-// 통합 학생 레코드 모델
+// 통합 학생 레코드 모델 (구버전 백업 JSON 100% 하위 호환)
 export interface StudentRecord {
-  kind: 'proof2lesson-v1';      // 구버전 100% 호환 고유 식별자
-  group: string;                // 학교/학급 (예: "서울중학교 1학년 3반")
-  code: string;                 // 식별코드 (예: "10301_홍길동")
-  createdAt: string;            // 생성 일시 (ISO-8601)
-  updatedAt: string;            // 수정 일시 (ISO-8601)
-  l1: Lesson1State;             // 1차시 데이터
-  l2: Lesson2State;             // 2차시 데이터
-  l3?: Lesson3State;            // 3차시 데이터 (구버전 레코드 로드 시 기본값 자동 보정)
-  l4?: Lesson4State;            // 4차시 데이터 (구버전 레코드 로드 시 기본값 자동 보정)
-  teacherMemo?: string;         // 교사용 관찰 메모
+  kind: 'proof2lesson-v1';
+  group: string;                  // 학교/학급 (예: "서울고등학교 1학년 3반")
+  code: string;                   // 식별코드 (예: "10301_홍길동")
+  createdAt: string;              // 생성 일시 (ISO-8601)
+  updatedAt: string;              // 수정 일시 (ISO-8601)
+  l1: Lesson1State;               // 1차시 데이터
+  l2: Lesson2State;               // 2차시 데이터
+  l3?: Lesson3State;              // 3차시 데이터 (대우 증명)
+  l4?: Lesson4State;              // 4차시 데이터 (귀류법)
+  l5?: Lesson5State;              // 5차시 데이터 (절대부등식 1)
+  l6?: Lesson6State;              // 6차시 데이터 (절대부등식 2)
+  l7?: Lesson7State;              // 7차시 데이터 (절대부등식 3)
+  teacherMemo?: string;           // 교사용 관찰 메모
   evaluation?: TeacherEvaluation; // 교사 평정 및 피드백
 }
 ```
 
 ---
 
-## 7. 프로젝트 파일 구조
+## 6. 프로젝트 파일 구조
 
 ```text
 /
 ├── src/
-│   ├── App.tsx                     # 최상위 세션 라우팅 및 탭·인쇄·상태 관리
-│   ├── firebase.ts                 # Firestore 초기화 및 에러 핸들러
-│   ├── index.css                   # 글로벌 Tailwind 스타일 및 인쇄 매체 쿼리
-│   ├── main.tsx                    # React 진입점
+│   ├── App.tsx                       # 최상위 세션 라우팅, 1~7차시 탭, 인쇄 및 상태 관리
+│   ├── firebase.ts                   # Firestore 초기화 및 에러 핸들러
+│   ├── index.css                     # 글로벌 Tailwind 스타일 및 인쇄 매체 쿼리
+│   ├── main.tsx                      # React 진입점
 │   ├── components/
-│   │   ├── AuthGateView.tsx        # 학생 가입/로그인 및 교사 인증 게이트웨이
-│   │   ├── CharCountBadge.tsx      # 실시간 글자수 카운터 및 최소 분량 검증 배지
-│   │   ├── Lesson1View.tsx         # 1차시 활동지 (직접 증명 4단계 인터랙션)
-│   │   ├── Lesson2View.tsx         # 2차시 활동지 (반례 검사 및 정당화)
-│   │   ├── Lesson3View.tsx         # 3차시 활동지 (대우를 이용한 증명 2문항 & 단계별 힌트)
-│   │   ├── Lesson4View.tsx         # 4차시 활동지 (귀류법 증명 2문항 & 단계별 힌트)
-│   │   ├── StudentEvaluationModal.tsx # 개별 학습자용 평가 결과 및 교수자 맞춤 피드백 모달
-│   │   └── TeacherView.tsx         # 교사용 기록실, 필터, 비모달 비교창, 1~4차시 대시보드
+│   │   ├── AuthGateView.tsx          # 학생 가입/로그인 및 교사 인증 게이트웨이
+│   │   ├── CharCountBadge.tsx        # 실시간 글자수 카운터 및 최소 분량 검증 배지
+│   │   ├── Lesson1View.tsx           # 1차시 활동지 (직접 증명)
+│   │   ├── Lesson2View.tsx           # 2차시 활동지 (반례 탐색 및 대수적 정당화)
+│   │   ├── Lesson3View.tsx           # 3차시 활동지 (대우를 이용한 증명 2문항)
+│   │   ├── Lesson4View.tsx           # 4차시 활동지 (귀류법 증명 2문항)
+│   │   ├── Lesson5View.tsx           # 5차시 활동지 (절대부등식 1: 완전제곱식, 예제3·문제3)
+│   │   ├── Lesson6View.tsx           # 6차시 활동지 (절대부등식 2: 산술·기하평균, 예제4·문제4)
+│   │   ├── Lesson7View.tsx           # 7차시 활동지 (절대부등식 3: 절댓값 부등식, 예제5·문제5)
+│   │   ├── StudentEvaluationModal.tsx # 개별 학습자용 1~7차시 평가 결과 및 피드백 모달
+│   │   └── TeacherView.tsx           # 교사용 기록실, 평가 진행율, 비모달 비교창, 1~7차시 대시보드
 │   └── utils/
-│       ├── authLogic.ts            # MAC 식별자 해시 및 관리자 권한 로직
-│       ├── mathLogic.ts            # 순수 수학 판정, 루브릭 평가, JSON 정제
-│       └── mathLogic.test.ts       # node:test 기반 로직 무결성 단위 테스트
-├── index.html                      # HTML 셸 (모바일 뷰포트 및 메타 태그)
-├── firestore.rules                 # Firestore 보안 규칙 (RBAC & 기기 잠금)
-├── firebase-blueprint.json         # Firestore 데이터베이스 스키마 정의
-├── log.md                          # 개발 작업 로그 및 회귀 검증 기록
-├── package.json                    # 프로젝트 의존성 및 스크립트 정의
-└── README.md                       # 시스템 구조 및 Props 명세 문서
+│       ├── authLogic.ts              # 기기 식별자 해시 및 관리자 권한 로직
+│       ├── authLogic.test.ts         # 인증/식별 로직 단위 테스트
+│       ├── mathLogic.ts              # 1~7차시 수학 판정, 루브릭/평가 진행율 계산, JSON 정제
+│       └── mathLogic.test.ts         # node:test 기반 1~7차시 로직 무결성 단위 테스트
+├── index.html                        # HTML 셸 (모바일 뷰포트 및 메타 태그)
+├── ghpages-app.js / ghpages-app.css  # GitHub Pages 루트 배포용 동기화 번들
+├── firestore.rules                   # Firestore 보안 규칙 (RBAC & 기기 잠금)
+├── firebase-blueprint.json           # Firestore 데이터베이스 스키마 정의
+├── log.md                            # 개발 작업 로그 및 회귀 검증 기록
+├── package.json                      # 프로젝트 의존성 및 빌드 스크립트
+└── README.md                         # 시스템 구조 및 전체 명세 문서
 ```
 
 ---
 
-## 8. 빌드 및 테스트 가이드
+## 7. 빌드 및 배포 가이드 (GitHub Pages 호환)
+
+`npm run build` 실행 시 Vite 프로덕션 빌드(`dist/`) 생성과 동시에 루트 디렉터리의 `ghpages-app.js` 및 `ghpages-app.css`가 자동으로 최신 빌드 산출물로 동기화됩니다. 따라서 GitHub 저장소의 루트 브랜치(`main`)나 `dist` 어느 쪽으로 GitHub Pages를 배포하더라도 항상 최신 UI(1~7차시 탭, `평가 결과` 버튼 등)가 반영됩니다.
 
 ```bash
 # 1. 의존성 설치
@@ -378,9 +280,9 @@ npm run dev
 # 3. TypeScript 타입 및 코드 린트 검사
 npm run lint
 
-# 4. 순수 수학 로직 단위 테스트 실행
-node --test src/utils/mathLogic.test.ts
+# 4. 순수 수학 및 인증 로직 단위 테스트 실행
+npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts
 
-# 5. 프로덕션 빌드 (dist/ 생성)
+# 5. 프로덕션 빌드 및 GitHub Pages 루트 번들(ghpages-app.js/css) 자동 동기화
 npm run build
 ```
