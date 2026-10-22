@@ -1,6 +1,6 @@
 {
   "name": "우연일까, 필연일까? — 수학 탐정단 참·거짓 추리 프로젝트",
-  "description": "공통수학2 명제의 증명 단원 1~4차시(직접 증명·반례·대우법·귀류법) 통합 인터랙티브 탐구 활동지 및 교사용 수사 기록실",
+  "description": "이하연 수학 교실 — 공통수학2 명제의 증명 단원 1~4차시(직접 증명·반례·대우법·귀류법) 통합 인터랙티브 탐구 활동지 및 교사용 수사 기록실",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

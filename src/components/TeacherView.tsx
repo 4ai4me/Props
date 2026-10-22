@@ -25,6 +25,12 @@ import {
   evaluateRubricL2,
   evaluateRubricL3,
   evaluateRubricL4,
+  evaluateRubricL5,
+  evaluateRubricL6,
+  evaluateRubricL7,
+  getTeacherEvalAverage,
+  getTeacherEvaluationProgress,
+  getClassEvaluationSummary,
   studentKey,
 } from '../utils/mathLogic';
 import { formatDeviceHashAsMac } from '../utils/authLogic';
@@ -100,6 +106,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   const [filterExamples, setFilterExamples] = useState<'all' | '4plus' | '1to3' | '0'>('all');
   const [filterTopic, setFilterTopic] = useState<'all' | TopicId>('all');
   const [filterDecision, setFilterDecision] = useState<'all' | 'true' | 'false' | 'unknown' | 'none'>('all');
+  const [filterEvalStatus, setFilterEvalStatus] = useState<'all' | 'complete' | 'partial' | 'none'>('all');
 
   // Modeless (비모달) dialog state for detail comparison
   const [isModelessOpen, setIsModelessOpen] = useState<boolean>(false);
@@ -367,7 +374,27 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
       '4차시 귀류법 문제2 증명서술',
       '4차시 성찰1',
       '4차시 성찰2',
+      '5차시 절대부등식1 문제1 단계확인',
+      '5차시 절대부등식1 문제1 증명서술',
+      '5차시 절대부등식1 문제2 단계확인',
+      '5차시 절대부등식1 문제2 증명서술',
+      '5차시 성찰1',
+      '5차시 성찰2',
+      '6차시 절대부등식2 문제1 단계확인',
+      '6차시 절대부등식2 문제1 증명서술',
+      '6차시 절대부등식2 문제2 단계확인',
+      '6차시 절대부등식2 문제2 증명서술',
+      '6차시 성찰1',
+      '6차시 성찰2',
+      '7차시 절대부등식3 문제1 단계확인',
+      '7차시 절대부등식3 문제1 증명서술',
+      '7차시 절대부등식3 문제2 단계확인',
+      '7차시 절대부등식3 문제2 증명서술',
+      '7차시 성찰1',
+      '7차시 성찰2',
       '교사 메모',
+      '교사 평가 상태',
+      '교사 평가 진행율(%)',
       ...EVAL_CRITERIA.map((t) => `교사 평정_${t}`),
       '학생 피드백',
       '다음 탐구 제안',
@@ -378,7 +405,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
       const b = x.l2;
       const c = x.l3;
       const d = x.l4;
+      const e = x.l5;
+      const f = x.l6;
+      const g = x.l7;
       const ev = ensureTeacherEval(x);
+      const evalProg = getTeacherEvaluationProgress(x);
       const tDef = b.topic ? TOPICS[b.topic as TopicId] : null;
       return [
         x.group,
@@ -417,7 +448,27 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
         d?.prob2ProofText || '',
         d?.reflection1 || '',
         d?.reflection2 || '',
+        e?.prob1Verified?.filter(Boolean).length ?? 0,
+        e?.prob1ProofText || '',
+        e?.prob2Verified?.filter(Boolean).length ?? 0,
+        e?.prob2ProofText || '',
+        e?.reflection1 || '',
+        e?.reflection2 || '',
+        f?.prob1Verified?.filter(Boolean).length ?? 0,
+        f?.prob1ProofText || '',
+        f?.prob2Verified?.filter(Boolean).length ?? 0,
+        f?.prob2ProofText || '',
+        f?.reflection1 || '',
+        f?.reflection2 || '',
+        g?.prob1Verified?.filter(Boolean).length ?? 0,
+        g?.prob1ProofText || '',
+        g?.prob2Verified?.filter(Boolean).length ?? 0,
+        g?.prob2ProofText || '',
+        g?.reflection1 || '',
+        g?.reflection2 || '',
         x.teacherMemo || '',
+        evalProg.statusLabel,
+        evalProg.percent,
         ...ev.scores.map((v) => (v === null ? '' : v)),
         ev.feedback,
         ev.nextStep,
@@ -430,7 +481,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '수학탐정단_1-4차시_학급응답.csv';
+    a.download = '수학탐정단_1-7차시_학급응답.csv';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -480,7 +531,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     filterGroup !== 'all' ||
     filterExamples !== 'all' ||
     filterTopic !== 'all' ||
-    filterDecision !== 'all';
+    filterDecision !== 'all' ||
+    filterEvalStatus !== 'all';
 
   const resetRecordsFilters = () => {
     setRecordsSearchName('');
@@ -488,6 +540,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     setFilterExamples('all');
     setFilterTopic('all');
     setFilterDecision('all');
+    setFilterEvalStatus('all');
   };
 
   const filteredSortedRecords = records
@@ -522,6 +575,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           if (x.l2.decision !== filterDecision) return false;
         }
       }
+      // 6. Filter by Teacher Evaluation status
+      if (filterEvalStatus !== 'all') {
+        const evalProg = getTeacherEvaluationProgress(x);
+        if (evalProg.status !== filterEvalStatus) return false;
+      }
       return true;
     })
     .slice()
@@ -536,6 +594,10 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   const complete2 = records.filter((x) => evaluateRubricL2(x.l2).every(Boolean)).length;
   const complete3 = records.filter((x) => x.l3 && evaluateRubricL3(x.l3).every(Boolean)).length;
   const complete4 = records.filter((x) => x.l4 && evaluateRubricL4(x.l4).every(Boolean)).length;
+  const complete5 = records.filter((x) => x.l5 && evaluateRubricL5(x.l5).every(Boolean)).length;
+  const complete6 = records.filter((x) => x.l6 && evaluateRubricL6(x.l6).every(Boolean)).length;
+  const complete7 = records.filter((x) => x.l7 && evaluateRubricL7(x.l7).every(Boolean)).length;
+  const classEvalSummary = getClassEvaluationSummary(records);
 
   const selectedStudent = records.find((v) => studentKey(v) === selectedKey) || null;
 
@@ -572,6 +634,9 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     ['2차시 정당화 기록', records.filter((x) => evaluateRubricL2(x.l2)[4]).length],
     ['3차시 대우법(문제 1·2) 완료', complete3],
     ['4차시 귀류법(문제 1·2) 완료', complete4],
+    ['5차시 절대부등식1 완료', complete5],
+    ['6차시 절대부등식2 완료', complete6],
+    ['7차시 절대부등식3 완료', complete7],
   ];
 
   const decisions: [string, number, string][] = [
@@ -880,7 +945,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                 교사용 수사 기록실
                 {!isControlsOpen && (
                   <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
-                    수합 학생 {count}명 (1차시 {complete1} · 2차시 {complete2} · 3차시 {complete3} · 4차시 {complete4} 완성)
+                    수합 학생 {count}명 · 평가 완료 {classEvalSummary.completeCount}/{count}명 ({classEvalSummary.averageProgressPercent}%)
                   </span>
                 )}
               </h2>
@@ -891,7 +956,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
         {isControlsOpen && (
           <div className="mt-4 pt-4 border-t border-slate-100">
             <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-              승인된 학생들이 작성한 1~4차시(직접증명 · 반례 · 대우법 · 귀류법) 탐구 기록이 실시간으로 연동되며, 외부 JSON 파일을 추가로 불러오거나 CSV로 내려받을 수도 있습니다.
+              승인된 학생들이 작성한 1~7차시(직접증명 · 반례 · 대우법 · 귀류법 · 절대부등식1·2·3) 탐구 기록이 실시간으로 연동되며, 외부 JSON 파일을 추가로 불러오거나 CSV로 내려받을 수도 있습니다.
             </p>
 
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
@@ -966,22 +1031,33 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             </div>
 
             {/* Summary KPI Tiles */}
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-9">
               {[
                 [count, '수합 학생 (명)'],
                 [complete1, '1차시 완성'],
                 [complete2, '2차시 완성'],
-                [complete3, '3차시(대우법) 완성'],
-                [complete4, '4차시(귀류법) 완성'],
+                [complete3, '3차시(대우) 완성'],
+                [complete4, '4차시(귀류) 완성'],
+                [complete5, '5차시(절대1) 완성'],
+                [complete6, '6차시(절대2) 완성'],
+                [complete7, '7차시(절대3) 완성'],
               ].map(([num, label], idx) => (
                 <div
                   key={idx}
-                  className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 text-center"
+                  className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 text-center"
                 >
-                  <strong className="block text-2xl font-extrabold text-blue-600 mono">{num}</strong>
-                  <span className="mt-0.5 block text-xs font-semibold text-slate-600">{label}</span>
+                  <strong className="block text-xl sm:text-2xl font-extrabold text-blue-600 mono">{num}</strong>
+                  <span className="mt-0.5 block text-[11px] font-semibold text-slate-600">{label}</span>
                 </div>
               ))}
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-center">
+                <strong className="block text-xl sm:text-2xl font-extrabold text-emerald-700 mono">
+                  {classEvalSummary.completeCount}/{count}명 ({classEvalSummary.averageProgressPercent}%)
+                </strong>
+                <span className="mt-0.5 block text-[11px] font-bold text-emerald-900">
+                  교수자 평가 완료
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -1225,7 +1301,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               </div>
 
               {/* 2. Column Filter Dropdowns */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-1">
                 {/* Column Filter: 학급/반 */}
                 <div>
                   <label htmlFor="filter-group" className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
@@ -1306,12 +1382,31 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                     <option value="none">미작성</option>
                   </select>
                 </div>
+
+                {/* Column Filter: 교수자 평가 상태 */}
+                <div>
+                  <label htmlFor="filter-eval-status" className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Filter className="h-3 w-3 text-emerald-600" />
+                    <span>교수자 평가 상태</span>
+                  </label>
+                  <select
+                    id="filter-eval-status"
+                    value={filterEvalStatus}
+                    onChange={(e) => setFilterEvalStatus(e.target.value as typeof filterEvalStatus)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="all">전체 평가 상태</option>
+                    <option value="complete">평가 완료 (100%)</option>
+                    <option value="partial">평가 진행 중 (20~80%)</option>
+                    <option value="none">미평가 (0%)</option>
+                  </select>
+                </div>
               </div>
             </div>
 
             {/* Table */}
             <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-              <table className="w-full min-w-[880px] border-collapse text-sm">
+              <table className="w-full min-w-[980px] border-collapse text-sm">
                 <thead>
                   <tr className="bg-slate-50 text-slate-600 text-xs font-bold border-b border-slate-200">
                     <th className="py-3 px-3.5 text-left">학급</th>
@@ -1320,7 +1415,9 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                     <th className="py-3 px-3.5 text-left">2차시 주제/판단</th>
                     <th className="py-3 px-3.5 text-left">3차시 대우법</th>
                     <th className="py-3 px-3.5 text-left">4차시 귀류법</th>
-                    <th className="py-3 px-3.5 text-left">비교 (비모달)</th>
+                    <th className="py-3 px-3.5 text-left">5~7차시 절대부등식</th>
+                    <th className="py-3 px-3.5 text-left">교수자 평가 현황 (진행율)</th>
+                    <th className="py-3 px-3.5 text-left">평가 및 비교</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -1329,6 +1426,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       const k = studentKey(x);
                       const isSel = k === selectedKey;
                       const tDef = x.l2.topic ? TOPICS[x.l2.topic as TopicId] : null;
+                      const evalProg = getTeacherEvaluationProgress(x);
+                      const avgScore = getTeacherEvalAverage(ensureTeacherEval(x).scores);
                       return (
                         <tr
                           key={k}
@@ -1357,6 +1456,53 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           <td className="py-3 px-3.5 mono text-slate-700">
                             {x.l4 ? evaluateRubricL4(x.l4).filter(Boolean).length : 0}/5
                           </td>
+                          <td className="py-3 px-3.5 mono text-xs text-slate-700">
+                            5차 {x.l5 ? evaluateRubricL5(x.l5).filter(Boolean).length : 0}/5 · 6차 {x.l6 ? evaluateRubricL6(x.l6).filter(Boolean).length : 0}/5 · 7차 {x.l7 ? evaluateRubricL7(x.l7).filter(Boolean).length : 0}/5
+                          </td>
+                          <td className="py-3 px-3.5 min-w-[200px]">
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-extrabold border ${
+                                    evalProg.status === 'complete'
+                                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                      : evalProg.status === 'partial'
+                                      ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                      : 'bg-slate-100 text-slate-600 border-slate-200'
+                                  }`}
+                                >
+                                  {evalProg.status === 'complete'
+                                    ? '✓ 평가 완료'
+                                    : evalProg.status === 'partial'
+                                    ? '● 평가 진행 중'
+                                    : '미평가'}
+                                </span>
+                                <span className="mono text-xs font-extrabold text-slate-800">
+                                  {evalProg.percent}% ({evalProg.completedCount}/{evalProg.totalCount})
+                                </span>
+                              </div>
+                              <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    evalProg.status === 'complete'
+                                      ? 'bg-emerald-600'
+                                      : evalProg.status === 'partial'
+                                      ? 'bg-amber-500'
+                                      : 'bg-slate-300'
+                                  }`}
+                                  style={{ width: `${evalProg.percent}%` }}
+                                />
+                              </div>
+                              <div className="text-[11px] text-slate-500 flex items-center justify-between">
+                                <span>
+                                  평정 {evalProg.scoredRubricCount}/4 · 피드백 {evalProg.hasFeedback ? '완료' : '미작성'}
+                                </span>
+                                {avgScore !== null && (
+                                  <strong className="mono text-slate-700">평균 {avgScore.toFixed(2)}점</strong>
+                                )}
+                              </div>
+                            </div>
+                          </td>
                           <td className="py-3 px-3.5">
                             <button
                               type="button"
@@ -1371,7 +1517,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                                   : 'border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
                               }`}
                             >
-                              {isSel && isModelessOpen ? '비모달 비교 중' : '상세 비교'}
+                              {isSel && isModelessOpen ? '비모달 평가·비교 중' : '상세 비교 · 평가'}
                             </button>
                           </td>
                         </tr>
@@ -1379,7 +1525,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                     })
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-8 px-4 text-center text-slate-500">
+                      <td colSpan={9} className="py-8 px-4 text-center text-slate-500">
                         {isAnyRecordsFilterActive
                           ? '선택한 검색 및 필터 조건에 해당하는 학생 기록이 없습니다.'
                           : '불러온 학생 자료가 없습니다.'}
@@ -1395,7 +1541,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               <div ref={detailRef} className="mt-6 pt-6 border-t border-slate-200 space-y-4">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
-                    {selectedStudent.code || '미입력'} 학생의 1~4차시 종합 비교 ({selectedStudent.group || '학급 미입력'})
+                    {selectedStudent.code || '미입력'} 학생의 1~7차시 종합 비교 ({selectedStudent.group || '학급 미입력'})
                   </h3>
                   <div className="flex items-center gap-2">
                     <button
@@ -1517,7 +1663,183 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       </div>
                     ))}
                   </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
+                    <div className="text-xs font-bold text-cyan-700">5차시 · 절대부등식1 수사 (문제 1·2)</div>
+                    {[
+                      [
+                        '문제 1 (a²+b² ≥ ab) 증명',
+                        `단계 확인: ${selectedStudent.l5?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l5?.prob1ProofText || '미작성'}`,
+                      ],
+                      [
+                        '문제 2 ((a+b)² ≥ 4ab, a²−4ab+5b² ≥ 0) 증명',
+                        `단계 확인: ${selectedStudent.l5?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l5?.prob2ProofText || '미작성'}`,
+                      ],
+                      ['5차시 성찰', selectedStudent.l5?.reflection1],
+                    ].map(([label, val]) => (
+                      <div key={label}>
+                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
+                          {val || '미작성'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
+                    <div className="text-xs font-bold text-teal-700">6차시 · 절대부등식2 수사 (문제 1·2)</div>
+                    {[
+                      [
+                        '문제 1 ((a+b)/2 ≥ √ab) 증명',
+                        `단계 확인: ${selectedStudent.l6?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob1ProofText || '미작성'}`,
+                      ],
+                      [
+                        '문제 2 (a+1/a ≥ 2, √ab ≥ 2ab/(a+b)) 증명',
+                        `단계 확인: ${selectedStudent.l6?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob2ProofText || '미작성'}`,
+                      ],
+                      ['6차시 성찰', selectedStudent.l6?.reflection1],
+                    ].map(([label, val]) => (
+                      <div key={label}>
+                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
+                          {val || '미작성'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3 lg:col-span-2">
+                    <div className="text-xs font-bold text-rose-700">7차시 · 절대부등식3 수사 (문제 1·2)</div>
+                    <div className="grid gap-3 lg:grid-cols-3">
+                      {[
+                        [
+                          '문제 1 (|a+b| ≤ |a|+|b|) 증명',
+                          `단계 확인: ${selectedStudent.l7?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l7?.prob1ProofText || '미작성'}`,
+                        ],
+                        [
+                          '문제 2 (|a−b| ≤ |a|+|b|, |a|−|b| ≤ |a−b|) 증명',
+                          `단계 확인: ${selectedStudent.l7?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l7?.prob2ProofText || '미작성'}`,
+                        ],
+                        ['7차시 성찰', selectedStudent.l7?.reflection1],
+                      ].map(([label, val]) => (
+                        <div key={label}>
+                          <div className="text-xs font-bold text-slate-700">{label}</div>
+                          <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
+                            {val || '미작성'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+
+                {/* Inline Teacher Evaluation & Feedback Section */}
+                {(() => {
+                  const inlineEvalProg = getTeacherEvaluationProgress(selectedStudent);
+                  return (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-6 space-y-5">
+                      <div className="flex items-center justify-between gap-3 flex-wrap border-b border-slate-200 pb-3">
+                        <div>
+                          <div className="text-xs font-bold text-blue-600">개별 학습자 평가</div>
+                          <h4 className="text-base sm:text-lg font-extrabold text-slate-900">
+                            {selectedStudent.code} 학생 역량 평가 및 맞춤 피드백
+                          </h4>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-extrabold border ${
+                              inlineEvalProg.status === 'complete'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : inlineEvalProg.status === 'partial'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}
+                          >
+                            {inlineEvalProg.statusLabel} · 진행율 {inlineEvalProg.percent}% ({inlineEvalProg.completedCount}/{inlineEvalProg.totalCount})
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {EVAL_CRITERIA.map((title, i) => {
+                          const ev = ensureTeacherEval(selectedStudent);
+                          return (
+                            <div key={title}>
+                              <label htmlFor={`inlineEval${i}`} className="block text-xs sm:text-sm font-bold text-slate-900">
+                                {title}
+                                <span className="block text-xs font-normal text-slate-500">
+                                  {EVAL_DESCRIPTIONS[i]}
+                                </span>
+                              </label>
+                              <select
+                                id={`inlineEval${i}`}
+                                value={ev.scores[i] === null ? '' : String(ev.scores[i])}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? null : Number(e.target.value);
+                                  updateSelectedStudent((item) => {
+                                    const currentEv = ensureTeacherEval(item);
+                                    const nextScores = [...currentEv.scores];
+                                    nextScores[i] = val;
+                                    return {
+                                      ...item,
+                                      evaluation: { ...currentEv, scores: nextScores },
+                                    };
+                                  });
+                                }}
+                                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                              >
+                                <option value="">평정 전</option>
+                                {[0, 1, 2, 3].map((v) => (
+                                  <option key={v} value={v}>
+                                    {v}점 · {['증거 부족', '시작 단계', '부분적 수행', '충분한 수행'][v]}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div>
+                        <label htmlFor="inlineTeacherFeedback" className="block text-sm font-bold text-slate-900 mb-1.5">
+                          학생에게 전달할 구체적인 피드백
+                        </label>
+                        <textarea
+                          id="inlineTeacherFeedback"
+                          rows={3}
+                          value={ensureTeacherEval(selectedStudent).feedback}
+                          onChange={(e) =>
+                            updateSelectedStudent((item) => {
+                              const ev = ensureTeacherEval(item);
+                              return { ...item, evaluation: { ...ev, feedback: e.target.value } };
+                            })
+                          }
+                          placeholder="잘한 점과 이를 뒷받침하는 학생의 탐구 기록을 적어 주세요."
+                          className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="inlineTeacherNext" className="block text-sm font-bold text-slate-900 mb-1.5">
+                          다음 탐구를 위한 제안
+                        </label>
+                        <textarea
+                          id="inlineTeacherNext"
+                          rows={2}
+                          value={ensureTeacherEval(selectedStudent).nextStep}
+                          onChange={(e) =>
+                            updateSelectedStudent((item) => {
+                              const ev = ensureTeacherEval(item);
+                              return { ...item, evaluation: { ...ev, nextStep: e.target.value } };
+                            })
+                          }
+                          placeholder="예: 반례가 가정을 만족하는지 먼저 확인하고, 문자로 일반화해 보세요."
+                          className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -1748,6 +2070,86 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       </div>
                     ))}
                   </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                    <div className="text-xs font-bold text-cyan-700 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-cyan-600" />
+                      5차시 · 절대부등식1 (완전제곱식 문제 1·2)
+                    </div>
+                    {[
+                      [
+                        '문제 1 (a²+b² ≥ ab)',
+                        `단계 확인: ${selectedStudent.l5?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l5?.prob1ProofText || '미작성'}`,
+                      ],
+                      [
+                        '문제 2 ((a+b)² ≥ 4ab, a²−4ab+5b² ≥ 0)',
+                        `단계 확인: ${selectedStudent.l5?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l5?.prob2ProofText || '미작성'}`,
+                      ],
+                      ['5차시 성찰 1', selectedStudent.l5?.reflection1],
+                      ['5차시 성찰 2', selectedStudent.l5?.reflection2],
+                    ].map(([label, val]) => (
+                      <div key={label}>
+                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
+                          {val || '미작성'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                    <div className="text-xs font-bold text-teal-700 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-teal-600" />
+                      6차시 · 절대부등식2 (산술·기하평균 문제 1·2)
+                    </div>
+                    {[
+                      [
+                        '문제 1 ((a+b)/2 ≥ √ab)',
+                        `단계 확인: ${selectedStudent.l6?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob1ProofText || '미작성'}`,
+                      ],
+                      [
+                        '문제 2 (a+1/a ≥ 2, √ab ≥ 2ab/(a+b))',
+                        `단계 확인: ${selectedStudent.l6?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob2ProofText || '미작성'}`,
+                      ],
+                      ['6차시 성찰 1', selectedStudent.l6?.reflection1],
+                      ['6차시 성찰 2', selectedStudent.l6?.reflection2],
+                    ].map(([label, val]) => (
+                      <div key={label}>
+                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
+                          {val || '미작성'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3 lg:col-span-2">
+                    <div className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-rose-600" />
+                      7차시 · 절대부등식3 (절댓값 부등식 문제 1·2)
+                    </div>
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {[
+                        [
+                          '문제 1 (|a+b| ≤ |a|+|b|)',
+                          `단계 확인: ${selectedStudent.l7?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l7?.prob1ProofText || '미작성'}`,
+                        ],
+                        [
+                          '문제 2 (|a−b| ≤ |a|+|b|, |a|−|b| ≤ |a−b|)',
+                          `단계 확인: ${selectedStudent.l7?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l7?.prob2ProofText || '미작성'}`,
+                        ],
+                        ['7차시 성찰 1', selectedStudent.l7?.reflection1],
+                        ['7차시 성찰 2', selectedStudent.l7?.reflection2],
+                      ].map(([label, val]) => (
+                        <div key={label}>
+                          <div className="text-xs font-bold text-slate-700">{label}</div>
+                          <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
+                            {val || '미작성'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Teacher Memo and Rubric Section */}
@@ -1769,7 +2171,28 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
-                    <h4 className="text-base font-bold text-slate-900">학생 역량 평가 및 맞춤 피드백</h4>
+                    {(() => {
+                      const modelessEvalProg = getTeacherEvaluationProgress(selectedStudent);
+                      return (
+                        <div className="flex items-center justify-between gap-2 flex-wrap border-b border-slate-100 pb-3">
+                          <div>
+                            <div className="text-xs font-bold text-blue-600">교수자 평가</div>
+                            <h4 className="text-base font-bold text-slate-900">학생 역량 평가 및 맞춤 피드백</h4>
+                          </div>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-extrabold border ${
+                              modelessEvalProg.status === 'complete'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : modelessEvalProg.status === 'partial'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}
+                          >
+                            {modelessEvalProg.statusLabel} · 진행율 {modelessEvalProg.percent}% ({modelessEvalProg.completedCount}/{modelessEvalProg.totalCount})
+                          </span>
+                        </div>
+                      );
+                    })()}
                     <div className="grid gap-4 sm:grid-cols-2">
                       {EVAL_CRITERIA.map((title, i) => {
                         const ev = ensureTeacherEval(selectedStudent);

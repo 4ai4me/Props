@@ -20,6 +20,7 @@ export interface Lesson4ViewProps {
   step: number;
   onStepChange: (nextStep: number) => void;
   onUpdate: (updater: (prev: Lesson4State) => Lesson4State) => void;
+  onGoToLesson5?: () => void;
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
 
@@ -40,11 +41,16 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
   step,
   onStepChange,
   onUpdate,
+  onGoToLesson5,
   onRequestConfirm,
 }) => {
   const [mInputStr, setMInputStr] = useState<string>('5');
   const [nInputStr, setNInputStr] = useState<string>('7');
   const [feedback, setFeedback] = useState<Record<string, { text: string; type: 'good' | 'warn' }>>({});
+  const [isStep1HintVisible, setIsStep1HintVisible] = useState<boolean>(false);
+  const [visibleProb1Hints, setVisibleProb1Hints] = useState<boolean[]>([false, false, false, false]);
+  const [isStep3HintVisible, setIsStep3HintVisible] = useState<boolean>(false);
+  const [visibleProb2Hints, setVisibleProb2Hints] = useState<boolean[]>([false, false, false, false]);
 
   const completion = evaluateLevel4Completion(state);
 
@@ -96,11 +102,40 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
     }
   };
 
-  const handleOpenProb1Hint = (i: number) => {
+  const handleToggleProb1Hint = (i: number) => {
+    const isCurrentlyVisible = visibleProb1Hints[i];
+    if (isCurrentlyVisible) {
+      setVisibleProb1Hints((prev) => {
+        const next = [...prev];
+        next[i] = false;
+        return next;
+      });
+    } else {
+      if ((state.prob1Hints[i] || 0) === 0) {
+        onUpdate((prev) => {
+          const nextHints = [...prev.prob1Hints];
+          nextHints[i] = 1;
+          return { ...prev, prob1Hints: nextHints };
+        });
+      }
+      setVisibleProb1Hints((prev) => {
+        const next = [...prev];
+        next[i] = true;
+        return next;
+      });
+    }
+  };
+
+  const handleNextProb1Hint = (i: number) => {
     onUpdate((prev) => {
       const nextHints = [...prev.prob1Hints];
       nextHints[i] = Math.min(3, (nextHints[i] || 0) + 1);
       return { ...prev, prob1Hints: nextHints };
+    });
+    setVisibleProb1Hints((prev) => {
+      const next = [...prev];
+      next[i] = true;
+      return next;
     });
   };
 
@@ -124,11 +159,40 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
     }
   };
 
-  const handleOpenProb2Hint = (i: number) => {
+  const handleToggleProb2Hint = (i: number) => {
+    const isCurrentlyVisible = visibleProb2Hints[i];
+    if (isCurrentlyVisible) {
+      setVisibleProb2Hints((prev) => {
+        const next = [...prev];
+        next[i] = false;
+        return next;
+      });
+    } else {
+      if ((state.prob2Hints[i] || 0) === 0) {
+        onUpdate((prev) => {
+          const nextHints = [...prev.prob2Hints];
+          nextHints[i] = 1;
+          return { ...prev, prob2Hints: nextHints };
+        });
+      }
+      setVisibleProb2Hints((prev) => {
+        const next = [...prev];
+        next[i] = true;
+        return next;
+      });
+    }
+  };
+
+  const handleNextProb2Hint = (i: number) => {
     onUpdate((prev) => {
       const nextHints = [...prev.prob2Hints];
       nextHints[i] = Math.min(3, (nextHints[i] || 0) + 1);
       return { ...prev, prob2Hints: nextHints };
+    });
+    setVisibleProb2Hints((prev) => {
+      const next = [...prev];
+      next[i] = true;
+      return next;
     });
   };
 
@@ -321,26 +385,67 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                   </h3>
                   <button
                     type="button"
-                    onClick={() =>
-                      onUpdate((prev) => ({
-                        ...prev,
-                        step1HintLevel: Math.min(3, (prev.step1HintLevel || 0) + 1),
-                      }))
-                    }
-                    className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-100"
+                    aria-expanded={isStep1HintVisible && state.step1HintLevel > 0}
+                    onClick={() => {
+                      if (isStep1HintVisible && state.step1HintLevel > 0) {
+                        setIsStep1HintVisible(false);
+                      } else {
+                        if ((state.step1HintLevel || 0) === 0) {
+                          onUpdate((prev) => ({
+                            ...prev,
+                            step1HintLevel: 1,
+                          }));
+                        }
+                        setIsStep1HintVisible(true);
+                      }
+                    }}
+                    className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors ${
+                      isStep1HintVisible && state.step1HintLevel > 0
+                        ? 'border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200/70'
+                        : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                    }`}
                   >
                     <HelpCircle className="h-3.5 w-3.5" />
-                    원리 힌트 보기 ({state.step1HintLevel}/3)
+                    {isStep1HintVisible && state.step1HintLevel > 0
+                      ? `원리 힌트 숨기기 (${state.step1HintLevel}/3)`
+                      : `원리 힌트 보기 (${state.step1HintLevel}/3)`}
                   </button>
                 </div>
 
-                {state.step1HintLevel > 0 && (
-                  <div className="rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1">
+                {isStep1HintVisible && state.step1HintLevel > 0 && (
+                  <div className="rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1.5">
                     {STEP1_CONTRADICTION_HINTS.slice(0, state.step1HintLevel).map((h, idx) => (
                       <div key={idx}>
                         <strong>힌트 {idx + 1}:</strong> {h}
                       </div>
                     ))}
+                    <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
+                      {state.step1HintLevel < 3 ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onUpdate((prev) => ({
+                              ...prev,
+                              step1HintLevel: Math.min(3, (prev.step1HintLevel || 0) + 1),
+                            }))
+                          }
+                          className="text-xs font-extrabold text-amber-800 hover:text-amber-950 underline underline-offset-2"
+                        >
+                          + 다음 단계 힌트 더 보기 ({state.step1HintLevel}/3)
+                        </button>
+                      ) : (
+                        <span className="text-[11px] font-semibold text-amber-700">
+                          모든 단계 힌트를 확인했습니다 (3/3)
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setIsStep1HintVisible(false)}
+                        className="text-xs font-bold text-amber-700 hover:text-amber-950"
+                      >
+                        힌트 접기 ▲
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -465,21 +570,50 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleOpenProb1Hint(i)}
-                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs sm:text-sm font-bold text-amber-800 hover:bg-amber-100"
+                      onClick={() => handleToggleProb1Hint(i)}
+                      aria-expanded={Boolean(visibleProb1Hints[i] && hintCount > 0)}
+                      className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors ${
+                        visibleProb1Hints[i] && hintCount > 0
+                          ? 'border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200/70'
+                          : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                      }`}
                     >
                       <HelpCircle className="h-4 w-4" />
-                      힌트 보기 ({hintCount}/3)
+                      {visibleProb1Hints[i] && hintCount > 0
+                        ? `힌트 숨기기 (${hintCount}/3)`
+                        : `힌트 보기 (${hintCount}/3)`}
                     </button>
                   </div>
 
-                  {hintCount > 0 && (
-                    <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1">
+                  {visibleProb1Hints[i] && hintCount > 0 && (
+                    <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1.5">
                       {t.hints.slice(0, hintCount).map((h, hIdx) => (
                         <div key={hIdx}>
                           <strong>힌트 {hIdx + 1}:</strong> {h}
                         </div>
                       ))}
+                      <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
+                        {hintCount < 3 ? (
+                          <button
+                            type="button"
+                            onClick={() => handleNextProb1Hint(i)}
+                            className="text-xs font-extrabold text-amber-800 hover:text-amber-950 underline underline-offset-2"
+                          >
+                            + 다음 단계 힌트 더 보기 ({hintCount}/3)
+                          </button>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-amber-700">
+                            모든 단계 힌트를 확인했습니다 (3/3)
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleProb1Hint(i)}
+                          className="text-xs font-bold text-amber-700 hover:text-amber-950"
+                        >
+                          힌트 접기 ▲
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -547,26 +681,67 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
               </h3>
               <button
                 type="button"
-                onClick={() =>
-                  onUpdate((prev) => ({
-                    ...prev,
-                    step3HintLevel: Math.min(3, (prev.step3HintLevel || 0) + 1),
-                  }))
-                }
-                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-100"
+                aria-expanded={isStep3HintVisible && state.step3HintLevel > 0}
+                onClick={() => {
+                  if (isStep3HintVisible && state.step3HintLevel > 0) {
+                    setIsStep3HintVisible(false);
+                  } else {
+                    if ((state.step3HintLevel || 0) === 0) {
+                      onUpdate((prev) => ({
+                        ...prev,
+                        step3HintLevel: 1,
+                      }));
+                    }
+                    setIsStep3HintVisible(true);
+                  }
+                }}
+                className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors ${
+                  isStep3HintVisible && state.step3HintLevel > 0
+                    ? 'border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200/70'
+                    : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                }`}
               >
                 <HelpCircle className="h-3.5 w-3.5" />
-                단서 힌트 보기 ({state.step3HintLevel}/3)
+                {isStep3HintVisible && state.step3HintLevel > 0
+                  ? `단서 힌트 숨기기 (${state.step3HintLevel}/3)`
+                  : `단서 힌트 보기 (${state.step3HintLevel}/3)`}
               </button>
             </div>
 
-            {state.step3HintLevel > 0 && (
-              <div className="rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1">
+            {isStep3HintVisible && state.step3HintLevel > 0 && (
+              <div className="rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1.5">
                 {STEP3_CLOSURE_HINTS.slice(0, state.step3HintLevel).map((h, idx) => (
                   <div key={idx}>
                     <strong>힌트 {idx + 1}:</strong> {h}
                   </div>
                 ))}
+                <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
+                  {state.step3HintLevel < 3 ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdate((prev) => ({
+                          ...prev,
+                          step3HintLevel: Math.min(3, (prev.step3HintLevel || 0) + 1),
+                        }))
+                      }
+                      className="text-xs font-extrabold text-amber-800 hover:text-amber-950 underline underline-offset-2"
+                    >
+                      + 다음 단계 힌트 더 보기 ({state.step3HintLevel}/3)
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-amber-700">
+                      모든 단계 힌트를 확인했습니다 (3/3)
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsStep3HintVisible(false)}
+                    className="text-xs font-bold text-amber-700 hover:text-amber-950"
+                  >
+                    힌트 접기 ▲
+                  </button>
+                </div>
               </div>
             )}
 
@@ -709,21 +884,50 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleOpenProb2Hint(i)}
-                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs sm:text-sm font-bold text-amber-800 hover:bg-amber-100"
+                      onClick={() => handleToggleProb2Hint(i)}
+                      aria-expanded={Boolean(visibleProb2Hints[i] && hintCount > 0)}
+                      className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors ${
+                        visibleProb2Hints[i] && hintCount > 0
+                          ? 'border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200/70'
+                          : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                      }`}
                     >
                       <HelpCircle className="h-4 w-4" />
-                      힌트 보기 ({hintCount}/3)
+                      {visibleProb2Hints[i] && hintCount > 0
+                        ? `힌트 숨기기 (${hintCount}/3)`
+                        : `힌트 보기 (${hintCount}/3)`}
                     </button>
                   </div>
 
-                  {hintCount > 0 && (
-                    <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1">
+                  {visibleProb2Hints[i] && hintCount > 0 && (
+                    <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1.5">
                       {t.hints.slice(0, hintCount).map((h, hIdx) => (
                         <div key={hIdx}>
                           <strong>힌트 {hIdx + 1}:</strong> {h}
                         </div>
                       ))}
+                      <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
+                        {hintCount < 3 ? (
+                          <button
+                            type="button"
+                            onClick={() => handleNextProb2Hint(i)}
+                            className="text-xs font-extrabold text-amber-800 hover:text-amber-950 underline underline-offset-2"
+                          >
+                            + 다음 단계 힌트 더 보기 ({hintCount}/3)
+                          </button>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-amber-700">
+                            모든 단계 힌트를 확인했습니다 (3/3)
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleProb2Hint(i)}
+                          className="text-xs font-bold text-amber-700 hover:text-amber-950"
+                        >
+                          힌트 접기 ▲
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -822,16 +1026,27 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
             </div>
           </div>
 
-          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5">
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-              <h3 className="text-lg font-extrabold text-emerald-950">
-                01 ~ 04차시 전체 수사 완료 · 실시간 자동 제출
-              </h3>
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                <h3 className="text-lg font-extrabold text-emerald-950">
+                  04차시 귀류법 수사 완료 · 실시간 자동 제출
+                </h3>
+              </div>
+              <p className="mt-1.5 text-sm text-emerald-800">
+                작성한 귀류법 증명 보고서가 클라우드와 브라우저에 안전하게 보관되었습니다. 이어서 5차시(절대부등식1) 수사로 이동해 보세요!
+              </p>
             </div>
-            <p className="mt-1.5 text-sm text-emerald-800">
-              작성한 모든 탐구 기록과 대우법·귀류법 증명 보고서가 클라우드와 브라우저에 실시간으로 안전하게 보관되었습니다. 상단의 [현재 화면 인쇄 / PDF] 버튼으로 보고서를 출력할 수 있습니다.
-            </p>
+            {onGoToLesson5 && (
+              <button
+                type="button"
+                onClick={onGoToLesson5}
+                className="min-h-[44px] rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 whitespace-nowrap shrink-0 transition-colors"
+              >
+                5차시(절대부등식1)로 이동 →
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -849,14 +1064,31 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
         <div className="text-xs font-bold text-slate-400 mono">
           STAGE 0{step + 1} / 05 {completion[step] ? '· 완료 ✓' : ''}
         </div>
-        <button
-          type="button"
-          onClick={() => onStepChange(Math.min(4, step + 1))}
-          disabled={step === 4}
-          className="min-h-[44px] rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-40"
-        >
-          다음 단계
-        </button>
+        {step < 4 ? (
+          <button
+            type="button"
+            onClick={() => onStepChange(Math.min(4, step + 1))}
+            className="min-h-[44px] rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+          >
+            다음 단계
+          </button>
+        ) : onGoToLesson5 ? (
+          <button
+            type="button"
+            onClick={onGoToLesson5}
+            className="min-h-[44px] rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+          >
+            5차시로 이동 →
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="min-h-[44px] rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white opacity-40"
+          >
+            다음 단계
+          </button>
+        )}
       </div>
     </div>
   );

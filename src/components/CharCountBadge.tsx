@@ -1,7 +1,8 @@
 import React from 'react';
 
 interface CharCountBadgeProps {
-  current: number;
+  current?: number;
+  text?: string;
   min: number;
   className?: string;
 }
@@ -13,11 +14,13 @@ interface CharCountBadgeProps {
  */
 export const CharCountBadge: React.FC<CharCountBadgeProps> = ({
   current,
+  text,
   min,
   className = '',
 }) => {
-  const isSatisfied = current >= min;
-  const remaining = min - current;
+  const count = typeof current === 'number' ? current : (text ?? '').trim().length;
+  const isSatisfied = count >= min;
+  const remaining = min - count;
 
   return (
     <span
@@ -34,7 +37,7 @@ export const CharCountBadge: React.FC<CharCountBadgeProps> = ({
         }`}
       />
       <span>
-        현재 <strong className="font-extrabold">{current}</strong>자 / 최소 {min}자
+        현재 <strong className="font-extrabold">{count}</strong>자 / 최소 {min}자
       </span>
       {isSatisfied ? (
         <span className="text-[11px] font-semibold text-emerald-700">✓ 조건 충족</span>

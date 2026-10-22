@@ -563,6 +563,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
           </div>
 
           <div className="mb-6">
+            <div className="text-xs font-extrabold text-blue-600 mb-1">이하연 수학 교실 · 수학 탐정단</div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
               {studentSubTab === 'login'
                 ? '학생 탐정단 입장하기'
@@ -777,7 +778,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
             </div>
             <div>
               <div className="text-xs font-bold text-blue-600">
-                유일 관리자 전용 인증
+                이하연 수학 교실 · 유일 관리자 전용 인증
               </div>
               <h2 className="mt-0.5 text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                 교사(관리자) 전용 Google 이메일 인증

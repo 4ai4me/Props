@@ -3,6 +3,7 @@ import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import {
+  CLASSROOM_BRAND_NAME,
   STORAGE_KEY_STUDENT,
   STORAGE_KEY_TEACHER,
   STAGE_TITLES,
@@ -17,6 +18,10 @@ import {
   evaluateLevel2Completion,
   evaluateLevel3Completion,
   evaluateLevel4Completion,
+  evaluateLevel5Completion,
+  evaluateLevel6Completion,
+  evaluateLevel7Completion,
+  getTeacherEvaluationProgress,
   hasTeacherEvaluation,
 } from './utils/mathLogic';
 import {
@@ -28,6 +33,9 @@ import { Lesson1View } from './components/Lesson1View';
 import { Lesson2View } from './components/Lesson2View';
 import { Lesson3View } from './components/Lesson3View';
 import { Lesson4View } from './components/Lesson4View';
+import { Lesson5View } from './components/Lesson5View';
+import { Lesson6View } from './components/Lesson6View';
+import { Lesson7View } from './components/Lesson7View';
 import { TeacherView } from './components/TeacherView';
 import { AuthGateView, FirestoreStudentRegistrationDoc } from './components/AuthGateView';
 import { StudentEvaluationModal } from './components/StudentEvaluationModal';
@@ -89,17 +97,25 @@ export default function App() {
     return [];
   });
 
-  const [activeLessonTab, setActiveLessonTab] = useState<1 | 2 | 3 | 4>(() => {
+  const [activeLessonTab, setActiveLessonTab] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const l = Number(params.get('lesson'));
-      if (l === 1 || l === 2 || l === 3 || l === 4) return l;
+      if (l === 1 || l === 2 || l === 3 || l === 4 || l === 5 || l === 6 || l === 7) return l;
     } catch {
       // ignore
     }
     return 1;
   });
-  const [steps, setSteps] = useState<{ 1: number; 2: number; 3: number; 4: number }>(() => {
+  const [steps, setSteps] = useState<{
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+    5: number;
+    6: number;
+    7: number;
+  }>(() => {
     let initialStep = 0;
     try {
       const params = new URLSearchParams(window.location.search);
@@ -108,7 +124,15 @@ export default function App() {
     } catch {
       // ignore
     }
-    return { 1: initialStep, 2: initialStep, 3: initialStep, 4: initialStep };
+    return {
+      1: initialStep,
+      2: initialStep,
+      3: initialStep,
+      4: initialStep,
+      5: initialStep,
+      6: initialStep,
+      7: initialStep,
+    };
   });
   const [selectedTeacherKey, setSelectedTeacherKey] = useState<string>('');
   const [printingStudent, setPrintingStudent] = useState<StudentRecord | null>(null);
@@ -297,26 +321,39 @@ export default function App() {
   const done2 = evaluateLevel2Completion(student.l2);
   const done3 = evaluateLevel3Completion(student.l3);
   const done4 = evaluateLevel4Completion(student.l4);
-  const doneMap = { 1: done1, 2: done2, 3: done3, 4: done4 } as const;
+  const done5 = evaluateLevel5Completion(student.l5);
+  const done6 = evaluateLevel6Completion(student.l6);
+  const done7 = evaluateLevel7Completion(student.l7);
+  const doneMap = {
+    1: done1,
+    2: done2,
+    3: done3,
+    4: done4,
+    5: done5,
+    6: done6,
+    7: done7,
+  } as const;
   const activeDone = doneMap[activeLessonTab];
   const activeStep = steps[activeLessonTab];
 
   return (
     <>
       <div id="app-shell" className="min-h-screen flex flex-col">
-        {/* Top Navigation Bar (Strict 3-Zone Contract) */}
+        {/* Top Navigation Bar (Strict 3-Zone Contract — 최상단 브랜드 표기) */}
         <div className="no-print border-b border-white/10 bg-[#070b14] text-slate-300 px-4 sm:px-6 py-3">
-          <div className="mx-auto max-w-[1160px] flex items-center justify-between gap-6">
+          <div className="mx-auto max-w-[1160px] flex items-center justify-between gap-2 sm:gap-6">
             {/* Zone 1: Single-line Brand Wordmark */}
-            <div className="text-sm sm:text-base font-extrabold tracking-tight text-white whitespace-nowrap shrink-0">
-              Math Detective Lab
+            <div className="text-sm sm:text-base font-extrabold tracking-tight text-white whitespace-nowrap shrink-0 flex items-center gap-2">
+              <span className="text-sky-400">{CLASSROOM_BRAND_NAME}</span>
+              <span aria-hidden="true" className="hidden sm:inline text-slate-600">·</span>
+              <span className="hidden sm:inline">Math Detective Lab</span>
             </div>
 
             {/* Zone 2: Unboxed Curriculum Metadata */}
             <div className="hidden md:flex items-center gap-3 text-xs font-medium text-slate-400 whitespace-nowrap shrink-0">
               <span>공통수학2</span>
               <span aria-hidden="true" className="text-slate-600">·</span>
-              <span>명제의 증명</span>
+              <span>명제의 증명과 절대부등식</span>
               <span aria-hidden="true" className="text-slate-600">·</span>
               <span>관찰 · 추측 · 반례 · 증명</span>
             </div>
@@ -364,10 +401,10 @@ export default function App() {
             <div className="grid gap-8 lg:grid-cols-[1fr_300px] items-center">
               {/* Hero Copy */}
               <div>
-                <div className="flex items-center gap-2 text-xs font-semibold text-sky-400">
-                  <span>01 — 04차시 통합 탐구 프로젝트</span>
+                <div className="flex items-center gap-2 text-xs font-semibold text-sky-400 flex-wrap">
+                  <span>01 — 07차시 통합 탐구 프로젝트</span>
                   <span aria-hidden="true" className="text-slate-600">/</span>
-                  <span className="text-slate-300">직접 증명 · 반례 탐색 · 대우법 · 귀류법</span>
+                  <span className="text-slate-300">직접 증명 · 반례 탐색 · 대우법 · 귀류법 · 절대부등식(1·2·3)</span>
                 </div>
 
                 <h1
@@ -380,7 +417,7 @@ export default function App() {
                   수학 탐정단의 참·거짓 추리 및 증명 프로젝트
                 </p>
                 <p className="mt-2 text-sm sm:text-base text-slate-400 max-w-2xl leading-relaxed">
-                  구체적인 숫자의 단서를 수집하고, 반례 수색과 대수적 증명(1·2차시)부터 대우를 이용한 증명(3차시), 귀류법 증명(4차시)까지 단계별 힌트와 함께 완성해 보세요.
+                  구체적인 숫자의 단서를 수집하고, 반례 수색과 대수적 증명(1·2차시)부터 대우법(3차시), 귀류법(4차시), 그리고 절대부등식의 증명(5·6·7차시)까지 단계별 힌트와 함께 완성해 보세요.
                 </p>
               </div>
 
@@ -389,7 +426,7 @@ export default function App() {
                 <div className="w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xs">
                   <div className="flex items-center justify-between text-xs text-slate-400 pb-3 border-b border-white/10">
                     <span className="font-semibold text-slate-200">핵심 증명 기법</span>
-                    <span className="mono text-sky-300">01 — 04차시</span>
+                    <span className="mono text-sky-300">01 — 07차시</span>
                   </div>
                   <div className="py-3 space-y-2 mono text-xs">
                     <div className="flex items-center justify-between gap-3 text-slate-300 whitespace-nowrap">
@@ -397,30 +434,30 @@ export default function App() {
                       <span className="text-white font-semibold">(2k+1)² ≡ 1 (mod 8)</span>
                     </div>
                     <div className="flex items-center justify-between gap-3 text-slate-300 whitespace-nowrap">
-                      <span>대우법</span>
-                      <span className="text-sky-300 font-semibold">p → q ⇔ ~q → ~p</span>
+                      <span>대우·귀류</span>
+                      <span className="text-sky-300 font-semibold">~q → ~p, √2 ∉ ℚ</span>
                     </div>
                     <div className="flex items-center justify-between gap-3 text-slate-400 whitespace-nowrap">
-                      <span>귀류법</span>
-                      <span className="text-emerald-300 font-semibold">√2, 1+√2 ≠ n/m</span>
+                      <span>절대부등식</span>
+                      <span className="text-emerald-300 font-semibold">(a+b)/2 ≥ √ab, |a+b| ≤ |a|+|b|</span>
                     </div>
                   </div>
                   <div className="pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-                    <span>관찰 → 추측 → 대우 → 귀류법</span>
-                    <span className="mono text-slate-300">01 / 02 / 03 / 04</span>
+                    <span>관찰 → 추측 → 대우·귀류 → 절대부등식</span>
+                    <span className="mono text-slate-300">01 ~ 07</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* In Student Mode: Show Lesson 1~4 Tabs on Left, Progress & Print Feature on Right */}
+            {/* In Student Mode: Show Lesson 1~7 Tabs on Left, Progress & Print Feature on Right */}
             {sessionMode === 'student' && (
               <div
                 role="tablist"
                 aria-label="학생 차시 선택 및 수사 진행 현황"
-                className="no-print mt-7 pt-5 border-t border-white/10 flex flex-wrap items-center justify-between gap-4"
+                className="no-print mt-7 pt-5 border-t border-white/10 flex flex-col gap-4"
               >
-                {/* Left Side: Lesson 1 ~ 4 Tabs */}
+                {/* Top Row: Lesson 1 ~ 7 Tabs */}
                 <div className="flex flex-wrap items-center gap-2">
                   {(
                     [
@@ -428,6 +465,9 @@ export default function App() {
                       [2, '02', '진실의 증명 (2차시)'],
                       [3, '03', '대우법 추리 (3차시)'],
                       [4, '04', '귀류법 추리 (4차시)'],
+                      [5, '05', '절대부등식1 (5차시)'],
+                      [6, '06', '절대부등식2 (6차시)'],
+                      [7, '07', '절대부등식3 (7차시)'],
                     ] as const
                   ).map(([tabNum, badge, label]) => (
                     <button
@@ -439,7 +479,7 @@ export default function App() {
                         setActiveLessonTab(tabNum);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className={`min-h-[44px] rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
+                      className={`min-h-[42px] rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
                         activeLessonTab === tabNum
                           ? 'bg-white text-slate-900 shadow-sm'
                           : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
@@ -457,16 +497,18 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Right Side: 나의 수사 진행 현황 (h3 class) with Print Button */}
-                <div className="flex flex-wrap items-center gap-3">
+                {/* Bottom Row: 나의 수사 진행 현황 (h3 class) with Evaluation & Print Buttons */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2">
                     <h3 className="text-sm sm:text-base font-extrabold text-white whitespace-nowrap">
                       나의 수사 진행 현황
                     </h3>
                     <span className="mono text-xs font-bold text-sky-200 bg-sky-950/70 border border-sky-400/30 px-2 py-0.5 rounded-md">
-                      1차시 {done1.filter(Boolean).length}/5 · 2차시 {done2.filter(Boolean).length}/5 · 3차시 {done3.filter(Boolean).length}/5 · 4차시 {done4.filter(Boolean).length}/5
+                      1차시 {done1.filter(Boolean).length}/5 · 2차시 {done2.filter(Boolean).length}/5 · 3차시 {done3.filter(Boolean).length}/5 · 4차시 {done4.filter(Boolean).length}/5 · 5차시 {done5.filter(Boolean).length}/5 · 6차시 {done6.filter(Boolean).length}/5 · 7차시 {done7.filter(Boolean).length}/5
                     </span>
                   </div>
+
+                  <div className="flex flex-wrap items-center gap-2.5">
 
                   {/* "평가 결과" Button */}
                   <button
@@ -497,6 +539,7 @@ export default function App() {
                     <Printer className="h-4 w-4 text-sky-300" />
                     <span>현재 화면 인쇄 / PDF</span>
                   </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -593,6 +636,9 @@ export default function App() {
                       {activeLessonTab === 2 && '02차시 · 학생 주도형 수사 (반례와 정당화)'}
                       {activeLessonTab === 3 && '03차시 · 힌트 안내형 수사 (대우를 이용한 증명)'}
                       {activeLessonTab === 4 && '04차시 · 힌트 안내형 수사 (귀류법을 이용한 증명)'}
+                      {activeLessonTab === 5 && '05차시 · 절대부등식1 (완전제곱식을 이용한 절대부등식의 증명)'}
+                      {activeLessonTab === 6 && '06차시 · 절대부등식2 (산술평균과 기하평균의 관계 증명)'}
+                      {activeLessonTab === 7 && '07차시 · 절대부등식3 (절댓값 기호를 포함한 부등식의 증명)'}
                     </span>
                     <span className="font-semibold mono text-slate-600">
                       권장 시간 50분 · 단계 완료 {activeDone.filter(Boolean).length} / 5
@@ -604,12 +650,18 @@ export default function App() {
                     {activeLessonTab === 2 && '반례를 찾아라! 진실을 증명하라!'}
                     {activeLessonTab === 3 && '대우(~q → ~p)로 숨겨진 진실을 증명하라!'}
                     {activeLessonTab === 4 && '모순을 포착하라! 귀류법으로 무리수를 증명하라!'}
+                    {activeLessonTab === 5 && '절대부등식1 — 실수의 제곱(X² ≥ 0)으로 절대부등식을 증명하라!'}
+                    {activeLessonTab === 6 && '절대부등식2 — 산술평균과 기하평균의 관계를 증명하라!'}
+                    {activeLessonTab === 7 && '절대부등식3 — 절댓값의 제곱 성질(|A|² = A²)로 부등식을 증명하라!'}
                   </h2>
                   <p className="mt-1 text-xs sm:text-sm text-slate-600">
                     {activeLessonTab === 1 && '홀수의 제곱에서 발견한 단서는 우연일까요, 필연일까요?'}
                     {activeLessonTab === 2 && '새롭게 만든 명제는 진실일까요? 반례와 증명으로 사건을 해결해 보세요.'}
                     {activeLessonTab === 3 && '직접 증명하기 까다로운 두 사건(짝수·홀수, 3의 배수)을 대우 명제와 단계별 힌트로 해결해 보세요.'}
                     {activeLessonTab === 4 && '결론을 부정했을 때 발생하는 논리적 모순을 추적하여 √2와 1+√2가 유리수가 아님을 증명해 보세요.'}
+                    {activeLessonTab === 5 && '교과서 예제 3을 변환한 [문제 1] (a²+b² ≥ ab)과 [문제 2] ((a+b)² ≥ 4ab, a²−4ab+5b² ≥ 0)를 완전제곱식으로 증명해 보세요.'}
+                    {activeLessonTab === 6 && '교과서 예제 4를 변환한 [문제 1] ((a+b)/2 ≥ √ab)과 [문제 2] (a+1/a ≥ 2, √ab ≥ 2ab/(a+b))를 증명해 보세요.'}
+                    {activeLessonTab === 7 && '교과서 예제 5를 변환한 [문제 1] (|a+b| ≤ |a|+|b|)과 [문제 2] (|a−b| ≤ |a|+|b|, |a|−|b| ≤ |a−b|)를 증명해 보세요.'}
                   </p>
 
                   <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
@@ -661,6 +713,18 @@ export default function App() {
                 aria-live="polite"
                 className="print-card rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-8 shadow-xs"
               >
+                {/* Print-only Classroom Header for Current Screen Print / PDF */}
+                <div className="hidden print:block mb-4 pb-3 border-b border-slate-300 text-slate-900">
+                  <div className="text-xs font-extrabold tracking-wider text-blue-700">
+                    MATH DETECTIVE WORKSHEET
+                  </div>
+                  <div className="text-lg font-extrabold mt-0.5">
+                    우연일까, 필연일까? ({activeLessonTab}차시 탐구 활동지)
+                  </div>
+                  <div className="text-xs text-slate-600 mt-1">
+                    학생: {approvedProfile ? `${approvedProfile.school} ${approvedProfile.grade}학년 ${approvedProfile.classNum}반 ${approvedProfile.studentNum}번 ${approvedProfile.name}` : `${student.group} ${student.code}`} · 출력일: {new Date().toLocaleDateString('ko-KR')}
+                  </div>
+                </div>
                 {activeLessonTab === 1 && (
                   <Lesson1View
                     state={student.l1}
@@ -749,6 +813,78 @@ export default function App() {
                         l4: updater(prev.l4),
                       }))
                     }
+                    onGoToLesson5={() => {
+                      setSteps((prev) => ({ ...prev, 5: 0 }));
+                      setActiveLessonTab(5);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onRequestConfirm={requestConfirm}
+                  />
+                )}
+
+                {activeLessonTab === 5 && (
+                  <Lesson5View
+                    state={student.l5}
+                    step={steps[5]}
+                    onStepChange={(next) => {
+                      setSteps((prev) => ({ ...prev, 5: next }));
+                      window.scrollTo({ top: 180, behavior: 'smooth' });
+                    }}
+                    onUpdate={(updater) =>
+                      setStudent((prev) => ({
+                        ...prev,
+                        updatedAt: new Date().toISOString(),
+                        l5: updater(prev.l5),
+                      }))
+                    }
+                    onGoToLesson6={() => {
+                      setSteps((prev) => ({ ...prev, 6: 0 }));
+                      setActiveLessonTab(6);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onRequestConfirm={requestConfirm}
+                  />
+                )}
+
+                {activeLessonTab === 6 && (
+                  <Lesson6View
+                    state={student.l6}
+                    step={steps[6]}
+                    onStepChange={(next) => {
+                      setSteps((prev) => ({ ...prev, 6: next }));
+                      window.scrollTo({ top: 180, behavior: 'smooth' });
+                    }}
+                    onUpdate={(updater) =>
+                      setStudent((prev) => ({
+                        ...prev,
+                        updatedAt: new Date().toISOString(),
+                        l6: updater(prev.l6),
+                      }))
+                    }
+                    onGoToLesson7={() => {
+                      setSteps((prev) => ({ ...prev, 7: 0 }));
+                      setActiveLessonTab(7);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    onRequestConfirm={requestConfirm}
+                  />
+                )}
+
+                {activeLessonTab === 7 && (
+                  <Lesson7View
+                    state={student.l7}
+                    step={steps[7]}
+                    onStepChange={(next) => {
+                      setSteps((prev) => ({ ...prev, 7: next }));
+                      window.scrollTo({ top: 180, behavior: 'smooth' });
+                    }}
+                    onUpdate={(updater) =>
+                      setStudent((prev) => ({
+                        ...prev,
+                        updatedAt: new Date().toISOString(),
+                        l7: updater(prev.l7),
+                      }))
+                    }
                     onRequestConfirm={requestConfirm}
                   />
                 )}
@@ -771,13 +907,15 @@ export default function App() {
           )}
         </main>
 
-        {/* Footer */}
+        {/* Footer (최하단 브랜드 표기) */}
         <footer className="no-print border-t border-slate-200/80 bg-white mt-10">
           <div className="mx-auto max-w-[1160px] px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
             <div>
+              <span className="font-extrabold text-blue-700">{CLASSROOM_BRAND_NAME}</span>
+              <span className="mx-2 text-slate-300">·</span>
               <span className="font-bold text-slate-800">우연일까, 필연일까?</span>
               <span className="mx-2 text-slate-300">·</span>
-              <span>공통수학2 명제의 증명 탐구 프로젝트</span>
+              <span>공통수학2 명제의 증명과 절대부등식 탐구 프로젝트</span>
             </div>
             <div>
               학생 모드 · 교사(관리자 <span className="mono">{ADMIN_TEACHER_EMAIL}</span>) 승인제 통합 플랫폼
@@ -845,19 +983,26 @@ export default function App() {
       >
         {printingStudent && (
           <div className="text-[#18283b] space-y-4">
-            <div className="text-xs tracking-[2px] text-[#516780] font-bold">
-              MATH DETECTIVE · INDIVIDUAL FEEDBACK
+            <div className="flex items-center justify-between border-b-2 border-[#18283b] pb-2">
+              <div>
+                <div className="text-xs tracking-[2px] text-[#2563eb] font-extrabold">
+                  {CLASSROOM_BRAND_NAME} · MATH DETECTIVE · INDIVIDUAL FEEDBACK
+                </div>
+                <h2 className="text-2xl font-extrabold mt-0.5">
+                  우연일까, 필연일까? — 수학 탐정단 개별 탐구 평가 결과서
+                </h2>
+              </div>
+              <div className="text-right text-xs font-bold text-[#516780]">
+                <div>발행일: {new Date().toLocaleDateString('ko-KR')}</div>
+              </div>
             </div>
-            <h2 className="text-2xl font-extrabold">
-              우연일까, 필연일까? — 수학 탐정단 개별 탐구 피드백
-            </h2>
             <div className="border-b border-[#ccd5df] py-2 text-sm">
               <strong>학급/모둠:</strong> {printingStudent.group || '—'} &nbsp;&nbsp;|&nbsp;&nbsp;{' '}
               <strong>학생 식별코드:</strong> {printingStudent.code || '—'} &nbsp;&nbsp;|&nbsp;&nbsp;{' '}
-              <strong>발행일:</strong> {new Date().toLocaleDateString('ko-KR')}
+              <strong>평가 상태:</strong> {getTeacherEvaluationProgress(printingStudent).statusLabel} ({getTeacherEvaluationProgress(printingStudent).percent}%)
             </div>
 
-            <h3 className="text-lg font-bold pt-2">1. 탐구 활동 요약</h3>
+            <h3 className="text-lg font-bold pt-2">1. 탐구 활동 요약 (1 ~ 7차시)</h3>
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
               <strong>1차시 발견한 명제:</strong> {printingStudent.l1.claim || '미작성'}
             </div>
@@ -892,8 +1037,28 @@ export default function App() {
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
               <strong>4차시 귀류법 [문제 2·1+√2]:</strong> {printingStudent.l4?.prob2ProofText || '미작성'}
             </div>
+            <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+              <strong>5차시 절대부등식1 [문제 1·a²+b²≥ab]:</strong> {printingStudent.l5?.prob1ProofText || '미작성'}
+            </div>
+            <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+              <strong>5차시 절대부등식1 [문제 2·(a+b)²≥4ab 외]:</strong> {printingStudent.l5?.prob2ProofText || '미작성'}
+            </div>
+            <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+              <strong>6차시 절대부등식2 [문제 1·산술·기하평균]:</strong> {printingStudent.l6?.prob1ProofText || '미작성'}
+            </div>
+            <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+              <strong>6차시 절대부등식2 [문제 2·역수·조화평균]:</strong> {printingStudent.l6?.prob2ProofText || '미작성'}
+            </div>
+            <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+              <strong>7차시 절대부등식3 [문제 1·|a+b|≤|a|+|b|]:</strong> {printingStudent.l7?.prob1ProofText || '미작성'}
+            </div>
+            <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+              <strong>7차시 절대부등식3 [문제 2·절댓값 차 부등식]:</strong> {printingStudent.l7?.prob2ProofText || '미작성'}
+            </div>
 
-            <h3 className="text-lg font-bold pt-2">2. 교사 평가 (4개 영역, 각 0~3점)</h3>
+            <h3 className="text-lg font-bold pt-2">
+              2. 교수자 역량 평가 (4개 영역, 각 0~3점)
+            </h3>
             <div className="grid grid-cols-4 gap-3">
               {EVAL_CRITERIA.map((title, i) => {
                 const ev = ensureTeacherEval(printingStudent);
@@ -912,7 +1077,7 @@ export default function App() {
               })}
             </div>
 
-            <h3 className="text-lg font-bold pt-2">3. 선생님의 피드백</h3>
+            <h3 className="text-lg font-bold pt-2">3. 교수자 피드백</h3>
             <div className="rounded-lg border border-[#ddd] p-3 text-sm whitespace-pre-wrap">
               {ensureTeacherEval(printingStudent).feedback || '아직 작성된 피드백이 없습니다.'}
             </div>
@@ -920,6 +1085,10 @@ export default function App() {
             <h3 className="text-lg font-bold pt-2">4. 다음 탐구를 위한 제안</h3>
             <div className="rounded-lg border border-[#ddd] p-3 text-sm whitespace-pre-wrap">
               {ensureTeacherEval(printingStudent).nextStep || '아직 작성된 제안이 없습니다.'}
+            </div>
+
+            <div className="pt-4 border-t border-[#ccd5df] text-center text-xs text-[#516780] font-semibold">
+              {CLASSROOM_BRAND_NAME} · 공통수학2 명제의 증명과 절대부등식 탐구 프로젝트 공식 평가서
             </div>
           </div>
         )}

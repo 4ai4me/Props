@@ -44,6 +44,7 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
   const [testInputStr, setTestInputStr] = useState<string>('3');
   const [testMemoStr, setTestMemoStr] = useState<string>('');
   const [feedback, setFeedback] = useState<Record<string, { text: string; type: 'good' | 'warn' | 'info' }>>({});
+  const [isHintVisible, setIsHintVisible] = useState<boolean>(false);
 
   const completion = evaluateLevel2Completion(state);
   const currentTopic = state.topic ? TOPICS[state.topic as TopicId] : null;
@@ -952,23 +953,70 @@ export const Lesson2View: React.FC<Lesson2ViewProps> = ({
               <div className="mt-5 pt-5 border-t border-slate-100">
                 <h3 className="text-base font-bold text-slate-900">필요할 때만 힌트 열기</h3>
                 <p className="mt-1 text-xs sm:text-sm text-slate-500">
-                  증명을 스스로 시도한 다음 막히는 부분에서 활용하세요.
+                  증명을 스스로 시도한 다음 막히는 부분에서 활용하세요. (클릭하여 열거나 다시 클릭하여 숨길 수 있습니다)
                 </p>
                 <div className="mt-3">
                   <button
                     type="button"
-                    onClick={() =>
-                      onUpdate((prev) => ({ ...prev, hintLevel: Math.min(3, (prev.hintLevel || 0) + 1) }))
-                    }
-                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs sm:text-sm font-bold text-amber-800 hover:bg-amber-100"
+                    aria-expanded={isHintVisible}
+                    onClick={() => {
+                      if (isHintVisible) {
+                        setIsHintVisible(false);
+                      } else {
+                        setIsHintVisible(true);
+                        if ((state.hintLevel || 0) === 0) {
+                          onUpdate((prev) => ({ ...prev, hintLevel: 1 }));
+                        }
+                      }
+                    }}
+                    className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border px-4 py-2 text-xs sm:text-sm font-bold transition-colors ${
+                      isHintVisible
+                        ? 'border-amber-400 bg-amber-100 text-amber-950'
+                        : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                    }`}
                   >
                     <HelpCircle className="h-4 w-4" />
-                    힌트 한 단계 보기 ({state.hintLevel}/3)
+                    {isHintVisible
+                      ? `힌트 숨기기 (${Math.max(1, state.hintLevel)}/3)`
+                      : `힌트 보기 (${state.hintLevel}/3)`}
                   </button>
                 </div>
-                {state.hintLevel > 0 && currentTopic && (
-                  <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3.5 text-sm text-amber-900">
-                    <strong>힌트 {state.hintLevel}:</strong> {currentTopic.hints[state.hintLevel - 1]}
+                {isHintVisible && currentTopic && (
+                  <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3.5 text-sm text-amber-900 space-y-2">
+                    <div className="space-y-1">
+                      {currentTopic.hints.slice(0, Math.max(1, state.hintLevel)).map((h, hIdx) => (
+                        <div key={hIdx}>
+                          <strong>힌트 {hIdx + 1}:</strong> {h}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-amber-200/60">
+                      {state.hintLevel < 3 ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onUpdate((prev) => ({
+                              ...prev,
+                              hintLevel: Math.min(3, (prev.hintLevel || 0) + 1),
+                            }))
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg bg-amber-200/70 hover:bg-amber-200 px-2.5 py-1 text-xs font-bold text-amber-950 transition-colors"
+                        >
+                          + 다음 단계 힌트 더 보기 ({Math.max(1, state.hintLevel)}/3)
+                        </button>
+                      ) : (
+                        <span className="text-[11px] font-semibold text-amber-700">
+                          모든 단계 힌트가 열렸습니다 (3/3)
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setIsHintVisible(false)}
+                        className="text-xs font-bold text-amber-800 hover:underline"
+                      >
+                        힌트 접기 ▲
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

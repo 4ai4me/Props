@@ -121,6 +121,91 @@ export interface Lesson4State {
   reflection2: string;
 }
 
+export interface L5InequalityExample {
+  a: number;
+  b: number;
+  lhs: number;
+  rhs: number;
+  diff: number;
+  isEqual: boolean;
+}
+
+export interface Lesson5State {
+  examples: L5InequalityExample[];
+  squareConceptChoice: '' | 'nonnegative' | 'alwayspositive' | 'negative';
+  step1HintLevel: number;
+  prob1Choices: (number | null)[];
+  prob1Verified: boolean[];
+  prob1Hints: number[];
+  prob1ProofText: string;
+  equalityConditionChecked: boolean;
+  equalityReason: string;
+  step3HintLevel: number;
+  prob2Choices: (number | null)[];
+  prob2Verified: boolean[];
+  prob2Hints: number[];
+  prob2ProofText: string;
+  reflection1: string;
+  reflection2: string;
+}
+
+export interface L6MeanExample {
+  a: number;
+  b: number;
+  arith: number;
+  geom: number;
+  harm: number;
+  diff: number;
+  isEqual: boolean;
+}
+
+export interface Lesson6State {
+  examples: L6MeanExample[];
+  amgmConceptChoice: '' | 'positive' | 'anyreal' | 'negative';
+  step1HintLevel: number;
+  prob1Choices: (number | null)[];
+  prob1Verified: boolean[];
+  prob1Hints: number[];
+  prob1ProofText: string;
+  harmonicChecked: boolean;
+  harmonicReason: string;
+  step3HintLevel: number;
+  prob2Choices: (number | null)[];
+  prob2Verified: boolean[];
+  prob2Hints: number[];
+  prob2ProofText: string;
+  reflection1: string;
+  reflection2: string;
+}
+
+export interface L7AbsExample {
+  a: number;
+  b: number;
+  lhsSum: number;
+  rhsSum: number;
+  diffSq: number;
+  sameSign: boolean;
+}
+
+export interface Lesson7State {
+  examples: L7AbsExample[];
+  absSquareConceptChoice: '' | 'square_diff' | 'direct_sub' | 'cube';
+  step1HintLevel: number;
+  prob1Choices: (number | null)[];
+  prob1Verified: boolean[];
+  prob1Hints: number[];
+  prob1ProofText: string;
+  absDiffChecked: boolean;
+  absDiffReason: string;
+  step3HintLevel: number;
+  prob2Choices: (number | null)[];
+  prob2Verified: boolean[];
+  prob2Hints: number[];
+  prob2ProofText: string;
+  reflection1: string;
+  reflection2: string;
+}
+
 export interface TeacherEvaluation {
   scores: (number | null)[];
   feedback: string;
@@ -137,6 +222,9 @@ export interface StudentRecord {
   l2: Lesson2State;
   l3: Lesson3State;
   l4: Lesson4State;
+  l5: Lesson5State;
+  l6: Lesson6State;
+  l7: Lesson7State;
   teacherMemo?: string;
   evaluation?: TeacherEvaluation;
 }
@@ -530,11 +618,368 @@ export const PROOF4_PROB2_STEPS: ProofStepQuestion[] = [
   },
 ];
 
+export const PROOF5_PROB1_STEPS: ProofStepQuestion[] = [
+  {
+    q: '실수 a와 b에 대하여 부등식 a² + b² ≥ ab가 성립함을 증명하기 위해 가장 먼저 계산해야 할 식은?',
+    opts: [
+      '좌변에서 우변을 뺀 차 (a² + b²) − ab = a² − ab + b²',
+      '좌변과 우변을 곱한 식 (a² + b²) × ab',
+      '좌변을 우변으로 나눈 식 (a² + b²) ÷ ab',
+    ],
+    answer: 0,
+    hints: [
+      '두 실수 A, B의 대소를 비교할 때는 A − B ≥ 0임을 보이는 것이 기본 원리입니다.',
+      '따라서 좌변 A = a² + b²에서 우변 B = ab를 뺀 차 A − B를 구합니다.',
+      '(a² + b²) − ab = a² − ab + b²의 부호를 조사하면 됩니다.',
+    ],
+  },
+  {
+    q: 'a² − ab + b²을 a에 대한 완전제곱식과 나머지의 합으로 바르게 변형한 것은?',
+    opts: [
+      '(a − b)² + b²',
+      '(a − b/2)² + (3/4)b²',
+      '(a − b/2)² − (3/4)b²',
+    ],
+    answer: 1,
+    hints: [
+      'a² − ab가 완전제곱식이 되려면 a의 계수(−b)의 절반의 제곱인 (−b/2)² = b²/4를 더하고 빼야 합니다.',
+      'a² − ab + b² = (a² − ab + b²/4) − b²/4 + b²으로 묶을 수 있습니다.',
+      '따라서 (a − b/2)² + (3/4)b²이 됩니다.',
+    ],
+  },
+  {
+    q: '실수의 성질에 의하여 (a − b/2)²과 (3/4)b²의 부호는 각각 어떠한가요?',
+    opts: [
+      '실수의 제곱은 항상 0 이상이므로 (a − b/2)² ≥ 0, (3/4)b² ≥ 0이 되어 그 합도 0 이상이다.',
+      'a와 b가 음수이면 제곱한 값도 음수가 될 수 있다.',
+      '항상 0보다 커서 0이 될 수는 없다.',
+    ],
+    answer: 0,
+    hints: [
+      '임의의 실수 X에 대하여 X² ≥ 0이라는 실수의 기본 성질을 떠올려 보세요.',
+      'a − b/2와 b가 모두 실수이므로 (a − b/2)² ≥ 0이고 (3/4)b² ≥ 0입니다.',
+      '0 이상인 두 실수의 합은 항상 0 이상이므로 a² + b² − ab ≥ 0, 즉 a² + b² ≥ ab가 성립합니다.',
+    ],
+  },
+  {
+    q: '부등식 a² + b² ≥ ab에서 등호(=)가 성립할 조건은 무엇인가요?',
+    opts: [
+      'a = b인 모든 실수일 때 성립한다.',
+      'a − b/2 = 0이고 b = 0일 때, 즉 a = b = 0일 때 성립한다.',
+      'a = 1, b = 2일 때 성립한다.',
+    ],
+    answer: 1,
+    hints: [
+      'X² + Y² = 0 (X, Y는 실수)이 성립하려면 X = 0이고 동시에 Y = 0이어야 합니다.',
+      '(a − b/2)² + (3/4)b² = 0이 되려면 a − b/2 = 0이고 (3/4)b² = 0이어야 합니다.',
+      'b = 0을 a − b/2 = 0에 대입하면 a = 0이므로, 등호는 a = b = 0일 때 성립합니다.',
+    ],
+  },
+];
+
+export const PROOF5_PROB2_STEPS: ProofStepQuestion[] = [
+  {
+    q: '[문제 2-(1)] 부등식 (a + b)² ≥ 4ab를 증명하기 위해 좌변에서 우변을 빼서 정리한 완전제곱식은?',
+    opts: [
+      '(a + b)² − 4ab = a² + 2ab + b² − 4ab = a² − 2ab + b² = (a − b)² ≥ 0',
+      '(a + b)² − 4ab = a² − 4ab + b² = (a − 2b)² ≥ 0',
+      '(a + b)² − 4ab = (a + b − 2)² ≥ 0',
+    ],
+    answer: 0,
+    hints: [
+      '(a + b)²을 전개하면 a² + 2ab + b²입니다.',
+      '여기에 −4ab를 계산하면 동류항 2ab − 4ab = −2ab가 되어 a² − 2ab + b²이 됩니다.',
+      'a² − 2ab + b²을 인수분해하면 (a − b)²이고, 실수의 제곱이므로 항상 (a − b)² ≥ 0입니다.',
+    ],
+  },
+  {
+    q: '[문제 2-(1)] 부등식 (a + b)² ≥ 4ab에서 등호가 성립할 조건은?',
+    opts: [
+      'a = b = 0일 때만 성립한다.',
+      'a − b = 0, 즉 a = b일 때 성립한다.',
+      'a = −b일 때 성립한다.',
+    ],
+    answer: 1,
+    hints: [
+      '(a + b)² − 4ab = (a − b)²에서 등호가 성립한다는 것은 (a − b)² = 0이 된다는 뜻입니다.',
+      '실수의 제곱이 0이 되려면 밑인 a − b = 0이어야 합니다.',
+      '따라서 등호는 a = b일 때 성립합니다.',
+    ],
+  },
+  {
+    q: '[문제 2-(2)] 부등식 a² − 4ab + 5b² ≥ 0을 증명하기 위해 좌변을 두 제곱식의 합으로 바르게 변형한 것은?',
+    opts: [
+      'a² − 4ab + 5b² = (a − 4b)² + b² ≥ 0',
+      'a² − 4ab + 5b² = (a² − 4ab + 4b²) + b² = (a − 2b)² + b² ≥ 0',
+      'a² − 4ab + 5b² = (a − 5b)² ≥ 0',
+    ],
+    answer: 1,
+    hints: [
+      'a² − 4ab가 완전제곱식이 되려면 뒤에 +4b²이 필요합니다.',
+      '5b²을 4b² + b²으로 쪼개면 (a² − 4ab + 4b²) + b²이 됩니다.',
+      '앞부분을 완전제곱식으로 묶으면 (a − 2b)² + b²이 되며, 두 실수의 제곱의 합이므로 ≥ 0입니다.',
+    ],
+  },
+  {
+    q: '[문제 2-(2)] 부등식 a² − 4ab + 5b² ≥ 0에서 등호가 성립할 조건은?',
+    opts: [
+      'a = 2b인 모든 실수에서 성립한다.',
+      'a − 2b = 0이고 b = 0일 때, 즉 a = b = 0일 때 성립한다.',
+      'a = b = 1일 때 성립한다.',
+    ],
+    answer: 1,
+    hints: [
+      '(a − 2b)² + b² = 0이 되려면 두 제곱식이 동시에 0이어야 합니다.',
+      '즉 a − 2b = 0이고 동시에 b = 0이어야 합니다.',
+      'b = 0을 대입하면 a = 0이므로, 등호는 a = b = 0일 때 성립합니다.',
+    ],
+  },
+];
+
+export const PROOF6_PROB1_STEPS: ProofStepQuestion[] = [
+  {
+    q: 'a > 0, b > 0일 때 산술평균과 기하평균의 관계 (a + b)/2 ≥ √(ab)를 증명하기 위해 계산할 차의 식은?',
+    opts: [
+      '(a + b)/2 − √(ab) = (a + b − 2√(ab)) / 2',
+      '(a + b)/2 + √(ab) = (a + b + 2√(ab)) / 2',
+      '(a − b)/2 − √(ab)',
+    ],
+    answer: 0,
+    hints: [
+      '좌변 (a + b)/2에서 우변 √(ab)를 뺀 차가 0 이상임을 보이면 됩니다.',
+      '분모를 2로 통분하면 √(ab) = 2√(ab)/2가 됩니다.',
+      '따라서 (a + b)/2 − √(ab) = (a + b − 2√(ab)) / 2로 정리됩니다.',
+    ],
+  },
+  {
+    q: 'a > 0, b > 0이므로 a = (√a)², b = (√b)²임을 이용하면 분자 a − 2√a√b + b는 어떤 완전제곱식이 되나요?',
+    opts: [
+      '(a − b)²',
+      '(√a − √b)²',
+      '(√a + √b)²',
+    ],
+    answer: 1,
+    hints: [
+      '양수 a, b에 대하여 a = (√a)², b = (√b)², √(ab) = √a√b입니다.',
+      '따라서 분자는 (√a)² − 2√a√b + (√b)²으로 쓸 수 있습니다.',
+      '이는 인수분해 공식 X² − 2XY + Y² = (X − Y)²에 의해 (√a − √b)²이 됩니다.',
+    ],
+  },
+  {
+    q: '(a + b)/2 − √(ab) = (√a − √b)² / 2의 부호에 대한 올바른 결론은?',
+    opts: [
+      '실수 (√a − √b)의 제곱은 항상 0 이상이므로 (√a − √b)² / 2 ≥ 0이 되어 (a + b)/2 ≥ √(ab)가 성립한다.',
+      '√a − √b가 음수이면 제곱해도 음수가 될 수 있다.',
+      '분모가 2이므로 항상 1보다 크다.',
+    ],
+    answer: 0,
+    hints: [
+      'a > 0, b > 0일 때 √a와 √b는 모두 실수이므로 √a − √b도 실수입니다.',
+      '실수의 제곱은 항상 0 이상이므로 (√a − √b)² ≥ 0이고, 이를 양수 2로 나눈 값도 0 이상입니다.',
+      '따라서 (a + b)/2 − √(ab) ≥ 0이므로 (a + b)/2 ≥ √(ab)가 성립합니다.',
+    ],
+  },
+  {
+    q: '부등식 (a + b)/2 ≥ √(ab)에서 등호(=)가 성립할 조건은?',
+    opts: [
+      'a = b = 0일 때 성립한다.',
+      '√a − √b = 0, 즉 a = b일 때 성립한다.',
+      'ab = 1일 때만 성립한다.',
+    ],
+    answer: 1,
+    hints: [
+      '(√a − √b)² / 2 = 0이 되려면 √a − √b = 0이어야 합니다.',
+      '√a = √b의 양변을 제곱하면 a = b가 됩니다 (단, a > 0, b > 0).',
+      '따라서 등호는 두 양수 a와 b가 서로 같을 때(a = b) 성립합니다.',
+    ],
+  },
+];
+
+export const PROOF6_PROB2_STEPS: ProofStepQuestion[] = [
+  {
+    q: '[문제 2-(1)] a > 0일 때 부등식 a + 1/a ≥ 2를 산술평균과 기하평균의 관계로 증명하는 첫 단계는?',
+    opts: [
+      'a > 0이면 1/a > 0이므로, 두 양수 a와 1/a에 산술·기하평균의 관계 a + 1/a ≥ 2√(a · 1/a)를 적용한다.',
+      'a에 0을 대입하여 성립함을 확인한다.',
+      '양변에서 a를 빼서 1/a ≥ 2 − a로 정리한다.',
+    ],
+    answer: 0,
+    hints: [
+      '산술평균과 기하평균의 관계는 두 수가 모두 양수일 때 사용할 수 있습니다 (양변에 2를 곱한 형태: A + B ≥ 2√(AB)).',
+      'a > 0이면 역수인 1/a도 양수(1/a > 0)입니다.',
+      '따라서 A = a, B = 1/a를 대입하면 a + 1/a ≥ 2√(a · 1/a) = 2√1 = 2가 성립합니다.',
+    ],
+  },
+  {
+    q: '[문제 2-(1)] a > 0일 때 부등식 a + 1/a ≥ 2에서 등호가 성립할 조건은?',
+    opts: [
+      'a = 1/a이고 a > 0이므로 a² = 1에서 a = 1일 때 성립한다.',
+      'a = 2일 때 성립한다.',
+      'a = 1 또는 a = −1일 때 모두 성립한다.',
+    ],
+    answer: 0,
+    hints: [
+      '두 양수 a와 1/a에 대한 산술·기하평균에서 등호는 두 수가 같을 때(a = 1/a) 성립합니다.',
+      'a = 1/a의 양변에 a를 곱하면 a² = 1이므로 a = 1 또는 a = −1입니다.',
+      '문제의 조건에서 a > 0이므로, 등호는 a = 1일 때 성립합니다.',
+    ],
+  },
+  {
+    q: '[문제 2-(2)] a > 0, b > 0일 때 부등식 √(ab) ≥ 2ab / (a + b)를 증명하는 올바른 방법은?',
+    opts: [
+      '좌변에서 우변을 빼서 통분하면 √(ab) − 2ab/(a+b) = √(ab)(a + b − 2√(ab))/(a + b) = √(ab)(√a − √b)²/(a + b) ≥ 0이다.',
+      '양변에서 a + b를 빼서 음수임을 보인다.',
+      'a = 0, b = 0을 대입하여 0 ≥ 0임을 보인다.',
+    ],
+    answer: 0,
+    hints: [
+      '방법 1 (차의 부호): √(ab) − 2ab/(a+b)를 분모 (a+b)로 통분하고 분자를 √(ab)로 묶으면 √(ab)(a + b − 2√(ab)) = √(ab)(√a − √b)²이 됩니다.',
+      '방법 2 (산술·기하평균 활용): 문제 1에서 증명한 (a + b)/2 ≥ √(ab)의 양변에 양수 2√(ab)/(a + b)를 곱해도 √(ab) ≥ 2ab/(a + b)가 바로 유도됩니다.',
+      'a > 0, b > 0이므로 √(ab) > 0, a + b > 0이고 (√a − √b)² ≥ 0이므로 항상 성립합니다.',
+    ],
+  },
+  {
+    q: '[문제 2-(2)] 부등식 √(ab) ≥ 2ab / (a + b) (단, a > 0, b > 0)에서 등호가 성립할 조건은?',
+    opts: [
+      'a = b일 때 성립한다.',
+      'a + b = 2일 때만 성립한다.',
+      'ab = 1일 때만 성립한다.',
+    ],
+    answer: 0,
+    hints: [
+      '√(ab)(√a − √b)² / (a + b) = 0이 되려면 √a − √b = 0이어야 합니다.',
+      '또는 산술·기하평균 (a + b)/2 ≥ √(ab)의 등호 성립 조건과 동일합니다.',
+      '따라서 등호는 a = b일 때 성립합니다.',
+    ],
+  },
+];
+
+export const PROOF7_PROB1_STEPS: ProofStepQuestion[] = [
+  {
+    q: '실수 a, b에 대하여 절댓값 기호가 포함된 부등식 |a + b| ≤ |a| + |b|를 증명할 때 양변을 제곱하여 비교할 수 있는 이유는?',
+    opts: [
+      '절댓값은 항상 0 이상이므로 좌변 |a + b| ≥ 0이고 우변 |a| + |b| ≥ 0이어서, (|a| + |b|)² − |a + b|² ≥ 0임을 보이면 되기 때문이다.',
+      '음수인 경우에도 제곱하면 부등호 방향이 항상 그대로 유지되기 때문이다.',
+      '절댓값 기호는 제곱하지 않아도 그냥 괄호로 바꿀 수 있기 때문이다.',
+    ],
+    answer: 0,
+    hints: [
+      '두 실수 A ≥ 0, B ≥ 0일 때는 A ≤ B와 A² ≤ B²이 필요충분조건(동치)입니다.',
+      '절댓값의 성질에 의해 |a + b| ≥ 0이고 |a| + |b| ≥ 0이므로 양변이 모두 0 이상입니다.',
+      '따라서 우변의 제곱에서 좌변의 제곱을 뺀 (|a| + |b|)² − |a + b|² ≥ 0임을 증명하면 됩니다.',
+    ],
+  },
+  {
+    q: '절댓값의 성질 |x|² = x²과 |a||b| = |ab|를 이용하여 (|a| + |b|)² − |a + b|²을 전개·정리한 식은?',
+    opts: [
+      '(a² + 2|ab| + b²) − (a² + 2ab + b²) = 2(|ab| − ab)',
+      '(a² + 2ab + b²) − (a² − 2ab + b²) = 4ab',
+      'a² + b² − (a² + b²) = 0',
+    ],
+    answer: 0,
+    hints: [
+      '(|a| + |b|)² = |a|² + 2|a||b| + |b|² = a² + 2|ab| + b²입니다.',
+      '|a + b|² = (a + b)² = a² + 2ab + b²입니다.',
+      '두 식을 빼면 a²과 b²이 소거되어 2|ab| − 2ab = 2(|ab| − ab)가 남습니다.',
+    ],
+  },
+  {
+    q: '임의의 실수 ab에 대하여 2(|ab| − ab)의 부호와 그에 따른 결론으로 옳은 것은?',
+    opts: [
+      '항상 |ab| ≥ ab이므로 2(|ab| − ab) ≥ 0이다. 따라서 |a + b|² ≤ (|a| + |b|)²이고, 양변이 0 이상이므로 |a + b| ≤ |a| + |b|가 성립한다.',
+      'ab가 음수이면 |ab| − ab < 0이 될 수 있다.',
+      '|ab|와 ab는 항상 같으므로 차는 언제나 0이다.',
+    ],
+    answer: 0,
+    hints: [
+      '임의의 실수 X에 대하여 절댓값 |X|는 항상 X 이상입니다 (|X| ≥ X).',
+      '따라서 |ab| ≥ ab이므로 |ab| − ab ≥ 0이고, 2(|ab| − ab) ≥ 0입니다.',
+      '즉 |a + b|² ≤ (|a| + |b|)²이며, |a + b| ≥ 0, |a| + |b| ≥ 0이므로 |a + b| ≤ |a| + |b|가 성립합니다.',
+    ],
+  },
+  {
+    q: '부등식 |a + b| ≤ |a| + |b|에서 등호(=)가 성립할 조건은 무엇인가요?',
+    opts: [
+      '|ab| = ab, 즉 ab ≥ 0 (두 실수 a, b의 부호가 같거나 적어도 하나가 0)일 때 성립한다.',
+      'a = b일 때만 성립한다.',
+      'ab ≤ 0 (두 실수 a, b의 부호가 반대)일 때 성립한다.',
+    ],
+    answer: 0,
+    hints: [
+      '2(|ab| − ab) = 0이 되려면 |ab| − ab = 0, 즉 |ab| = ab여야 합니다.',
+      '절댓값 |X|가 자기 자신 X와 같으려면(|X| = X), 그 수 X는 0 이상이어야 합니다.',
+      '따라서 등호는 ab ≥ 0일 때 성립합니다.',
+    ],
+  },
+];
+
+export const PROOF7_PROB2_STEPS: ProofStepQuestion[] = [
+  {
+    q: '[문제 2-(1)] 부등식 |a − b| ≤ |a| + |b|를 증명하기 위해 제곱의 차 (|a| + |b|)² − |a − b|²을 정리한 식은?',
+    opts: [
+      '(a² + 2|ab| + b²) − (a² − 2ab + b²) = 2(|ab| + ab) ≥ 0',
+      '(a² − 2|ab| + b²) − (a² + 2ab + b²) = −2(|ab| + ab)',
+      '2(|ab| − ab) ≥ 0',
+    ],
+    answer: 0,
+    hints: [
+      '|a − b| ≥ 0, |a| + |b| ≥ 0이므로 양변을 제곱하여 뺍니다.',
+      '(|a| + |b|)² = a² + 2|ab| + b²이고, |a − b|² = (a − b)² = a² − 2ab + b²입니다.',
+      '두 식을 빼면 2|ab| − (−2ab) = 2(|ab| + ab)가 되며, 항상 |ab| ≥ −ab이므로 2(|ab| + ab) ≥ 0입니다.',
+    ],
+  },
+  {
+    q: '[문제 2-(1)] 부등식 |a − b| ≤ |a| + |b|에서 등호가 성립할 조건은?',
+    opts: [
+      '|ab| + ab = 0, 즉 |ab| = −ab이므로 ab ≤ 0일 때 성립한다.',
+      'ab ≥ 0일 때 성립한다.',
+      'a = b = 0일 때만 성립한다.',
+    ],
+    answer: 0,
+    hints: [
+      '2(|ab| + ab) = 0이 되려면 |ab| = −ab여야 합니다.',
+      '절댓값 |X|가 −X와 같으려면(|X| = −X), 그 수 X는 0 이하(X ≤ 0)여야 합니다.',
+      '따라서 등호는 ab ≤ 0일 때 성립합니다.',
+    ],
+  },
+  {
+    q: '[문제 2-(2)] 부등식 |a| − |b| ≤ |a − b|를 증명할 때, 왜 (i) |a| < |b|인 경우와 (ii) |a| ≥ |b|인 경우로 나누어 생각하면 편리한가요?',
+    opts: [
+      '|a| < |b|이면 좌변 |a| − |b| < 0이고 우변 |a − b| ≥ 0이므로 제곱할 필요 없이 당연히 성립하고, |a| ≥ |b|이면 양변이 모두 0 이상이므로 제곱의 차로 비교할 수 있기 때문이다.',
+      '|a| < |b|일 때는 부등식이 성립하지 않기 때문이다.',
+      '절댓값은 음수일 때만 정의되기 때문이다.',
+    ],
+    answer: 0,
+    hints: [
+      '제곱하여 크기를 비교하는 방법은 양변이 모두 0 이상일 때 쓸 수 있습니다.',
+      '(i) |a| < |b|일 때는 좌변 |a| − |b| < 0(음수)이고 우변 |a − b| ≥ 0이므로 부등식 |a| − |b| < |a − b|가 항상 성립합니다.',
+      '(ii) |a| ≥ |b|일 때는 좌변 |a| − |b| ≥ 0, 우변 |a − b| ≥ 0이므로 양변을 제곱하여 비교할 수 있습니다.',
+    ],
+  },
+  {
+    q: '[문제 2-(2)] |a| ≥ |b|일 때 우변의 제곱에서 좌변의 제곱을 뺀 |a − b|² − (|a| − |b|)²의 정리 결과와 등호 성립 조건은?',
+    opts: [
+      '(a² − 2ab + b²) − (a² − 2|ab| + b²) = 2(|ab| − ab) ≥ 0이며, 등호는 ab ≥ 0이고 |a| ≥ |b|일 때 성립한다.',
+      '2(|ab| + ab) ≥ 0이며, 등호는 ab ≤ 0일 때 성립한다.',
+      '0이 되어 모든 실수 a, b에서 등호가 성립한다.',
+    ],
+    answer: 0,
+    hints: [
+      '|a − b|² = a² − 2ab + b²이고, (|a| − |b|)² = |a|² − 2|a||b| + |b|² = a² − 2|ab| + b²입니다.',
+      '두 식을 빼면 −2ab − (−2|ab|) = 2(|ab| − ab) ≥ 0이므로 |a| − |b| ≤ |a − b|가 성립합니다.',
+      '등호는 |a| ≥ |b|인 조건에서 |ab| = ab(즉 ab ≥ 0)일 때 성립합니다.',
+    ],
+  },
+];
+
 export const STAGE_TITLES = {
   1: ['단서 수집', '가설 수립', '반례 수색', '증명 보고서', '다음 사건 예고'],
   2: ['새 사건 선택', '현장 조사', '반례 수색', '판정서 작성', '수사 결과 공유'],
   3: ['대우 단서 탐색', '문제 1 증명', '3의 배수 탐색', '문제 2 증명', '사건 종결·성찰'],
-  4: ['귀류법 단서 탐색', '문제 1 증명 (√2)', '무리수 성질 탐색', '문제 2 증명 (1+√2)', '전체 수사 종결'],
+  4: ['귀류법 단서 탐색', '문제 1 증명 (√2)', '무리수 성질 탐색', '문제 2 증명 (1+√2)', '사건 종결·성찰'],
+  5: ['완전제곱 단서', '문제 1 (예제 3)', '등호 조건 탐색', '문제 2 (문제 3)', '절대부등식1 종결'],
+  6: ['산술·기하 단서', '문제 1 (예제 4)', '역수·조화 탐색', '문제 2 (문제 4)', '절대부등식2 종결'],
+  7: ['절댓값 단서', '문제 1 (예제 5)', '절댓값 차 탐색', '문제 2 (문제 5)', '전체 수사 종결'],
 } as const;
 
 export const EVAL_CRITERIA = [
@@ -551,12 +996,36 @@ export const EVAL_DESCRIPTIONS = [
   '한계를 인식하고 탐구를 수정·확장하는 능력',
 ] as const;
 
+export const CLASSROOM_BRAND_NAME = '이하연 수학 교실';
+
 export const EVAL_SCORE_LABELS: Record<number, string> = {
   0: '0점 · 증거 부족',
   1: '1점 · 시작 단계',
   2: '2점 · 부분적 수행',
   3: '3점 · 충분한 수행',
 };
+
+export interface TeacherEvaluationProgress {
+  completedCount: number;
+  totalCount: number;
+  percent: number;
+  status: 'none' | 'partial' | 'complete';
+  statusLabel: string;
+  scoredRubricCount: number;
+  hasFeedback: boolean;
+  hasNextStep: boolean;
+  hasMemo: boolean;
+}
+
+export interface ClassEvaluationSummary {
+  totalStudents: number;
+  completeCount: number;
+  partialCount: number;
+  noneCount: number;
+  evaluatedAnyCount: number;
+  completionRatePercent: number;
+  averageProgressPercent: number;
+}
 
 export function hasTeacherEvaluation(student?: StudentRecord | null): boolean {
   if (!student) return false;
@@ -578,6 +1047,96 @@ export function getTeacherEvalAverage(scores?: (number | null)[]): number | null
   const valid = scores.filter((v): v is number => typeof v === 'number' && v >= 0 && v <= 3);
   if (!valid.length) return null;
   return valid.reduce((a, b) => a + b, 0) / valid.length;
+}
+
+export function getTeacherEvaluationProgress(
+  student?: StudentRecord | null
+): TeacherEvaluationProgress {
+  const totalCount = 5; // 4 rubric criteria + 1 student feedback
+  if (!student) {
+    return {
+      completedCount: 0,
+      totalCount,
+      percent: 0,
+      status: 'none',
+      statusLabel: '미평가',
+      scoredRubricCount: 0,
+      hasFeedback: false,
+      hasNextStep: false,
+      hasMemo: false,
+    };
+  }
+  const ev = student.evaluation;
+  const scoredRubricCount = Array.isArray(ev?.scores)
+    ? ev!.scores.slice(0, 4).filter((v): v is number => typeof v === 'number' && v >= 0 && v <= 3).length
+    : 0;
+  const hasFeedback = Boolean(ev?.feedback && ev.feedback.trim().length > 0);
+  const hasNextStep = Boolean(ev?.nextStep && ev.nextStep.trim().length > 0);
+  const hasMemo = Boolean(student.teacherMemo && student.teacherMemo.trim().length > 0);
+
+  const completedCount = scoredRubricCount + (hasFeedback ? 1 : 0);
+  let percent = Math.round((completedCount / totalCount) * 100);
+  let status: 'none' | 'partial' | 'complete' = 'none';
+  let statusLabel = '미평가';
+
+  if (completedCount >= totalCount) {
+    status = 'complete';
+    statusLabel = '평가 완료';
+    percent = 100;
+  } else if (completedCount > 0 || hasNextStep || hasMemo) {
+    status = 'partial';
+    statusLabel = '평가 진행 중';
+    if (percent === 0) percent = 10;
+  }
+
+  return {
+    completedCount,
+    totalCount,
+    percent,
+    status,
+    statusLabel,
+    scoredRubricCount,
+    hasFeedback,
+    hasNextStep,
+    hasMemo,
+  };
+}
+
+export function getClassEvaluationSummary(records: StudentRecord[]): ClassEvaluationSummary {
+  const totalStudents = records.length;
+  if (totalStudents === 0) {
+    return {
+      totalStudents: 0,
+      completeCount: 0,
+      partialCount: 0,
+      noneCount: 0,
+      evaluatedAnyCount: 0,
+      completionRatePercent: 0,
+      averageProgressPercent: 0,
+    };
+  }
+  let completeCount = 0;
+  let partialCount = 0;
+  let noneCount = 0;
+  let sumPercent = 0;
+
+  for (const r of records) {
+    const p = getTeacherEvaluationProgress(r);
+    sumPercent += p.percent;
+    if (p.status === 'complete') completeCount++;
+    else if (p.status === 'partial') partialCount++;
+    else noneCount++;
+  }
+
+  return {
+    totalStudents,
+    completeCount,
+    partialCount,
+    noneCount,
+    evaluatedAnyCount: completeCount + partialCount,
+    completionRatePercent: Math.round((completeCount / totalStudents) * 100),
+    averageProgressPercent: Math.round(sumPercent / totalStudents),
+  };
 }
 
 export function createInitialStudentState(): StudentRecord {
@@ -650,6 +1209,60 @@ export function createInitialStudentState(): StudentRecord {
       prob1ProofText: '',
       closureChecked: false,
       closureReason: '',
+      step3HintLevel: 0,
+      prob2Choices: [null, null, null, null],
+      prob2Verified: [false, false, false, false],
+      prob2Hints: [0, 0, 0, 0],
+      prob2ProofText: '',
+      reflection1: '',
+      reflection2: '',
+    },
+    l5: {
+      examples: [],
+      squareConceptChoice: '',
+      step1HintLevel: 0,
+      prob1Choices: [null, null, null, null],
+      prob1Verified: [false, false, false, false],
+      prob1Hints: [0, 0, 0, 0],
+      prob1ProofText: '',
+      equalityConditionChecked: false,
+      equalityReason: '',
+      step3HintLevel: 0,
+      prob2Choices: [null, null, null, null],
+      prob2Verified: [false, false, false, false],
+      prob2Hints: [0, 0, 0, 0],
+      prob2ProofText: '',
+      reflection1: '',
+      reflection2: '',
+    },
+    l6: {
+      examples: [],
+      amgmConceptChoice: '',
+      step1HintLevel: 0,
+      prob1Choices: [null, null, null, null],
+      prob1Verified: [false, false, false, false],
+      prob1Hints: [0, 0, 0, 0],
+      prob1ProofText: '',
+      harmonicChecked: false,
+      harmonicReason: '',
+      step3HintLevel: 0,
+      prob2Choices: [null, null, null, null],
+      prob2Verified: [false, false, false, false],
+      prob2Hints: [0, 0, 0, 0],
+      prob2ProofText: '',
+      reflection1: '',
+      reflection2: '',
+    },
+    l7: {
+      examples: [],
+      absSquareConceptChoice: '',
+      step1HintLevel: 0,
+      prob1Choices: [null, null, null, null],
+      prob1Verified: [false, false, false, false],
+      prob1Hints: [0, 0, 0, 0],
+      prob1ProofText: '',
+      absDiffChecked: false,
+      absDiffReason: '',
       step3HintLevel: 0,
       prob2Choices: [null, null, null, null],
       prob2Verified: [false, false, false, false],
@@ -749,6 +1362,50 @@ export function calc4Coprime(m: number, n: number): L4FractionExample {
   };
 }
 
+export function calc5Inequality(a: number, b: number): L5InequalityExample {
+  const lhs = Number((a * a + b * b).toFixed(4));
+  const rhs = Number((a * b).toFixed(4));
+  const diff = Number((lhs - rhs).toFixed(4));
+  return {
+    a,
+    b,
+    lhs,
+    rhs,
+    diff,
+    isEqual: Math.abs(diff) < 1e-9,
+  };
+}
+
+export function calc6Means(a: number, b: number): L6MeanExample {
+  const arith = Number(((a + b) / 2).toFixed(4));
+  const geom = Number(Math.sqrt(a * b).toFixed(4));
+  const harm = Number(((2 * a * b) / (a + b)).toFixed(4));
+  const diff = Number((arith - geom).toFixed(4));
+  return {
+    a,
+    b,
+    arith,
+    geom,
+    harm,
+    diff,
+    isEqual: Math.abs(a - b) < 1e-9,
+  };
+}
+
+export function calc7Abs(a: number, b: number): L7AbsExample {
+  const lhsSum = Number(Math.abs(a + b).toFixed(4));
+  const rhsSum = Number((Math.abs(a) + Math.abs(b)).toFixed(4));
+  const diffSq = Number((rhsSum * rhsSum - lhsSum * lhsSum).toFixed(4));
+  return {
+    a,
+    b,
+    lhsSum,
+    rhsSum,
+    diffSq,
+    sameSign: a * b >= 0,
+  };
+}
+
 export function evaluateLevel1Completion(p: Lesson1State): boolean[] {
   return [
     p.examples.length >= 4 && p.examples.some((v) => v.n < 0),
@@ -791,6 +1448,36 @@ export function evaluateLevel4Completion(p: Lesson4State): boolean[] {
   ];
 }
 
+export function evaluateLevel5Completion(p: Lesson5State): boolean[] {
+  return [
+    p.examples.length >= 3 && p.squareConceptChoice === 'nonnegative',
+    p.prob1Verified.every(Boolean) && p.prob1ProofText.trim().length >= 35,
+    p.equalityConditionChecked && p.equalityReason.trim().length >= 15,
+    p.prob2Verified.every(Boolean) && p.prob2ProofText.trim().length >= 40,
+    p.reflection1.trim().length >= 20 && p.reflection2.trim().length >= 15,
+  ];
+}
+
+export function evaluateLevel6Completion(p: Lesson6State): boolean[] {
+  return [
+    p.examples.length >= 3 && p.amgmConceptChoice === 'positive',
+    p.prob1Verified.every(Boolean) && p.prob1ProofText.trim().length >= 35,
+    p.harmonicChecked && p.harmonicReason.trim().length >= 15,
+    p.prob2Verified.every(Boolean) && p.prob2ProofText.trim().length >= 40,
+    p.reflection1.trim().length >= 20 && p.reflection2.trim().length >= 15,
+  ];
+}
+
+export function evaluateLevel7Completion(p: Lesson7State): boolean[] {
+  return [
+    p.examples.length >= 3 && p.absSquareConceptChoice === 'square_diff',
+    p.prob1Verified.every(Boolean) && p.prob1ProofText.trim().length >= 35,
+    p.absDiffChecked && p.absDiffReason.trim().length >= 15,
+    p.prob2Verified.every(Boolean) && p.prob2ProofText.trim().length >= 40,
+    p.reflection1.trim().length >= 20 && p.reflection2.trim().length >= 15,
+  ];
+}
+
 export function evaluateRubricL1(p: Lesson1State): boolean[] {
   return [
     p.examples.length >= 4,
@@ -830,6 +1517,36 @@ export function evaluateRubricL4(p: Lesson4State): boolean[] {
     p.prob1Verified.every(Boolean) && p.prob1ProofText.trim().length >= 40,
     p.closureChecked && p.closureReason.trim().length >= 15,
     p.prob2Verified.every(Boolean) && p.prob2ProofText.trim().length >= 35,
+    p.reflection1.trim().length >= 20,
+  ];
+}
+
+export function evaluateRubricL5(p: Lesson5State): boolean[] {
+  return [
+    p.examples.length >= 3 && p.squareConceptChoice === 'nonnegative',
+    p.prob1Verified.every(Boolean) && p.prob1ProofText.trim().length >= 35,
+    p.equalityConditionChecked && p.equalityReason.trim().length >= 15,
+    p.prob2Verified.every(Boolean) && p.prob2ProofText.trim().length >= 40,
+    p.reflection1.trim().length >= 20,
+  ];
+}
+
+export function evaluateRubricL6(p: Lesson6State): boolean[] {
+  return [
+    p.examples.length >= 3 && p.amgmConceptChoice === 'positive',
+    p.prob1Verified.every(Boolean) && p.prob1ProofText.trim().length >= 35,
+    p.harmonicChecked && p.harmonicReason.trim().length >= 15,
+    p.prob2Verified.every(Boolean) && p.prob2ProofText.trim().length >= 40,
+    p.reflection1.trim().length >= 20,
+  ];
+}
+
+export function evaluateRubricL7(p: Lesson7State): boolean[] {
+  return [
+    p.examples.length >= 3 && p.absSquareConceptChoice === 'square_diff',
+    p.prob1Verified.every(Boolean) && p.prob1ProofText.trim().length >= 35,
+    p.absDiffChecked && p.absDiffReason.trim().length >= 15,
+    p.prob2Verified.every(Boolean) && p.prob2ProofText.trim().length >= 40,
     p.reflection1.trim().length >= 20,
   ];
 }
@@ -905,6 +1622,9 @@ export function cleanStudentState(raw: unknown): StudentRecord {
   const base = createInitialStudentState();
   const rawL3 = (x.l3 && typeof x.l3 === 'object' ? x.l3 : {}) as Partial<Lesson3State>;
   const rawL4 = (x.l4 && typeof x.l4 === 'object' ? x.l4 : {}) as Partial<Lesson4State>;
+  const rawL5 = (x.l5 && typeof x.l5 === 'object' ? x.l5 : {}) as Partial<Lesson5State>;
+  const rawL6 = (x.l6 && typeof x.l6 === 'object' ? x.l6 : {}) as Partial<Lesson6State>;
+  const rawL7 = (x.l7 && typeof x.l7 === 'object' ? x.l7 : {}) as Partial<Lesson7State>;
 
   return {
     ...base,
@@ -940,6 +1660,39 @@ export function cleanStudentState(raw: unknown): StudentRecord {
       prob2Choices: Array.isArray(rawL4.prob2Choices) && rawL4.prob2Choices.length === 4 ? rawL4.prob2Choices : base.l4.prob2Choices,
       prob2Verified: Array.isArray(rawL4.prob2Verified) && rawL4.prob2Verified.length === 4 ? rawL4.prob2Verified : base.l4.prob2Verified,
       prob2Hints: Array.isArray(rawL4.prob2Hints) && rawL4.prob2Hints.length === 4 ? rawL4.prob2Hints : base.l4.prob2Hints,
+    },
+    l5: {
+      ...base.l5,
+      ...rawL5,
+      examples: Array.isArray(rawL5.examples) ? rawL5.examples : base.l5.examples,
+      prob1Choices: Array.isArray(rawL5.prob1Choices) && rawL5.prob1Choices.length === 4 ? rawL5.prob1Choices : base.l5.prob1Choices,
+      prob1Verified: Array.isArray(rawL5.prob1Verified) && rawL5.prob1Verified.length === 4 ? rawL5.prob1Verified : base.l5.prob1Verified,
+      prob1Hints: Array.isArray(rawL5.prob1Hints) && rawL5.prob1Hints.length === 4 ? rawL5.prob1Hints : base.l5.prob1Hints,
+      prob2Choices: Array.isArray(rawL5.prob2Choices) && rawL5.prob2Choices.length === 4 ? rawL5.prob2Choices : base.l5.prob2Choices,
+      prob2Verified: Array.isArray(rawL5.prob2Verified) && rawL5.prob2Verified.length === 4 ? rawL5.prob2Verified : base.l5.prob2Verified,
+      prob2Hints: Array.isArray(rawL5.prob2Hints) && rawL5.prob2Hints.length === 4 ? rawL5.prob2Hints : base.l5.prob2Hints,
+    },
+    l6: {
+      ...base.l6,
+      ...rawL6,
+      examples: Array.isArray(rawL6.examples) ? rawL6.examples : base.l6.examples,
+      prob1Choices: Array.isArray(rawL6.prob1Choices) && rawL6.prob1Choices.length === 4 ? rawL6.prob1Choices : base.l6.prob1Choices,
+      prob1Verified: Array.isArray(rawL6.prob1Verified) && rawL6.prob1Verified.length === 4 ? rawL6.prob1Verified : base.l6.prob1Verified,
+      prob1Hints: Array.isArray(rawL6.prob1Hints) && rawL6.prob1Hints.length === 4 ? rawL6.prob1Hints : base.l6.prob1Hints,
+      prob2Choices: Array.isArray(rawL6.prob2Choices) && rawL6.prob2Choices.length === 4 ? rawL6.prob2Choices : base.l6.prob2Choices,
+      prob2Verified: Array.isArray(rawL6.prob2Verified) && rawL6.prob2Verified.length === 4 ? rawL6.prob2Verified : base.l6.prob2Verified,
+      prob2Hints: Array.isArray(rawL6.prob2Hints) && rawL6.prob2Hints.length === 4 ? rawL6.prob2Hints : base.l6.prob2Hints,
+    },
+    l7: {
+      ...base.l7,
+      ...rawL7,
+      examples: Array.isArray(rawL7.examples) ? rawL7.examples : base.l7.examples,
+      prob1Choices: Array.isArray(rawL7.prob1Choices) && rawL7.prob1Choices.length === 4 ? rawL7.prob1Choices : base.l7.prob1Choices,
+      prob1Verified: Array.isArray(rawL7.prob1Verified) && rawL7.prob1Verified.length === 4 ? rawL7.prob1Verified : base.l7.prob1Verified,
+      prob1Hints: Array.isArray(rawL7.prob1Hints) && rawL7.prob1Hints.length === 4 ? rawL7.prob1Hints : base.l7.prob1Hints,
+      prob2Choices: Array.isArray(rawL7.prob2Choices) && rawL7.prob2Choices.length === 4 ? rawL7.prob2Choices : base.l7.prob2Choices,
+      prob2Verified: Array.isArray(rawL7.prob2Verified) && rawL7.prob2Verified.length === 4 ? rawL7.prob2Verified : base.l7.prob2Verified,
+      prob2Hints: Array.isArray(rawL7.prob2Hints) && rawL7.prob2Hints.length === 4 ? rawL7.prob2Hints : base.l7.prob2Hints,
     },
   };
 }
@@ -1068,11 +1821,71 @@ export function createSampleTeacherDataset(): StudentRecord[] {
     reflection1: '직접 유리수가 아님을 보이기 어려울 때 결론을 부정하여 유리수라고 가정하면 분수나 등식으로 정리할 수 있어 모순을 명확히 이끌어낼 수 있었다.',
     reflection2: '1~4차시를 통해 직접 증명, 반례 찾기, 대우 증명, 귀류법을 모두 경험하며 명제의 형태에 맞는 최적의 증명 전략을 선택하는 법을 배웠다.',
   };
-  s1.teacherMemo = '1~4차시 모든 증명 기법(직접증명, 반례, 대우법, 귀류법)을 완벽하게 연결하여 서술함.';
+  s1.l5 = {
+    examples: [calc5Inequality(0, 0), calc5Inequality(2, 1), calc5Inequality(-1, 2)],
+    squareConceptChoice: 'nonnegative',
+    step1HintLevel: 0,
+    prob1Choices: [0, 1, 0, 1],
+    prob1Verified: [true, true, true, true],
+    prob1Hints: [0, 0, 0, 0],
+    prob1ProofText:
+      'a² + b² - ab = (a - b/2)² + (3/4)b²이다. a와 b가 실수이므로 (a - b/2)² ≥ 0, (3/4)b² ≥ 0이다. 따라서 a² + b² - ab ≥ 0이므로 a² + b² ≥ ab가 성립한다. 여기서 등호는 a - b/2 = 0이고 b = 0일 때, 즉 a = b = 0일 때 성립한다.',
+    equalityConditionChecked: true,
+    equalityReason: '실수의 제곱의 합 X² + Y² = 0이 성립하려면 X = 0이고 동시에 Y = 0이어야 하기 때문이다.',
+    step3HintLevel: 0,
+    prob2Choices: [0, 1, 1, 1],
+    prob2Verified: [true, true, true, true],
+    prob2Hints: [0, 0, 0, 0],
+    prob2ProofText:
+      '(1) (a+b)² - 4ab = a² - 2ab + b² = (a-b)² ≥ 0이므로 (a+b)² ≥ 4ab가 성립하며, 등호는 a=b일 때 성립한다. (2) a² - 4ab + 5b² = (a-2b)² + b² ≥ 0이므로 부등식이 성립하며, 등호는 a-2b=0이고 b=0, 즉 a=b=0일 때 성립한다.',
+    reflection1: '복잡한 이차식도 완전제곱식들의 합으로 변형하면 실수의 제곱이 0 이상이라는 성질로 명쾌하게 증명할 수 있었다.',
+    reflection2: '(a-b)² ≥ 0은 a=b인 모든 실수에서 등호가 성립하지만, (a-2b)² + b² ≥ 0은 두 제곱식이 모두 0이어야 해서 a=b=0일 때만 등호가 성립한다.',
+  };
+  s1.l6 = {
+    examples: [calc6Means(4, 4), calc6Means(1, 9), calc6Means(2, 8)],
+    amgmConceptChoice: 'positive',
+    step1HintLevel: 0,
+    prob1Choices: [0, 1, 0, 1],
+    prob1Verified: [true, true, true, true],
+    prob1Hints: [0, 0, 0, 0],
+    prob1ProofText:
+      'a > 0, b > 0일 때 (a+b)/2 - √(ab) = ((√a)² - 2√a√b + (√b)²)/2 = (√a - √b)²/2 ≥ 0이다. 따라서 (a+b)/2 ≥ √(ab)가 성립하며, 등호는 √a = √b, 즉 a = b일 때 성립한다.',
+    harmonicChecked: true,
+    harmonicReason: '두 양수의 곱이 일정하게 약분되거나 산술·기하평균 부등식의 양변에 양수를 곱해 조화평균 관계를 유도할 수 있다.',
+    step3HintLevel: 0,
+    prob2Choices: [0, 0, 0, 0],
+    prob2Verified: [true, true, true, true],
+    prob2Hints: [0, 0, 0, 0],
+    prob2ProofText:
+      '(1) a > 0이면 1/a > 0이므로 산술평균과 기하평균의 관계에 의해 a + 1/a ≥ 2√(a · 1/a) = 2이고, 등호는 a = 1/a 즉 a = 1일 때 성립한다. (2) √(ab) - 2ab/(a+b) = √(ab)(√a - √b)²/(a+b) ≥ 0이므로 √(ab) ≥ 2ab/(a+b)가 성립하며 등호는 a = b일 때 성립한다.',
+    reflection1: '양수 조건이 있기 때문에 a = (√a)², b = (√b)²으로 바꾸어 완전제곱식을 만들 수 있다는 점이 핵심이었다.',
+    reflection2: '산술평균 ≥ 기하평균 ≥ 조화평균의 크기가 항상 성립하고 등호는 모두 a = b일 때 성립함을 확인했다.',
+  };
+  s1.l7 = {
+    examples: [calc7Abs(2, 3), calc7Abs(2, -3), calc7Abs(-2, -3)],
+    absSquareConceptChoice: 'square_diff',
+    step1HintLevel: 0,
+    prob1Choices: [0, 0, 0, 0],
+    prob1Verified: [true, true, true, true],
+    prob1Hints: [0, 0, 0, 0],
+    prob1ProofText:
+      '(|a| + |b|)² - |a + b|² = (a² + 2|ab| + b²) - (a² + 2ab + b²) = 2(|ab| - ab)이다. 이때 |ab| ≥ ab이므로 2(|ab| - ab) ≥ 0이다. 따라서 |a + b|² ≤ (|a| + |b|)²이고 양변이 모두 0 이상이므로 |a + b| ≤ |a| + |b|가 성립한다. 등호는 |ab| = ab, 즉 ab ≥ 0일 때 성립한다.',
+    absDiffChecked: true,
+    absDiffReason: '|a| < |b|이면 좌변이 음수이고 우변은 0 이상이므로 제곱하지 않아도 성립하고, |a| ≥ |b|일 때만 양변이 0 이상이므로 제곱하여 비교한다.',
+    step3HintLevel: 0,
+    prob2Choices: [0, 0, 0, 0],
+    prob2Verified: [true, true, true, true],
+    prob2Hints: [0, 0, 0, 0],
+    prob2ProofText:
+      '(1) (|a|+|b|)² - |a-b|² = 2(|ab| + ab) ≥ 0이므로 |a-b| ≤ |a|+|b|가 성립하며, 등호는 |ab| = -ab 즉 ab ≤ 0일 때 성립한다. (2) |a| < |b|이면 |a|-|b| < 0 ≤ |a-b|로 성립하고, |a| ≥ |b|이면 |a-b|² - (|a|-|b|)² = 2(|ab| - ab) ≥ 0이므로 성립한다. 등호는 ab ≥ 0이고 |a| ≥ |b|일 때 성립한다.',
+    reflection1: '절댓값 기호가 있어 직접 빼기 어려울 때 양변이 0 이상임을 확인하고 제곱의 차를 이용하면 절댓값 기호가 제곱으로 풀려 쉽게 증명할 수 있었다.',
+    reflection2: '|a+b| ≤ |a|+|b|는 ab ≥ 0일 때 등호가 성립하고, |a-b| ≤ |a|+|b|는 ab ≤ 0일 때 등호가 성립한다는 부호의 차이를 명확히 이해했다.',
+  };
+  s1.teacherMemo = '1~7차시 모든 증명 기법(직접증명, 반례, 대우법, 귀류법, 절대부등식 1·2·3)을 완벽하게 연결하여 서술함.';
   s1.evaluation = {
     scores: [3, 3, 3, 3],
-    feedback: '관찰에서 추측, 반례 검증, 대우법과 귀류법 증명까지 모든 논리적 연결이 매우 탄탄합니다.',
-    nextStep: '√3이 유리수가 아님을 귀류법과 3차시 문제 2(3의 배수 대우 증명)를 결합하여 증명해 보세요.',
+    feedback: '관찰에서 추측, 반례 검증, 대우법·귀류법, 그리고 절대부등식 3종 증명까지 모든 논리적 연결이 매우 탄탄합니다.',
+    nextStep: '코시-슈바르츠 부등식 (a²+b²)(x²+y²) ≥ (ax+by)²도 완전제곱식을 이용해 직접 증명해 보세요.',
   };
 
   const s2 = createInitialStudentState();

@@ -20,6 +20,7 @@ import {
   StudentRecord,
   ensureTeacherEval,
   getTeacherEvalAverage,
+  getTeacherEvaluationProgress,
   hasTeacherEvaluation,
   TOPICS,
   TopicId,
@@ -30,7 +31,7 @@ export interface StudentEvaluationModalProps {
   onClose: () => void;
   student: StudentRecord;
   onPrintReport?: (student: StudentRecord) => void;
-  onGoToLesson?: (lesson: 1 | 2 | 3 | 4) => void;
+  onGoToLesson?: (lesson: 1 | 2 | 3 | 4 | 5 | 6 | 7) => void;
 }
 
 export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
@@ -56,6 +57,7 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
 
   const ev = ensureTeacherEval(student);
   const isEvaluated = hasTeacherEvaluation(student);
+  const evalProgress = getTeacherEvaluationProgress(student);
   const avg = getTeacherEvalAverage(ev.scores);
 
   // Rubric score visual helper
@@ -119,17 +121,22 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 id="eval-modal-title" className="text-sm sm:text-lg font-extrabold text-white">
-                  수학 탐정단 역량 평가서 &amp; 교수자 피드백
+                  역량 평가서 &amp; 교수자 피드백
                 </h2>
-                {isEvaluated ? (
+                {evalProgress.status === 'complete' ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 px-2 py-0.5 text-[11px] sm:text-xs font-bold text-emerald-300 whitespace-nowrap">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    평가 완료
+                    평가 완료 ({evalProgress.percent}%)
+                  </span>
+                ) : evalProgress.status === 'partial' ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/20 border border-sky-400/40 px-2 py-0.5 text-[11px] sm:text-xs font-bold text-sky-300 whitespace-nowrap">
+                    <Clock className="h-3 w-3" />
+                    평가 진행 중 ({evalProgress.percent}%)
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-400/40 px-2 py-0.5 text-[11px] sm:text-xs font-bold text-amber-300 whitespace-nowrap">
                     <Clock className="h-3 w-3" />
-                    교수자 검토 대기
+                    교수자 검토 대기 ({evalProgress.percent}%)
                   </span>
                 )}
               </div>
@@ -172,13 +179,13 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-xs font-bold text-blue-700">
                       <Sparkles className="h-4 w-4 text-blue-600" />
-                      <span>교수자 종합 평정 결과</span>
+                      <span>교수자 종합 평정 결과 (진행율 {evalProgress.percent}%)</span>
                     </div>
                     <div className="text-lg sm:text-xl font-extrabold text-slate-900">
                       {student.code} 탐정의 4대 수학적 탐구 역량
                     </div>
                     <p className="text-xs text-slate-600">
-                      1~4차시에서 수집한 단서, 반례 탐색, 대우법과 귀류법 증명 서술을 종합하여 평정되었습니다.
+                      1~7차시 단서, 반례 탐색, 대우법·귀류법 및 절대부등식 증명 서술을 종합하여 평정되었습니다.
                     </p>
                   </div>
 
@@ -302,7 +309,7 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4 text-slate-500" />
-                    <span>내가 작성한 1~4차시 핵심 서술 확인</span>
+                    <span>내가 작성한 1~7차시 핵심 서술 확인</span>
                   </div>
                   {showInquirySummary ? (
                     <ChevronUp className="h-4 w-4 text-slate-400" />
@@ -362,6 +369,39 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                         <strong>문제 2 (1+√2 무리수):</strong> {student.l4?.prob2ProofText || '(미작성)'}
                       </div>
                     </div>
+
+                    {/* 5차시 */}
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-2">
+                      <div className="font-bold text-cyan-700">5차시 · 절대부등식1 (완전제곱식)</div>
+                      <div className="text-slate-600 whitespace-pre-wrap">
+                        <strong>문제 1 (a²+b² ≥ ab):</strong> {student.l5?.prob1ProofText || '(미작성)'}
+                      </div>
+                      <div className="text-slate-600 whitespace-pre-wrap">
+                        <strong>문제 2 ((a+b)² ≥ 4ab 외):</strong> {student.l5?.prob2ProofText || '(미작성)'}
+                      </div>
+                    </div>
+
+                    {/* 6차시 */}
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-2">
+                      <div className="font-bold text-teal-700">6차시 · 절대부등식2 (산술·기하평균)</div>
+                      <div className="text-slate-600 whitespace-pre-wrap">
+                        <strong>문제 1 ((a+b)/2 ≥ √ab):</strong> {student.l6?.prob1ProofText || '(미작성)'}
+                      </div>
+                      <div className="text-slate-600 whitespace-pre-wrap">
+                        <strong>문제 2 (a+1/a ≥ 2 외):</strong> {student.l6?.prob2ProofText || '(미작성)'}
+                      </div>
+                    </div>
+
+                    {/* 7차시 */}
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 space-y-2">
+                      <div className="font-bold text-rose-700">7차시 · 절대부등식3 (절댓값 부등식)</div>
+                      <div className="text-slate-600 whitespace-pre-wrap">
+                        <strong>문제 1 (|a+b| ≤ |a|+|b|):</strong> {student.l7?.prob1ProofText || '(미작성)'}
+                      </div>
+                      <div className="text-slate-600 whitespace-pre-wrap">
+                        <strong>문제 2 (|a−b| ≤ |a|+|b| 외):</strong> {student.l7?.prob2ProofText || '(미작성)'}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -378,7 +418,7 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                     아직 교수자의 평가 결과가 등록되지 않았습니다
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
-                    1~4차시 탐구 활동을 충실히 작성하여 완료하면, 교수자가 제출된 기록을 검토하고
+                    1~7차시 탐구 활동을 충실히 작성하여 완료하면, 교수자가 제출된 기록을 검토하고
                     4대 핵심 탐구 역량 평정 점수와 맞춤형 피드백을 이곳에 등록해 줍니다.
                   </p>
                 </div>
@@ -417,6 +457,9 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                       { lesson: 2 as const, title: '02차시 (반례 탐색)' },
                       { lesson: 3 as const, title: '03차시 (대우법)' },
                       { lesson: 4 as const, title: '04차시 (귀류법)' },
+                      { lesson: 5 as const, title: '05차시 (절대부등식1)' },
+                      { lesson: 6 as const, title: '06차시 (절대부등식2)' },
+                      { lesson: 7 as const, title: '07차시 (절대부등식3)' },
                     ].map(({ lesson, title }) => (
                       <button
                         key={lesson}
@@ -441,7 +484,9 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
         {/* Modal Bottom Footer Bar */}
         <div className="bg-white border-t border-slate-200 px-4 py-3 sm:px-7 sm:py-4 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <span className="text-[11px] sm:text-xs text-slate-500 text-center sm:text-left">
-            {isEvaluated ? '💡 평가 내용은 실시간으로 최신화됩니다.' : '💡 작성을 완료하면 교수자가 확인합니다.'}
+            {isEvaluated
+              ? '💡 교수자 평가 내용은 실시간으로 최신화됩니다.'
+              : '💡 작성을 완료하면 교수자가 확인합니다.'}
           </span>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             {onPrintReport && isEvaluated && (

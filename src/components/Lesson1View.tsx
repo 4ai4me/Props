@@ -31,6 +31,7 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
   const [oddInputStr, setOddInputStr] = useState<string>('3');
   const [testInputStr, setTestInputStr] = useState<string>('-21');
   const [feedback, setFeedback] = useState<Record<string, { text: string; type: 'good' | 'warn' }>>({});
+  const [visibleProofHints, setVisibleProofHints] = useState<boolean[]>([false, false, false, false]);
 
   const completion = evaluateLevel1Completion(state);
 
@@ -128,7 +129,31 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
     );
   };
 
-  const handleOpenProofHint = (idx: number) => {
+  const handleToggleProofHint = (idx: number) => {
+    const isCurrentlyOpen = Boolean(visibleProofHints[idx]);
+    if (isCurrentlyOpen) {
+      setVisibleProofHints((prev) => {
+        const next = [...prev];
+        next[idx] = false;
+        return next;
+      });
+    } else {
+      setVisibleProofHints((prev) => {
+        const next = [...prev];
+        next[idx] = true;
+        return next;
+      });
+      if ((state.proofHints[idx] || 0) === 0) {
+        onUpdate((prev) => {
+          const nextHints = [...prev.proofHints];
+          nextHints[idx] = 1;
+          return { ...prev, proofHints: nextHints };
+        });
+      }
+    }
+  };
+
+  const handleNextProofHint = (idx: number) => {
     onUpdate((prev) => {
       const nextHints = [...prev.proofHints];
       nextHints[idx] = Math.min(3, (nextHints[idx] || 0) + 1);
@@ -713,17 +738,52 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleOpenProofHint(i)}
-                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs sm:text-sm font-bold text-amber-800 hover:bg-amber-100"
+                      aria-expanded={Boolean(visibleProofHints[i])}
+                      onClick={() => handleToggleProofHint(i)}
+                      className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs sm:text-sm font-bold transition-colors ${
+                        visibleProofHints[i]
+                          ? 'border-amber-400 bg-amber-100 text-amber-950'
+                          : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                      }`}
                     >
                       <HelpCircle className="h-4 w-4" />
-                      힌트 보기 ({hintCount}/3)
+                      {visibleProofHints[i]
+                        ? `힌트 숨기기 (${Math.max(1, hintCount)}/3)`
+                        : `힌트 보기 (${hintCount}/3)`}
                     </button>
                   </div>
 
-                  {hintCount > 0 && (
-                    <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900">
-                      <strong>힌트 {hintCount}:</strong> {t.hints[hintCount - 1]}
+                  {visibleProofHints[i] && (
+                    <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-2">
+                      <div className="space-y-1">
+                        {t.hints.slice(0, Math.max(1, hintCount)).map((h, hIdx) => (
+                          <div key={hIdx}>
+                            <strong>힌트 {hIdx + 1}:</strong> {h}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-amber-200/60">
+                        {hintCount < 3 ? (
+                          <button
+                            type="button"
+                            onClick={() => handleNextProofHint(i)}
+                            className="inline-flex items-center gap-1 rounded-lg bg-amber-200/70 hover:bg-amber-200 px-2.5 py-1 text-xs font-bold text-amber-950 transition-colors"
+                          >
+                            + 다음 단계 힌트 더 보기 ({Math.max(1, hintCount)}/3)
+                          </button>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-amber-700">
+                            모든 단계 힌트가 열렸습니다 (3/3)
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleProofHint(i)}
+                          className="text-xs font-bold text-amber-800 hover:underline"
+                        >
+                          힌트 접기 ▲
+                        </button>
+                      </div>
                     </div>
                   )}
 
