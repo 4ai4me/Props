@@ -329,3 +329,24 @@
   - `node --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts`: 18/18 통과.
   - `compile_applet` 및 `lint_applet`: 오류 0건, `ghpages-app.js` 및 `ghpages-app.css` 최신 빌드 동기화 완료.
   - `playwright-cli` 브라우저 검증: 데스크톱(1440x900) 및 모바일(390x844) 뷰포트에서 평가 대기 화면, 평가 완료 화면, 서술 아코디언 전개, 모바일 버튼 스택 등 시각 무결성 확인 완료.
+
+---
+
+## [Task 10] GitHub Pages ("평가 결과" 버튼 미표시) 원인 분석 및 배포 번들 최신화
+
+- **시작 및 완료 시각**: 2026-10-22T02:28:00-07:00 ~ 2026-10-22T02:31:00-07:00
+- **적용 Tier**: Tier 2 (배포 번들 빌드 동기화, 정적 호스팅 캐시 무효화 및 회귀 검증)
+- **원인 분석 (Root Cause)**:
+  1. **루트 정적 번들(`ghpages-app.js`) 미동기화**:
+     - GitHub Pages(`https://4ai4me.github.io/Props/`)는 `index.html` 내 `window.__loadStaticBundle()` 함수를 통해 루트의 `ghpages-app.js` 및 `ghpages-app.css`를 불러오도록 구성되어 있습니다.
+     - 직전 Task 9에서 `src/` 소스 코드에는 평가 결과 버튼과 모달이 구현되었으나, 루트의 `ghpages-app.js` 파일이 `npm run build`로 재생성되지 않은 채 푸시되어 파일 내 "평가 결과" 키워드가 0건(구버전 상태)이었습니다.
+  2. **브라우저 및 CDN 캐시 유지**:
+     - `index.html`의 정적 번들 로드 URL 파라미터가 구버전 태그(`?v=20261021-4lessons`)로 고정되어 있어, 브라우저가 이전 캐시를 재활용하는 문제가 있었습니다.
+- **해결 조치 (Fix Applied)**:
+  1. **프로덕션 번들 재빌드 및 루트 파일 동기화**:
+     - `npm run build`를 실행하여 `StudentEvaluationModal` 및 `App.tsx`의 "평가 결과" 버튼 컴포넌트가 포함된 최신 번들을 `ghpages-app.js`와 `ghpages-app.css`로 추출·동기화 (추출 후 `ghpages-app.js` 내 "평가 결과" 7건 포함 확인).
+  2. **캐시 무효화(Cache-Busting) 파라미터 갱신**:
+     - `index.html`의 번들 호출 쿼리를 `?v=20261022-eval-results`로 변경하여, 깃허브 푸시 후 사용자가 접속했을 때 브라우저 캐시 없이 즉시 최신 번들을 로드하도록 처리.
+  3. **무결성 검증**:
+     - `node --test src/utils/mathLogic.test.ts`: 12개 테스트 스위트 100% 통과.
+     - `compile_applet` & `lint_applet`: 오류 0건 통과.
