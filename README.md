@@ -350,6 +350,7 @@ export interface StudentRecord {
 │   │   ├── Lesson2View.tsx         # 2차시 활동지 (반례 검사 및 정당화)
 │   │   ├── Lesson3View.tsx         # 3차시 활동지 (대우를 이용한 증명 2문항 & 단계별 힌트)
 │   │   ├── Lesson4View.tsx         # 4차시 활동지 (귀류법 증명 2문항 & 단계별 힌트)
+│   │   ├── StudentEvaluationModal.tsx # 개별 학습자용 평가 결과 및 교수자 맞춤 피드백 모달
 │   │   └── TeacherView.tsx         # 교사용 기록실, 필터, 비모달 비교창, 1~4차시 대시보드
 │   └── utils/
 │       ├── authLogic.ts            # MAC 식별자 해시 및 관리자 권한 로직

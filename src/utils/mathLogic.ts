@@ -551,6 +551,35 @@ export const EVAL_DESCRIPTIONS = [
   '한계를 인식하고 탐구를 수정·확장하는 능력',
 ] as const;
 
+export const EVAL_SCORE_LABELS: Record<number, string> = {
+  0: '0점 · 증거 부족',
+  1: '1점 · 시작 단계',
+  2: '2점 · 부분적 수행',
+  3: '3점 · 충분한 수행',
+};
+
+export function hasTeacherEvaluation(student?: StudentRecord | null): boolean {
+  if (!student) return false;
+  const ev = student.evaluation;
+  if (!ev) {
+    return Boolean(student.teacherMemo && student.teacherMemo.trim().length > 0);
+  }
+  const hasScores =
+    Array.isArray(ev.scores) &&
+    ev.scores.some((s) => s !== null && s !== undefined && typeof s === 'number');
+  const hasFeedback = typeof ev.feedback === 'string' && ev.feedback.trim().length > 0;
+  const hasNextStep = typeof ev.nextStep === 'string' && ev.nextStep.trim().length > 0;
+  const hasMemo = Boolean(student.teacherMemo && student.teacherMemo.trim().length > 0);
+  return hasScores || hasFeedback || hasNextStep || hasMemo;
+}
+
+export function getTeacherEvalAverage(scores?: (number | null)[]): number | null {
+  if (!scores || !Array.isArray(scores)) return null;
+  const valid = scores.filter((v): v is number => typeof v === 'number' && v >= 0 && v <= 3);
+  if (!valid.length) return null;
+  return valid.reduce((a, b) => a + b, 0) / valid.length;
+}
+
 export function createInitialStudentState(): StudentRecord {
   const timestamp = new Date().toISOString();
   return {

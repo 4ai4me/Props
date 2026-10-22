@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import {
   STORAGE_KEY_STUDENT,
@@ -17,6 +17,7 @@ import {
   evaluateLevel2Completion,
   evaluateLevel3Completion,
   evaluateLevel4Completion,
+  hasTeacherEvaluation,
 } from './utils/mathLogic';
 import {
   ADMIN_TEACHER_EMAIL,
@@ -29,6 +30,7 @@ import { Lesson3View } from './components/Lesson3View';
 import { Lesson4View } from './components/Lesson4View';
 import { TeacherView } from './components/TeacherView';
 import { AuthGateView, FirestoreStudentRegistrationDoc } from './components/AuthGateView';
+import { StudentEvaluationModal } from './components/StudentEvaluationModal';
 import {
   Printer,
   CheckCircle2,
@@ -36,6 +38,7 @@ import {
   LogOut,
   ShieldCheck,
   UserCheck,
+  Award,
 } from 'lucide-react';
 
 export default function App() {
@@ -109,6 +112,7 @@ export default function App() {
   });
   const [selectedTeacherKey, setSelectedTeacherKey] = useState<string>('');
   const [printingStudent, setPrintingStudent] = useState<StudentRecord | null>(null);
+  const [isEvalModalOpen, setIsEvalModalOpen] = useState<boolean>(false);
 
   const [toast, setToast] = useState<{ text: string; type: 'good' | 'warn' } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -152,6 +156,36 @@ export default function App() {
       }, 900);
     }
   }, [student, sessionMode, approvedProfile]);
+
+  // Real-time listener for teacher evaluations pushed to student registration
+  useEffect(() => {
+    if (sessionMode !== 'student' || !approvedProfile?.studentKey) return;
+    const unsub = onSnapshot(doc(db, 'student_registrations', approvedProfile.studentKey), (docSnap) => {
+      if (!docSnap.exists()) return;
+      const data = docSnap.data() as FirestoreStudentRegistrationDoc;
+      if (data.worksheetJson) {
+        try {
+          const remote = cleanStudentState(JSON.parse(data.worksheetJson));
+          setStudent((prev) => {
+            const hasEvalChanged =
+              JSON.stringify(remote.evaluation) !== JSON.stringify(prev.evaluation) ||
+              remote.teacherMemo !== prev.teacherMemo;
+            if (hasEvalChanged) {
+              return {
+                ...prev,
+                teacherMemo: remote.teacherMemo ?? prev.teacherMemo,
+                evaluation: remote.evaluation ?? prev.evaluation,
+              };
+            }
+            return prev;
+          });
+        } catch {
+          // ignore parsing error
+        }
+      }
+    });
+    return () => unsub();
+  }, [sessionMode, approvedProfile?.studentKey]);
 
   // Sync teacher state to localStorage
   useEffect(() => {
@@ -434,6 +468,26 @@ export default function App() {
                     </span>
                   </div>
 
+                  {/* "평가 결과" Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsEvalModalOpen(true)}
+                    className={`inline-flex min-h-[42px] items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 shadow-xs border ${
+                      hasTeacherEvaluation(student)
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/40 ring-2 ring-emerald-400/30'
+                        : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+                    }`}
+                    title="교수자가 입력한 평가 결과 및 피드백 확인"
+                  >
+                    <Award className={`h-4 w-4 ${hasTeacherEvaluation(student) ? 'text-amber-300' : 'text-sky-300'}`} />
+                    <span>평가 결과</span>
+                    {hasTeacherEvaluation(student) && (
+                      <span className="rounded-full bg-emerald-300 text-emerald-950 text-[10px] px-1.5 py-0.5 font-black uppercase tracking-tight">
+                        피드백 도착
+                      </span>
+                    )}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => window.print()}
@@ -509,9 +563,25 @@ export default function App() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-100/90 border border-slate-200/80 px-3.5 py-2 rounded-xl">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>실시간 탐구 기록 보관 중</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setIsEvalModalOpen(true)}
+                      className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all shadow-2xs ${
+                        hasTeacherEvaluation(student)
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100 ring-1 ring-emerald-300/40'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                      title="교수자가 입력한 4대 역량 평가 및 피드백 열람"
+                    >
+                      <Award className={`h-4 w-4 ${hasTeacherEvaluation(student) ? 'text-emerald-600' : 'text-slate-500'}`} />
+                      <span>{hasTeacherEvaluation(student) ? '교수자 평가 결과 (완료)' : '교수자 평가 결과 확인'}</span>
+                    </button>
+
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-100/90 border border-slate-200/80 px-3.5 py-2 rounded-xl">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>실시간 탐구 기록 보관 중</span>
+                    </div>
                   </div>
                 </div>
 
@@ -753,6 +823,18 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* Student Evaluation Result & Teacher Feedback Modal */}
+        <StudentEvaluationModal
+          isOpen={isEvalModalOpen}
+          onClose={() => setIsEvalModalOpen(false)}
+          student={student}
+          onPrintReport={handlePrintStudentReport}
+          onGoToLesson={(lesson) => {
+            setActiveLessonTab(lesson);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
       </div>
 
       {/* Dedicated Individual Student Report Print Area */}

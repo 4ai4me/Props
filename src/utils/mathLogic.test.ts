@@ -22,6 +22,9 @@ import {
   evaluateLevel2Completion,
   evaluateLevel3Completion,
   evaluateLevel4Completion,
+  hasTeacherEvaluation,
+  getTeacherEvalAverage,
+  EVAL_SCORE_LABELS,
 } from './mathLogic.ts';
 
 test('mod handles positive and negative integers properly', () => {
@@ -197,4 +200,32 @@ test('evaluateLevel1..4Completion track progress accurately', () => {
   s.l4.contradictionConceptChecked = true;
   assert.equal(evaluateLevel4Completion(s.l4)[0], true);
 });
+
+test('hasTeacherEvaluation and getTeacherEvalAverage evaluate teacher scoring accurately', () => {
+  const s = createInitialStudentState();
+  assert.equal(hasTeacherEvaluation(s), false);
+  assert.equal(getTeacherEvalAverage(s.evaluation?.scores), null);
+
+  // When scores are set
+  s.evaluation = {
+    scores: [3, 2, 3, null],
+    feedback: '논증 전개가 우수합니다.',
+    nextStep: '문자로 일반화해 보세요.',
+  };
+  assert.equal(hasTeacherEvaluation(s), true);
+  // (3 + 2 + 3) / 3 = 2.66666...
+  const avg = getTeacherEvalAverage(s.evaluation.scores);
+  assert.ok(avg !== null);
+  assert.ok(Math.abs(avg - 8 / 3) < 0.001);
+
+  // When only memo is set
+  const sMemo = createInitialStudentState();
+  sMemo.teacherMemo = '꾸준히 발전 중임';
+  assert.equal(hasTeacherEvaluation(sMemo), true);
+
+  // Score label dictionary
+  assert.equal(EVAL_SCORE_LABELS[3], '3점 · 충분한 수행');
+  assert.equal(EVAL_SCORE_LABELS[0], '0점 · 증거 부족');
+});
+
 
