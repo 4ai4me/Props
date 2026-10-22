@@ -182,7 +182,7 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                       <span>교수자 종합 평정 결과 (진행율 {evalProgress.percent}%)</span>
                     </div>
                     <div className="text-lg sm:text-xl font-extrabold text-slate-900">
-                      {student.code} 탐정의 4대 수학적 탐구 역량
+                      {student.code} 탐정의 {EVAL_CRITERIA.length}대 수학적 탐구 역량
                     </div>
                     <p className="text-xs text-slate-600">
                       1~7차시 단서, 반례 탐색, 대우법·귀류법 및 절대부등식 증명 서술을 종합하여 평정되었습니다.
@@ -199,13 +199,18 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                     </div>
                   </div>
                 </div>
+                {evalProgress.isReopenedByLessonExpansion && (
+                  <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50/90 px-3.5 py-2.5 text-xs font-semibold text-amber-900">
+                    새로운 차시(평가 항목)가 추가되어 기존 평가 완료 상태가 <strong>평가 진행 중 ({evalProgress.percent}%, {evalProgress.completedCount}/{evalProgress.totalCount})</strong>으로 변경되었습니다. 추가된 차시 항목({evalProgress.ungradedRubricCount}개)의 평정이 완료되면 다시 평가 완료(100%)로 전환됩니다.
+                  </div>
+                )}
               </div>
 
-              {/* 4 Rubric Criteria Grid */}
+              {/* Rubric Criteria Grid */}
               <div className="space-y-3">
                 <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
                   <Award className="h-4 w-4 text-indigo-600" />
-                  <span>4대 탐구 역량 영역별 성취도 (0~3점)</span>
+                  <span>{EVAL_CRITERIA.length}대 탐구 역량 영역별 성취도 (0~3점 · 평정 {evalProgress.scoredRubricCount}/{evalProgress.totalRubricCount})</span>
                 </h3>
 
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -419,16 +424,16 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
                     1~7차시 탐구 활동을 충실히 작성하여 완료하면, 교수자가 제출된 기록을 검토하고
-                    4대 핵심 탐구 역량 평정 점수와 맞춤형 피드백을 이곳에 등록해 줍니다.
+                    {EVAL_CRITERIA.length}대 핵심 탐구 역량 평정 점수와 맞춤형 피드백을 이곳에 등록해 줍니다.
                   </p>
                 </div>
               </div>
 
-              {/* 4 Evaluation Criteria Guide */}
+              {/* Evaluation Criteria Guide */}
               <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-xs">
                 <div className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
                   <HelpCircle className="h-4 w-4 text-blue-600" />
-                  <span>교수자 평가 4대 루브릭 기준 미리보기</span>
+                  <span>교수자 평가 {EVAL_CRITERIA.length}대 루브릭 기준 미리보기</span>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {EVAL_CRITERIA.map((criterion, idx) => (

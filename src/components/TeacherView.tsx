@@ -289,8 +289,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           const old = nextList[existingIdx];
           if ((x.updatedAt || '') >= (old.updatedAt || '')) {
             x.teacherMemo = old.teacherMemo || '';
-            x.evaluation =
-              old.evaluation || { scores: [null, null, null, null], feedback: '', nextStep: '' };
+            x.evaluation = old.evaluation;
+            ensureTeacherEval(x);
             nextList[existingIdx] = x;
           }
         } else {
@@ -1397,7 +1397,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   >
                     <option value="all">전체 평가 상태</option>
                     <option value="complete">평가 완료 (100%)</option>
-                    <option value="partial">평가 진행 중 (20~80%)</option>
+                    <option value="partial">평가 진행 중 (차시 추가·부분 평정)</option>
                     <option value="none">미평가 (0%)</option>
                   </select>
                 </div>
@@ -1495,12 +1495,17 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                               </div>
                               <div className="text-[11px] text-slate-500 flex items-center justify-between">
                                 <span>
-                                  평정 {evalProg.scoredRubricCount}/4 · 피드백 {evalProg.hasFeedback ? '완료' : '미작성'}
+                                  평정 {evalProg.scoredRubricCount}/{evalProg.totalRubricCount} · 피드백 {evalProg.hasFeedback ? '완료' : '미작성'}
                                 </span>
                                 {avgScore !== null && (
                                   <strong className="mono text-slate-700">평균 {avgScore.toFixed(2)}점</strong>
                                 )}
                               </div>
+                              {evalProg.isReopenedByLessonExpansion && (
+                                <div className="rounded-md bg-amber-50/90 border border-amber-200/80 px-2 py-1 text-[10px] font-bold text-amber-800">
+                                  차시 추가로 완료 취소 → 진행형 (미평정 {evalProg.ungradedRubricCount}건)
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td className="py-3 px-3.5">
@@ -1760,6 +1765,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                         </div>
                       </div>
 
+                      {inlineEvalProg.isReopenedByLessonExpansion && (
+                        <div className="rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-xs font-semibold text-amber-900">
+                          새로운 차시(평가 항목)가 추가되어 기존 <strong>평가 완료</strong> 처리가 취소되고 <strong>평가 진행 중</strong> 상태로 변경되었습니다. 새로 추가된 차시 항목({inlineEvalProg.ungradedRubricCount}개)을 평정하면 다시 평가 완료(100%)로 전환됩니다.
+                        </div>
+                      )}
+
                       <div className="grid gap-4 sm:grid-cols-2">
                         {EVAL_CRITERIA.map((title, i) => {
                           const ev = ensureTeacherEval(selectedStudent);
@@ -1782,7 +1793,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                                     nextScores[i] = val;
                                     return {
                                       ...item,
-                                      evaluation: { ...currentEv, scores: nextScores },
+                                      evaluation: {
+                                        ...currentEv,
+                                        scores: nextScores,
+                                        evaluatedLessonCount: EVAL_CRITERIA.length,
+                                      },
                                     };
                                   });
                                 }}
@@ -2174,22 +2189,29 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                     {(() => {
                       const modelessEvalProg = getTeacherEvaluationProgress(selectedStudent);
                       return (
-                        <div className="flex items-center justify-between gap-2 flex-wrap border-b border-slate-100 pb-3">
-                          <div>
-                            <div className="text-xs font-bold text-blue-600">교수자 평가</div>
-                            <h4 className="text-base font-bold text-slate-900">학생 역량 평가 및 맞춤 피드백</h4>
+                        <div className="space-y-3 border-b border-slate-100 pb-3">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div>
+                              <div className="text-xs font-bold text-blue-600">교수자 평가</div>
+                              <h4 className="text-base font-bold text-slate-900">학생 역량 평가 및 맞춤 피드백</h4>
+                            </div>
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-extrabold border ${
+                                modelessEvalProg.status === 'complete'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : modelessEvalProg.status === 'partial'
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : 'bg-slate-100 text-slate-600 border-slate-200'
+                              }`}
+                            >
+                              {modelessEvalProg.statusLabel} · 진행율 {modelessEvalProg.percent}% ({modelessEvalProg.completedCount}/{modelessEvalProg.totalCount})
+                            </span>
                           </div>
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-extrabold border ${
-                              modelessEvalProg.status === 'complete'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                : modelessEvalProg.status === 'partial'
-                                ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
-                            }`}
-                          >
-                            {modelessEvalProg.statusLabel} · 진행율 {modelessEvalProg.percent}% ({modelessEvalProg.completedCount}/{modelessEvalProg.totalCount})
-                          </span>
+                          {modelessEvalProg.isReopenedByLessonExpansion && (
+                            <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+                              새로운 차시(평가 항목)가 추가되어 기존 <strong>평가 완료</strong> 처리가 취소되고 <strong>평가 진행 중</strong> 상태로 변경되었습니다. 미평정 차시 항목({modelessEvalProg.ungradedRubricCount}개)을 추가로 평정해 주세요.
+                            </div>
+                          )}
                         </div>
                       );
                     })()}
@@ -2215,7 +2237,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                                   nextScores[i] = val;
                                   return {
                                     ...item,
-                                    evaluation: { ...currentEv, scores: nextScores },
+                                    evaluation: {
+                                      ...currentEv,
+                                      scores: nextScores,
+                                      evaluatedLessonCount: EVAL_CRITERIA.length,
+                                    },
                                   };
                                 });
                               }}

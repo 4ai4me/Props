@@ -427,3 +427,36 @@
   - [x] `/readme.md` 삭제 확인
   - [x] `/README.md` 최신 스펙 반영 확인
   - [x] 기존 빌드 및 기능 무결성 유지 확인
+
+---
+
+## [Task 17] 차시 추가(5~7차시 등) 시 기존 교수자 평가 완료 상태를 취소하고 진행형('평가 진행 중')으로 자동 전환 (2026-10-22)
+
+### 1. 작업 시작 전 점검 (Pre-check)
+- **요청 사항**:
+  - 교수자 평가가 완료된 상태에서 차시가 추가되면 평가할 항목이 추가되었으므로, 기존 평가 완료(`complete`) 처리를 취소하고 진행형(`partial` / `평가 진행 중`)으로 변경할 것.
+- **작업 Tier**: Tier 2~3 (평가 데이터 모델 `TeacherEvaluation` 및 `EVAL_CRITERIA` 확장, 하위 호환성·기존 평정 점수 보존, 교사/학생 UI 및 인쇄 시트 반영, 단위 테스트 추가)
+- **변경 전 공통 질문 검토**:
+  - *기존 데이터(사용자 데이터)에 영향이 있는가?* 기존에 입력된 1~4차시 평정 점수(`scores[0..3]`), 학생 피드백(`feedback`), 다음 탐구 제안(`nextStep`), 교사 메모(`teacherMemo`)는 절대 삭제·초기화하지 않고 그대로 보존한다. 단지 추가된 차시(5~7차시 절대부등식 1·2·3 및 향후 추가 차시)의 평정 항목이 미평정(`null`) 상태로 확장되므로, 완료율이 `5/5 (100%, 평가 완료)`에서 `5/8 (63%, 평가 진행 중)`으로 재산출되어 진행형으로 전환된다.
+  - *무엇이 영향받는가?* `src/utils/mathLogic.ts`, `src/components/TeacherView.tsx`, `src/components/StudentEvaluationModal.tsx`, `src/App.tsx`, `src/utils/mathLogic.test.ts`, `README.md`.
+
+### 2. 구현 및 검증 결과 (Post-check)
+- **수행 내역**:
+  1. **1~7차시 전체 평가 항목(`EVAL_CRITERIA`) 확장 및 기존 점수 보존 (`src/utils/mathLogic.ts`)**:
+     - 기존 1~4차시 4개 평가 항목에 더해 추가된 5차시(`절대부등식1 증명 (5차시)`), 6차시(`절대부등식2 증명 (6차시)`), 7차시(`절대부등식3 증명 (7차시)`) 루브릭 항목을 추가하여 총 7개 차시별 역량 평정 항목 + 1개 피드백(총 8항목) 체제로 확장.
+     - `ensureTeacherEval` 및 `cleanStudentState`에서 기존 4차시 기준 평가 데이터(`scores.length === 4`)를 불러올 때 기존 평정 점수(`scores[0..3]`)와 피드백을 100% 보존하면서 `evaluatedLessonCount = 4`를 기록하고 추가된 차시 슬롯을 `null`로 패딩(`[s0, s1, s2, s3, null, null, null]`).
+  2. **차시 추가 시 기존 '평가 완료' 취소 및 '평가 진행 중(진행형)' 자동 전환 (`getTeacherEvaluationProgress`)**:
+     - `getTeacherEvaluationProgress(student, currentLessonCount)`에서 현재 총 차시(평가 항목) 수가 기존에 평정 완료된 항목 수보다 많아지면(미평정 항목 `ungradedRubricCount > 0`), 기존 `complete`('평가 완료') 처리를 취소하고 `partial`('평가 진행 중', 진행형) 상태로 자동 변경하며 `isReopenedByLessonExpansion: true` 플래그를 반환하도록 구현.
+     - 예시 학생 데이터(`createSampleTeacherDataset`) 및 기존 저장 데이터 모두 1~4차시 평정 완료(4개 항목 + 피드백) 상태에서 5~7차시 추가로 인해 `평가 진행 중 (63%, 5/8)` 상태로 표시되며, 교사가 추가된 5~7차시 항목을 모두 평정하면 다시 `평가 완료 (100%, 8/8)`로 전환됨.
+  3. **교사 모드·학생 평가 모달·상단 배지·인쇄 시트 연동 (`TeacherView.tsx`, `StudentEvaluationModal.tsx`, `App.tsx`)**:
+     - 교사용 수사 기록실 테이블, 인라인 평가 패널, 비모달 비교 창, 학생용 `평가 결과` 모달에 차시 추가로 인해 평가 완료에서 진행형(`평가 진행 중`)으로 전환되었음을 안내하는 배지 및 미평정 항목 수 표시.
+  4. **단위 테스트·빌드·번들 동기화 검증**:
+     - `npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts`: 총 21개 단위 테스트(차시 추가 시 완료 취소 및 진행형 전환 회귀 테스트 포함) 100% 통과.
+     - `compile_applet`, `lint_applet`, `npm run build` 성공 및 `ghpages-app.js`, `ghpages-app.css` 최신화 완료.
+- **Definition of Done 확인**:
+  - [x] 차시 추가 시 기존 평가 완료 상태를 취소하고 진행형(`평가 진행 중`)으로 자동 변경 확인
+  - [x] 기존에 입력된 평정 점수 및 피드백 데이터 100% 보존 확인
+  - [x] 추가된 차시 항목을 모두 평정하면 다시 `평가 완료 (100%)`로 전환됨을 확인
+  - [x] `README.md` 및 `log.md` 업데이트 완료
+
+

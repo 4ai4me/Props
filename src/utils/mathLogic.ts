@@ -210,6 +210,7 @@ export interface TeacherEvaluation {
   scores: (number | null)[];
   feedback: string;
   nextStep: string;
+  evaluatedLessonCount?: number;
 }
 
 export interface StudentRecord {
@@ -982,18 +983,27 @@ export const STAGE_TITLES = {
   7: ['절댓값 단서', '문제 1 (예제 5)', '절댓값 차 탐색', '문제 2 (문제 5)', '전체 수사 종결'],
 } as const;
 
+export const TOTAL_LESSONS = 7;
+export const LEGACY_EVAL_CRITERIA_COUNT = 4;
+
 export const EVAL_CRITERIA = [
-  '규칙 발견·추측',
-  '반례 탐색·검증',
-  '논리적 정당화',
-  '성찰·탐구 확장',
+  '규칙 발견·추측 (1차시)',
+  '반례 탐색·검증 (2차시)',
+  '논리적 정당화 (3차시 대우법)',
+  '성찰·탐구 확장 (4차시 귀류법)',
+  '절대부등식1 증명 (5차시)',
+  '절대부등식2 증명 (6차시)',
+  '절대부등식3 증명 (7차시)',
 ] as const;
 
 export const EVAL_DESCRIPTIONS = [
-  '사례의 규칙을 명제로 표현하는 능력',
-  '조건에 맞는 반례를 탐색하고 판단하는 능력',
-  '문자·정수의 성질 등으로 일반성을 설명하는 능력',
-  '한계를 인식하고 탐구를 수정·확장하는 능력',
+  '사례의 규칙을 보편 명제로 표현하고 직접 증명하는 능력',
+  '조건에 맞는 반례를 탐색하고 명제의 참·거짓을 판단하는 능력',
+  '명제의 대우(~q → ~p)와 경우 나누기로 일반성을 설명하는 능력',
+  '결론 부정을 통한 모순 추론(귀류법) 및 탐구 확장 능력',
+  '완전제곱식의 합(A²+B² ≥ 0)으로 부등식과 등호 조건을 증명하는 능력',
+  '양수 조건에서 산술·기하·조화평균 관계를 유도하고 증명하는 능력',
+  '절댓값 제곱 성질(|A|² = A²)과 제곱의 차로 절댓값 부등식을 증명하는 능력',
 ] as const;
 
 export const CLASSROOM_BRAND_NAME = '이하연 수학 교실';
@@ -1008,6 +1018,8 @@ export const EVAL_SCORE_LABELS: Record<number, string> = {
 export interface TeacherEvaluationProgress {
   completedCount: number;
   totalCount: number;
+  totalRubricCount: number;
+  ungradedRubricCount: number;
   percent: number;
   status: 'none' | 'partial' | 'complete';
   statusLabel: string;
@@ -1015,6 +1027,8 @@ export interface TeacherEvaluationProgress {
   hasFeedback: boolean;
   hasNextStep: boolean;
   hasMemo: boolean;
+  /** 기존 차시 기준 평가 완료 상태였으나, 차시(평가 항목)가 추가되어 진행형('partial')으로 전환되었는지 여부 */
+  isReopenedByLessonExpansion: boolean;
 }
 
 export interface ClassEvaluationSummary {
@@ -1050,13 +1064,17 @@ export function getTeacherEvalAverage(scores?: (number | null)[]): number | null
 }
 
 export function getTeacherEvaluationProgress(
-  student?: StudentRecord | null
+  student?: StudentRecord | null,
+  currentLessonCount: number = EVAL_CRITERIA.length
 ): TeacherEvaluationProgress {
-  const totalCount = 5; // 4 rubric criteria + 1 student feedback
+  const totalRubricCount = Math.max(1, currentLessonCount);
+  const totalCount = totalRubricCount + 1; // N lesson/competency rubric criteria + 1 student feedback
   if (!student) {
     return {
       completedCount: 0,
       totalCount,
+      totalRubricCount,
+      ungradedRubricCount: totalRubricCount,
       percent: 0,
       status: 'none',
       statusLabel: '미평가',
@@ -1064,22 +1082,58 @@ export function getTeacherEvaluationProgress(
       hasFeedback: false,
       hasNextStep: false,
       hasMemo: false,
+      isReopenedByLessonExpansion: false,
     };
   }
   const ev = student.evaluation;
-  const scoredRubricCount = Array.isArray(ev?.scores)
-    ? ev!.scores.slice(0, 4).filter((v): v is number => typeof v === 'number' && v >= 0 && v <= 3).length
-    : 0;
+  const rawScores = Array.isArray(ev?.scores) ? ev!.scores : [];
+
+  // If evaluatedLessonCount was explicitly recorded under an older curriculum with fewer lessons
+  // than currentLessonCount, only scores up to evaluatedLessonCount (or explicitly scored items) count,
+  // and any newly added lesson slots beyond that are ungraded until scored.
+  const effectiveRubricLimit =
+    typeof ev?.evaluatedLessonCount === 'number' &&
+    ev.evaluatedLessonCount > 0 &&
+    ev.evaluatedLessonCount < totalRubricCount &&
+    rawScores.slice(ev.evaluatedLessonCount, totalRubricCount).every((v) => v === null || v === undefined)
+      ? ev.evaluatedLessonCount
+      : totalRubricCount;
+
+  const isScoreValid = (v: unknown): v is number =>
+    typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 3;
+
+  const scoredRubricCount = rawScores
+    .slice(0, totalRubricCount)
+    .filter((v, idx) => idx < effectiveRubricLimit && isScoreValid(v)).length;
+
+  const ungradedRubricCount = Math.max(0, totalRubricCount - scoredRubricCount);
   const hasFeedback = Boolean(ev?.feedback && ev.feedback.trim().length > 0);
   const hasNextStep = Boolean(ev?.nextStep && ev.nextStep.trim().length > 0);
   const hasMemo = Boolean(student.teacherMemo && student.teacherMemo.trim().length > 0);
+
+  // Check if this record had completed all previous evaluation items (e.g., first 4 lessons + feedback,
+  // or first evaluatedLessonCount lessons + feedback) before new lessons were added.
+  const prevBaselineCount =
+    typeof ev?.evaluatedLessonCount === 'number' &&
+    ev.evaluatedLessonCount >= LEGACY_EVAL_CRITERIA_COUNT &&
+    ev.evaluatedLessonCount < totalRubricCount
+      ? ev.evaluatedLessonCount
+      : LEGACY_EVAL_CRITERIA_COUNT;
+
+  const hadCompletedPreviousCurriculum =
+    totalRubricCount > prevBaselineCount &&
+    hasFeedback &&
+    rawScores.slice(0, prevBaselineCount).filter(isScoreValid).length === prevBaselineCount &&
+    scoredRubricCount < totalRubricCount;
 
   const completedCount = scoredRubricCount + (hasFeedback ? 1 : 0);
   let percent = Math.round((completedCount / totalCount) * 100);
   let status: 'none' | 'partial' | 'complete' = 'none';
   let statusLabel = '미평가';
 
-  if (completedCount >= totalCount) {
+  // Even if all previous criteria were scored, if currentLessonCount > scoredRubricCount (or evaluatedLessonCount < totalRubricCount with ungraded new lessons),
+  // completion is revoked and changed to 'partial' (평가 진행 중).
+  if (completedCount >= totalCount && scoredRubricCount >= totalRubricCount) {
     status = 'complete';
     statusLabel = '평가 완료';
     percent = 100;
@@ -1087,11 +1141,14 @@ export function getTeacherEvaluationProgress(
     status = 'partial';
     statusLabel = '평가 진행 중';
     if (percent === 0) percent = 10;
+    if (percent >= 100) percent = 99;
   }
 
   return {
     completedCount,
     totalCount,
+    totalRubricCount,
+    ungradedRubricCount,
     percent,
     status,
     statusLabel,
@@ -1099,6 +1156,7 @@ export function getTeacherEvaluationProgress(
     hasFeedback,
     hasNextStep,
     hasMemo,
+    isReopenedByLessonExpansion: status === 'partial' && hadCompletedPreviousCurriculum,
   };
 }
 
@@ -1626,7 +1684,7 @@ export function cleanStudentState(raw: unknown): StudentRecord {
   const rawL6 = (x.l6 && typeof x.l6 === 'object' ? x.l6 : {}) as Partial<Lesson6State>;
   const rawL7 = (x.l7 && typeof x.l7 === 'object' ? x.l7 : {}) as Partial<Lesson7State>;
 
-  return {
+  const cleanedResult: StudentRecord = {
     ...base,
     ...(x as Partial<StudentRecord>),
     l1: {
@@ -1695,14 +1753,40 @@ export function cleanStudentState(raw: unknown): StudentRecord {
       prob2Hints: Array.isArray(rawL7.prob2Hints) && rawL7.prob2Hints.length === 4 ? rawL7.prob2Hints : base.l7.prob2Hints,
     },
   };
+
+  if (x.evaluation && typeof x.evaluation === 'object') {
+    ensureTeacherEval(cleanedResult);
+  }
+  return cleanedResult;
 }
 
-export function ensureTeacherEval(x: StudentRecord): TeacherEvaluation {
+export function ensureTeacherEval(
+  x: StudentRecord,
+  targetCriteriaCount: number = EVAL_CRITERIA.length
+): TeacherEvaluation {
   if (!x.evaluation || typeof x.evaluation !== 'object') {
-    x.evaluation = { scores: [null, null, null, null], feedback: '', nextStep: '' };
+    x.evaluation = {
+      scores: Array(targetCriteriaCount).fill(null),
+      feedback: '',
+      nextStep: '',
+      evaluatedLessonCount: targetCriteriaCount,
+    };
   }
   if (!Array.isArray(x.evaluation.scores)) {
-    x.evaluation.scores = [null, null, null, null];
+    x.evaluation.scores = Array(targetCriteriaCount).fill(null);
+  } else if (x.evaluation.scores.length < targetCriteriaCount) {
+    // Preserve previous lesson count if it was evaluated under an older curriculum (e.g., 4 lessons)
+    if (
+      x.evaluation.evaluatedLessonCount === undefined &&
+      x.evaluation.scores.some((s) => typeof s === 'number')
+    ) {
+      x.evaluation.evaluatedLessonCount = x.evaluation.scores.length;
+    }
+    const padded = [...x.evaluation.scores];
+    while (padded.length < targetCriteriaCount) {
+      padded.push(null);
+    }
+    x.evaluation.scores = padded;
   }
   if (typeof x.evaluation.feedback !== 'string') {
     x.evaluation.feedback = '';
@@ -1881,11 +1965,12 @@ export function createSampleTeacherDataset(): StudentRecord[] {
     reflection1: '절댓값 기호가 있어 직접 빼기 어려울 때 양변이 0 이상임을 확인하고 제곱의 차를 이용하면 절댓값 기호가 제곱으로 풀려 쉽게 증명할 수 있었다.',
     reflection2: '|a+b| ≤ |a|+|b|는 ab ≥ 0일 때 등호가 성립하고, |a-b| ≤ |a|+|b|는 ab ≤ 0일 때 등호가 성립한다는 부호의 차이를 명확히 이해했다.',
   };
-  s1.teacherMemo = '1~7차시 모든 증명 기법(직접증명, 반례, 대우법, 귀류법, 절대부등식 1·2·3)을 완벽하게 연결하여 서술함.';
+  s1.teacherMemo = '1~7차시 모든 증명 기법(직접증명, 반례, 대우법, 귀류법, 절대부등식 1·2·3)을 완벽하게 연결하여 서술함. (5~7차시 추가 항목 평정 진행 중)';
   s1.evaluation = {
-    scores: [3, 3, 3, 3],
-    feedback: '관찰에서 추측, 반례 검증, 대우법·귀류법, 그리고 절대부등식 3종 증명까지 모든 논리적 연결이 매우 탄탄합니다.',
+    scores: [3, 3, 3, 3, null, null, null],
+    feedback: '관찰에서 추측, 반례 검증, 대우법·귀류법까지 논리적 연결이 매우 탄탄합니다. 새로 추가된 5~7차시 절대부등식 평정이 진행 중입니다.',
     nextStep: '코시-슈바르츠 부등식 (a²+b²)(x²+y²) ≥ (ax+by)²도 완전제곱식을 이용해 직접 증명해 보세요.',
+    evaluatedLessonCount: 4,
   };
 
   const s2 = createInitialStudentState();
@@ -1954,11 +2039,12 @@ export function createSampleTeacherDataset(): StudentRecord[] {
     reflection1: '대우를 이용하면 결론을 부정한 조건에서 식을 시작할 수 있어서 편리했다.',
     reflection2: '3의 배수가 아닌 수는 나머지가 1과 2인 두 경우로 나누어 빠짐없이 조사해야 했다.',
   };
-  s2.teacherMemo = '1~3차시 완료, 4차시 귀류법 탐구 진행 중.';
+  s2.teacherMemo = '1~4차시 평가 완료 후 5~7차시 절대부등식 차시가 추가되어 추가 평가 진행 중.';
   s2.evaluation = {
-    scores: [3, 2, 3, 3],
+    scores: [3, 2, 3, 3, null, null, null],
     feedback: '대우를 이용한 두 가지 증명을 경우 나누기까지 정확하게 수행했습니다.',
-    nextStep: '4차시 귀류법에서 3차시 문제 1의 결과가 어떻게 쓰이는지 확인해 보세요.',
+    nextStep: '4차시 귀류법과 5~7차시 절대부등식 증명을 이어서 완성해 보세요.',
+    evaluatedLessonCount: 4,
   };
 
   return [s1, s2];

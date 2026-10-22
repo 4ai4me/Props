@@ -38,6 +38,9 @@ import {
   getTeacherEvalAverage,
   getTeacherEvaluationProgress,
   getClassEvaluationSummary,
+  ensureTeacherEval,
+  createSampleTeacherDataset,
+  EVAL_CRITERIA,
   EVAL_SCORE_LABELS,
   CLASSROOM_BRAND_NAME,
 } from './mathLogic.ts';
@@ -310,37 +313,46 @@ test('hasTeacherEvaluation and getTeacherEvalAverage evaluate teacher scoring ac
   assert.equal(CLASSROOM_BRAND_NAME, '이하연 수학 교실');
 });
 
-test('getTeacherEvaluationProgress and getClassEvaluationSummary calculate per-student and class progress accurately', () => {
+test('getTeacherEvaluationProgress and getClassEvaluationSummary calculate per-student and class progress accurately across 7 lessons', () => {
+  assert.equal(EVAL_CRITERIA.length, 7);
+
   const sNone = createInitialStudentState();
   const pNone = getTeacherEvaluationProgress(sNone);
   assert.equal(pNone.status, 'none');
   assert.equal(pNone.percent, 0);
   assert.equal(pNone.completedCount, 0);
+  assert.equal(pNone.totalCount, 8); // 7 rubric items + 1 feedback
   assert.equal(pNone.statusLabel, '미평가');
+  assert.equal(pNone.isReopenedByLessonExpansion, false);
 
   const sPartial = createInitialStudentState();
   sPartial.evaluation = {
-    scores: [3, 2, null, null],
+    scores: [3, 2, null, null, null, null, null],
     feedback: '규칙 발견이 뛰어납니다.',
     nextStep: '',
   };
   const pPartial = getTeacherEvaluationProgress(sPartial);
   assert.equal(pPartial.status, 'partial');
-  assert.equal(pPartial.completedCount, 3); // 2 scores + 1 feedback = 3/5 = 60%
-  assert.equal(pPartial.percent, 60);
+  assert.equal(pPartial.completedCount, 3); // 2 scores + 1 feedback = 3/8 = 38%
+  assert.equal(pPartial.totalCount, 8);
+  assert.equal(pPartial.percent, 38);
   assert.equal(pPartial.statusLabel, '평가 진행 중');
+  assert.equal(pPartial.isReopenedByLessonExpansion, false);
 
   const sComplete = createInitialStudentState();
   sComplete.evaluation = {
-    scores: [3, 3, 2, 3],
-    feedback: '모든 차시를 성실히 완수했습니다.',
+    scores: [3, 3, 2, 3, 3, 3, 3],
+    feedback: '1~7차시 모든 증명을 성실히 완수했습니다.',
     nextStep: '심화 문제를 탐구해 보세요.',
+    evaluatedLessonCount: 7,
   };
   const pComplete = getTeacherEvaluationProgress(sComplete);
   assert.equal(pComplete.status, 'complete');
-  assert.equal(pComplete.completedCount, 5);
+  assert.equal(pComplete.completedCount, 8);
+  assert.equal(pComplete.totalCount, 8);
   assert.equal(pComplete.percent, 100);
   assert.equal(pComplete.statusLabel, '평가 완료');
+  assert.equal(pComplete.isReopenedByLessonExpansion, false);
 
   const summary = getClassEvaluationSummary([sNone, sPartial, sComplete]);
   assert.equal(summary.totalStudents, 3);
@@ -349,8 +361,76 @@ test('getTeacherEvaluationProgress and getClassEvaluationSummary calculate per-s
   assert.equal(summary.noneCount, 1);
   assert.equal(summary.evaluatedAnyCount, 2);
   assert.equal(summary.completionRatePercent, 33); // 1/3 -> 33%
-  assert.equal(summary.averageProgressPercent, 53); // (0 + 60 + 100) / 3 = 53.33 -> 53%
+  assert.equal(summary.averageProgressPercent, 46); // (0 + 38 + 100) / 3 = 46%
 });
+
+test('when lessons are added, previously completed evaluations revoke complete status and transition to partial (in-progress) while preserving existing scores', () => {
+  // Case 1: A student whose evaluation was completed when only 1~4차시 existed (4 scores + feedback)
+  const legacyCompletedRaw = {
+    ...createInitialStudentState(),
+    group: '1학년 3반',
+    code: '10301',
+    evaluation: {
+      scores: [3, 3, 2, 3],
+      feedback: '1~4차시 명제 증명을 완벽히 수행했습니다.',
+      nextStep: '절대부등식도 탐구해 보세요.',
+    },
+  };
+
+  // Verify that under a 4-lesson curriculum it was 100% complete (5/5)
+  const progAt4Lessons = getTeacherEvaluationProgress(legacyCompletedRaw, 4);
+  assert.equal(progAt4Lessons.status, 'complete');
+  assert.equal(progAt4Lessons.percent, 100);
+
+  // Now lessons 5, 6, 7 are added (current 7-lesson curriculum):
+  const hydrated = cleanStudentState(legacyCompletedRaw);
+  const ev = ensureTeacherEval(hydrated);
+  // Existing 4 scores and feedback must be preserved intact, and new 3 items padded with null
+  assert.deepEqual(ev.scores, [3, 3, 2, 3, null, null, null]);
+  assert.equal(ev.feedback, '1~4차시 명제 증명을 완벽히 수행했습니다.');
+  assert.equal(ev.evaluatedLessonCount, 4);
+
+  const progAt7Lessons = getTeacherEvaluationProgress(hydrated);
+  assert.equal(progAt7Lessons.status, 'partial');
+  assert.equal(progAt7Lessons.statusLabel, '평가 진행 중');
+  assert.equal(progAt7Lessons.completedCount, 5); // 4 existing scores + 1 feedback
+  assert.equal(progAt7Lessons.totalCount, 8); // 7 rubric items + 1 feedback
+  assert.equal(progAt7Lessons.ungradedRubricCount, 3); // 5, 6, 7차시 미평정
+  assert.equal(progAt7Lessons.percent, 63); // 5/8 = 62.5% -> 63%
+  assert.equal(progAt7Lessons.isReopenedByLessonExpansion, true);
+
+  // Case 2: Once the teacher evaluates the newly added 5~7차시 items, it becomes 'complete' (100%)
+  hydrated.evaluation = {
+    ...ev,
+    scores: [3, 3, 2, 3, 3, 2, 3],
+    evaluatedLessonCount: 7,
+  };
+  const progAfterGradingNewLessons = getTeacherEvaluationProgress(hydrated);
+  assert.equal(progAfterGradingNewLessons.status, 'complete');
+  assert.equal(progAfterGradingNewLessons.statusLabel, '평가 완료');
+  assert.equal(progAfterGradingNewLessons.percent, 100);
+  assert.equal(progAfterGradingNewLessons.isReopenedByLessonExpansion, false);
+
+  // Case 3: If an 8th lesson is added in the future, the 7-lesson completed evaluation automatically transitions back to 'partial'
+  const progWhen8thLessonAdded = getTeacherEvaluationProgress(hydrated, 8);
+  assert.equal(progWhen8thLessonAdded.status, 'partial');
+  assert.equal(progWhen8thLessonAdded.statusLabel, '평가 진행 중');
+  assert.equal(progWhen8thLessonAdded.completedCount, 8);
+  assert.equal(progWhen8thLessonAdded.totalCount, 9);
+  assert.equal(progWhen8thLessonAdded.ungradedRubricCount, 1);
+  assert.equal(progWhen8thLessonAdded.percent, 89);
+  assert.equal(progWhen8thLessonAdded.isReopenedByLessonExpansion, true);
+
+  // Case 4: Sample dataset records (which had 4 lessons scored prior to 5~7차시 expansion) are in 'partial' state
+  const samples = createSampleTeacherDataset();
+  for (const sample of samples) {
+    const p = getTeacherEvaluationProgress(sample);
+    assert.equal(p.status, 'partial');
+    assert.equal(p.isReopenedByLessonExpansion, true);
+    assert.equal(p.ungradedRubricCount, 3);
+  }
+});
+
 
 
 

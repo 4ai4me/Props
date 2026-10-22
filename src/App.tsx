@@ -511,24 +511,40 @@ export default function App() {
                   <div className="flex flex-wrap items-center gap-2.5">
 
                   {/* "평가 결과" Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsEvalModalOpen(true)}
-                    className={`inline-flex min-h-[42px] items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 shadow-xs border ${
-                      hasTeacherEvaluation(student)
-                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/40 ring-2 ring-emerald-400/30'
-                        : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
-                    }`}
-                    title="교수자가 입력한 평가 결과 및 피드백 확인"
-                  >
-                    <Award className={`h-4 w-4 ${hasTeacherEvaluation(student) ? 'text-amber-300' : 'text-sky-300'}`} />
-                    <span>평가 결과</span>
-                    {hasTeacherEvaluation(student) && (
-                      <span className="rounded-full bg-emerald-300 text-emerald-950 text-[10px] px-1.5 py-0.5 font-black uppercase tracking-tight">
-                        피드백 도착
-                      </span>
-                    )}
-                  </button>
+                  {(() => {
+                    const studentEvalProg = getTeacherEvaluationProgress(student);
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => setIsEvalModalOpen(true)}
+                        className={`inline-flex min-h-[42px] items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 shadow-xs border ${
+                          studentEvalProg.status === 'complete'
+                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/40 ring-2 ring-emerald-400/30'
+                            : studentEvalProg.status === 'partial'
+                            ? 'bg-amber-600 hover:bg-amber-500 text-white border-amber-400/40 ring-2 ring-amber-400/30'
+                            : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+                        }`}
+                        title="교수자가 입력한 평가 결과 및 피드백 확인"
+                      >
+                        <Award
+                          className={`h-4 w-4 ${
+                            studentEvalProg.status !== 'none' ? 'text-amber-200' : 'text-sky-300'
+                          }`}
+                        />
+                        <span>평가 결과</span>
+                        {studentEvalProg.status === 'complete' && (
+                          <span className="rounded-full bg-emerald-300 text-emerald-950 text-[10px] px-1.5 py-0.5 font-black uppercase tracking-tight">
+                            평가 완료
+                          </span>
+                        )}
+                        {studentEvalProg.status === 'partial' && (
+                          <span className="rounded-full bg-amber-200 text-amber-950 text-[10px] px-1.5 py-0.5 font-black uppercase tracking-tight">
+                            진행 중 {studentEvalProg.percent}%
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })()}
 
                   <button
                     type="button"
@@ -607,19 +623,40 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => setIsEvalModalOpen(true)}
-                      className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all shadow-2xs ${
-                        hasTeacherEvaluation(student)
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100 ring-1 ring-emerald-300/40'
-                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                      }`}
-                      title="교수자가 입력한 4대 역량 평가 및 피드백 열람"
-                    >
-                      <Award className={`h-4 w-4 ${hasTeacherEvaluation(student) ? 'text-emerald-600' : 'text-slate-500'}`} />
-                      <span>{hasTeacherEvaluation(student) ? '교수자 평가 결과 (완료)' : '교수자 평가 결과 확인'}</span>
-                    </button>
+                    {(() => {
+                      const studentEvalProg = getTeacherEvaluationProgress(student);
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => setIsEvalModalOpen(true)}
+                          className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all shadow-2xs ${
+                            studentEvalProg.status === 'complete'
+                              ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100 ring-1 ring-emerald-300/40'
+                              : studentEvalProg.status === 'partial'
+                              ? 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100 ring-1 ring-amber-300/40'
+                              : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                          title="교수자가 입력한 역량 평가 및 피드백 열람"
+                        >
+                          <Award
+                            className={`h-4 w-4 ${
+                              studentEvalProg.status === 'complete'
+                                ? 'text-emerald-600'
+                                : studentEvalProg.status === 'partial'
+                                ? 'text-amber-600'
+                                : 'text-slate-500'
+                            }`}
+                          />
+                          <span>
+                            {studentEvalProg.status === 'complete'
+                              ? '교수자 평가 결과 (완료 100%)'
+                              : studentEvalProg.status === 'partial'
+                              ? `교수자 평가 결과 (진행 중 ${studentEvalProg.percent}%)`
+                              : '교수자 평가 결과 확인'}
+                          </span>
+                        </button>
+                      );
+                    })()}
 
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-100/90 border border-slate-200/80 px-3.5 py-2 rounded-xl">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -1057,7 +1094,7 @@ export default function App() {
             </div>
 
             <h3 className="text-lg font-bold pt-2">
-              2. 교수자 역량 평가 (4개 영역, 각 0~3점)
+              2. 교수자 역량 평가 ({EVAL_CRITERIA.length}개 영역, 각 0~3점)
             </h3>
             <div className="grid grid-cols-4 gap-3">
               {EVAL_CRITERIA.map((title, i) => {
