@@ -497,3 +497,41 @@
   - [x] `README.md` 및 `log.md` 업데이트 완료
 
 ---
+
+## [Task 19] 루트(근호, √) 기호가 V 체크처럼 보이는 문제 해결 — 윗줄(Vinculum)이 연결된 온전한 근호 수식 렌더링 전면 적용 (2026-10-22)
+
+### 1. 작업 시작 전 점검 (Pre-check)
+- **요청 사항**:
+  - 루트 기호(`√`)가 기본 한글 산세리프 폰트에서 마치 `V` 체크 표시처럼 표현되어(`√(ab)`, `√a`, `√b`, `√2` 등) 문제 해석과 평가의 오류가 발생할 수 있으므로, 근호의 갈고리와 윗줄(vinculum, $\sqrt{ab}$, $\sqrt{a}$, $\sqrt{b}$, $\sqrt{2}$)이 온전하게 연결되어 표기되도록 개선할 것.
+- **작업 Tier**: Tier 2 (수식 근호 토크나이저 및 전용 `<MathText />` 렌더링 컴포넌트 구현, SVG 기하 도형 내 근호 오버라인 적용, 주관식 실시간 수식 표기 미리보기 제공, 전 차시/교사/인쇄 화면 연동)
+- **변경 전 공통 질문 검토**:
+  - *왜 기존 `√` 기호가 `V` 체크처럼 보였는가?* 한글 웹폰트(Pretendard, Noto Sans KR 등)의 `U+221A`(`√`) 글리프는 높이가 낮고 우측 상단으로 이어지는 수평 윗줄(vinculum)이 없어 `√(ab)`나 `√a`가 `v(ab)` 또는 `✓a`처럼 보이는 시각적 왜곡이 발생했다.
+  - *어떻게 근본적으로 해결하는가?*
+    1) **순수 함수 기반 근호 토크나이저(`tokenizeMathRadicals`) 구현**: 텍스트 내의 `√(ab)`, `√(a × 1/a)`, `√(□)`, `√ab`, `√a`, `√b`, `√2`, `√2m`($\sqrt{2}m$) 등을 정밀하게 파싱하여 근호 내부 피개방수(radicand)와 외부 문자를 정확히 분리한다.
+    2) **폰트 독립적 SVG 근호 갈고리 + 상단 윗줄(Vinculum `border-top`) 결합 컴포넌트(`<MathText />`)**: 운영체제/브라우저 폰트에 의존하지 않도록 벡터 SVG 근호 기호와 피개방수 상단의 수평 윗줄(`border-top`)이 빈틈없이 하나로 이어지는 `.math-radical` 컴포넌트를 구현한다. 이때 스크린리더 및 `textContent` 복사 호환성을 위해 원본 문자열 구조도 그대로 보존한다.
+    3) **6차시 기하 시뮬레이터 SVG 및 주관식 입력창 실시간 수식 미리보기 연동**: 원·반원 SVG 내부의 `√ab` 라벨에도 윗줄(overline)을 적용하고, 학습자가 주관식 `<textarea>`에 `√`가 포함된 식을 입력할 때 하단 및 스마트 수식 키패드에 온전한 근호($\sqrt{ab}$, $\sqrt{a}$, $\sqrt{b}$, $\sqrt{2}$)로 렌더링된 실시간 수식 미리보기를 표시한다.
+  - *기존 데이터에 영향이 있는가?* 저장되는 학생 답안 JSON 문자열 포맷과 루브릭/완성도 평가 로직은 100% 하위 호환을 유지한다.
+- **영향 범위**: `/src/utils/mathLogic.ts`, `/src/components/MathText.tsx` (신규), `/src/index.css`, `/src/components/Lesson6View.tsx`, `/src/components/Lesson4View.tsx`, `/src/components/MathSymbolInputBar.tsx`, `/src/components/TeacherView.tsx`, `/src/App.tsx`, `/src/utils/mathLogic.test.ts`, `/README.md`, `/log.md`
+
+### 2. 구현 및 검증 결과 (Post-check)
+- **수행 내역**:
+  1. **근호(루트, `√`) 수식 파서(`tokenizeMathRadicals`) 구현 (`src/utils/mathLogic.ts`)**:
+     - `√(ab)`, `√(a × 1/a)`, `√(□)` 등 괄호로 감싸진 피개방수(radicand)를 괄호 균형 매칭으로 추출하고, 불필요한 바깥 괄호 대신 상단 수평 윗줄(vinculum) 아래에 피개방수가 놓이도록 토큰화.
+     - `n = √2m`처럼 숫자 뒤에 곱해지는 문자가 이어지는 경우 숫자 `2`만 근호 내부($\sqrt{2}$)에 넣고 `m`은 근호 바깥($\sqrt{2}m$)에 분리하여 수학적 의미 왜곡을 원천 차단.
+     - `√a`, `√b`, `√ab`, `√a√b` 및 단독 `√` 기호까지 모든 패턴을 정밀 분리.
+  2. **SVG 근호 갈고리 + 상단 윗줄(Vinculum) 결합 수식 컴포넌트 (`src/components/MathText.tsx`, `src/index.css`)**:
+     - `<MathRadical />`, `<MathText />`, `<MathPreviewBox />` 컴포넌트를 구현하여 벡터 `<svg>` 근호 기호(`.math-radical-surd`)와 상단 보더(`.math-radical-body` `border-top: 1.65px solid currentColor`)가 빈틈없이 하나로 이어지는 정통 수학 근호($\sqrt{ab}$, $\sqrt{a}$, $\sqrt{b}$, $\sqrt{2}$, $\sqrt{\square}$)를 렌더링.
+     - 스크린리더 및 드래그 복사 시에는 원본 `√(...)` 텍스트가 그대로 유지되도록 `.sr-only` 보조 텍스트를 함께 배치.
+     - 주관식 `<textarea>`에 학생이 `√`가 포함된 식을 작성하면 입력창 바로 아래에 `<MathPreviewBox />`가 자동으로 나타나 윗줄이 온전하게 연결된 수식 표기를 실시간으로 검증 가능.
+  3. **전 화면(4차시·6차시·스마트 수식 키패드·교사용 기록실·인쇄 보고서) 적용 (`Lesson6View.tsx`, `Lesson4View.tsx`, `MathSymbolInputBar.tsx`, `TeacherView.tsx`, `App.tsx`)**:
+     - 사용자 첨부 이미지에서 지적된 6차시 산술·기하평균 문제·보기·힌트·단서 표·원/반원 SVG 라벨(`√ab`, `√a`, `√b`), 4차시 귀류법 문제·보기·힌트(`√2`, `1 + √2`, `n = √2m`), 하단 스마트 수식 키패드(`√□`, `√ab`, `(√a - √b)²/2`), 교사용 비교창 및 인쇄용 평가 결과서까지 모든 근호 표기를 `<MathText />`로 일원화.
+     - `index.html` 및 `src/index.css`에 Google Fonts `Noto Sans Math` 및 `Noto Sans KR` 웹폰트 폴백과 `@theme` 폰트 변수를 구성하여 모든 기기·OS에서 수학 기호(`∴`, `∵`, `∉`, `ℚ` 등)와 한글이 깨짐 없이 출력되도록 보강.
+  4. **테스트·빌드·실제 브라우저 검증**:
+     - `npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts`: `tokenizeMathRadicals` 단위 테스트 포함 총 24개 테스트 100% 통과.
+     - `compile_applet`, `lint_applet`, `npm run build` 성공 및 `ghpages-app.js`, `ghpages-app.css` 동기화 완료.
+     - Playwright 실제 헤드리스 브라우저에서 6차시 및 4차시 화면을 캡처·검수하여 모든 루트 기호가 `V` 체크 모양이 아닌 상단 윗줄(vinculum)이 연결된 온전한 수학 근호($\sqrt{ab}$, $\sqrt{a}$, $\sqrt{b}$, $\sqrt{2}$)로 렌더링됨을 시각적으로 확인 완료.
+- **Definition of Done 확인**:
+  - [x] 루트 기호가 `V` 체크처럼 보이지 않고 상단 윗줄(vinculum)까지 온전하게 연결되어 표기됨을 실제 브라우저에서 확인
+  - [x] 주관식 입력창 실시간 수식 미리보기(`<MathPreviewBox />`) 및 스마트 수식 키패드 근호 표기 정상 동작 확인
+  - [x] 기존 1~7차시 학생 데이터 및 평가 로직 회귀 없음 확인
+  - [x] `README.md` 및 `log.md` 업데이트 완료

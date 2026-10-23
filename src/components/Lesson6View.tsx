@@ -23,6 +23,7 @@ import {
   PlusCircle,
 } from 'lucide-react';
 import { CharCountBadge } from './CharCountBadge';
+import { MathText, MathPreviewBox } from './MathText';
 
 interface Lesson6ViewProps {
   state: Lesson6State;
@@ -158,7 +159,10 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
             <p className="mt-1.5 text-sm sm:text-base text-slate-700 leading-relaxed">
               두 양수 <span className="mono font-bold">a &gt; 0, b &gt; 0</span>을 지름의 두 선분 또는 직사각형의 두 변으로 두면,{' '}
               <span className="mono font-bold text-blue-700">산술평균 (a+b)/2</span>는 <strong>원의 반지름(정사각형의 한 변)</strong>이 되고,{' '}
-              <span className="mono font-bold text-indigo-700">기하평균 √(ab)</span>는 <strong>수선의 높이(넓이가 같은 정사각형의 한 변)</strong>가 됩니다.
+              <span className="mono font-bold text-indigo-700">
+                <MathText text="기하평균 √(ab)" />
+              </span>
+              는 <strong>수선의 높이(넓이가 같은 정사각형의 한 변)</strong>가 됩니다.
               슬라이더나 추천 순서쌍을 조작하여 <strong>길이 비교(원·반원)</strong>와 <strong>면적 비교(사각형)</strong>를 실험하고 단서를 3개 이상 기록해 보세요.
             </p>
           </div>
@@ -341,13 +345,14 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                       key={`${preset.a}-${preset.b}`}
                       type="button"
                       onClick={() => handleAddExample(preset.a, preset.b)}
-                      className={`rounded-xl border px-3 py-1.5 font-bold mono transition-all ${
+                      className={`rounded-xl border px-3 py-1.5 font-bold transition-all ${
                         isCurrent
                           ? 'border-blue-600 bg-blue-600 text-white shadow-2xs'
                           : 'border-blue-200 bg-blue-50/80 text-blue-800 hover:bg-blue-100'
                       }`}
                     >
-                      ({preset.a}, {preset.b}) <span className="font-sans text-[11px] opacity-85">· {preset.tag}</span>
+                      <span className="mono">({preset.a}, {preset.b})</span>{' '}
+                      <span className="text-[11px] opacity-85">· {preset.tag}</span>
                     </button>
                   );
                 })}
@@ -379,7 +384,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                         GEOMETRY 01 · 반원·원에서의 선분 길이 비교
                       </span>
                       <h4 className="text-sm sm:text-base font-extrabold text-slate-900">
-                        반지름 R = (a+b)/2 vs 수선 높이 h = √(ab) vs 조화선분 = 2ab/(a+b)
+                        <MathText text="반지름 R = (a+b)/2 vs 수선 높이 h = √(ab) vs 조화선분 = 2ab/(a+b)" />
                       </h4>
                     </div>
                     <span
@@ -574,7 +579,8 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                         H
                       </text>
                       <text x={circleSvgGeometry.px} y={circleSvgGeometry.py - 8} fill="#fde68a" fontSize="11" fontWeight="bold" textAnchor="middle">
-                        P (√ab={geoSim.geom})
+                        P (<tspan fontFamily="Cambria Math, STIX Two Math, Times New Roman, serif">√</tspan>
+                        <tspan style={{ textDecoration: 'overline' }}>ab</tspan>={geoSim.geom})
                       </text>
                       <text
                         x={circleSvgGeometry.cx}
@@ -620,7 +626,9 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                         <span className="mono font-extrabold text-right text-sky-200">{geoSim.arith}</span>
                       </div>
                       <div className="grid grid-cols-[120px_1fr_64px] items-center gap-2">
-                        <span className="font-bold text-amber-300">기하 수선 √(ab)</span>
+                        <span className="font-bold text-amber-300">
+                          <MathText text="기하 수선 √(ab)" />
+                        </span>
                         <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
                           <div
                             className="h-full rounded-full bg-amber-400 transition-all duration-150"
@@ -645,9 +653,15 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                   <div className="rounded-lg bg-blue-50/80 border border-blue-200/80 px-3 py-2 text-xs text-slate-700 leading-relaxed">
                     <strong className="text-blue-900">원·반원 기하학적 원리:</strong> 직각삼각형 <span className="mono font-bold">△OPH</span>에서 빗변(반지름)의 길이는{' '}
                     <span className="mono font-bold text-blue-700">OP = (a+b)/2 = {geoSim.arith}</span>이고, 수선의 높이는{' '}
-                    <span className="mono font-bold text-amber-700">PH = √(ab) = {geoSim.geom}</span>, 밑변은{' '}
+                    <span className="mono font-bold text-amber-700">
+                      <MathText text={`PH = √(ab) = ${geoSim.geom}`} />
+                    </span>
+                    , 밑변은{' '}
                     <span className="mono font-bold">|a−b|/2 = {geoSim.centerOffset}</span>입니다. 직각삼각형의 빗변은 항상 높이보다 길거나 같으므로{' '}
-                    <span className="mono font-extrabold text-slate-900">(a+b)/2 ≥ √(ab)</span>가 성립합니다!
+                    <span className="mono font-extrabold text-slate-900">
+                      <MathText text="(a+b)/2 ≥ √(ab)" />
+                    </span>
+                    가 성립합니다!
                   </div>
                 </div>
               )}
@@ -817,7 +831,10 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                     <span className="mono font-bold text-blue-700">{geoSim.arithSquareArea}</span>는 가로 <span className="mono">a</span>, 세로 <span className="mono">b</span>인 직사각형의 넓이{' '}
                     <span className="mono font-bold text-amber-700">ab = {geoSim.rectArea}</span>보다 항상{' '}
                     <span className="mono font-bold text-rose-700">(a−b)²/4 = {geoSim.areaDiff}</span>만큼 크거나 같습니다. 양변에 루트를 씌우면{' '}
-                    <span className="mono font-extrabold text-slate-900">(a+b)/2 ≥ √(ab)</span>가 됩니다!
+                    <span className="mono font-extrabold text-slate-900">
+                      <MathText text="(a+b)/2 ≥ √(ab)" />
+                    </span>
+                    가 됩니다!
                   </div>
                 </div>
               )}
@@ -869,7 +886,9 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                     <tr className="bg-slate-100 text-slate-700">
                       <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">(a, b)</th>
                       <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">반지름 (a+b)/2</th>
-                      <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">높이 √(ab)</th>
+                      <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">
+                        <MathText text="높이 √(ab)" />
+                      </th>
                       <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">조화 2ab/(a+b)</th>
                       <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">길이·면적 비교</th>
                     </tr>
@@ -948,7 +967,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
               <div className="rounded-xl border border-indigo-200 bg-indigo-50/70 p-3.5 text-xs sm:text-sm text-indigo-950 space-y-1">
                 <div className="font-extrabold">핵심 개념 — 산술평균과 기하평균의 관계</div>
                 <div className="mono text-xs text-indigo-900">
-                  a &gt; 0, b &gt; 0일 때: (a + b) / 2 ≥ √(ab) &nbsp; (단, 등호는 a = b일 때 성립)
+                  <MathText text="a > 0, b > 0일 때: (a + b) / 2 ≥ √(ab)   (단, 등호는 a = b일 때 성립)" />
                 </div>
               </div>
 
@@ -957,7 +976,9 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                   {STEP1_HINTS.slice(0, state.step1HintLevel).map((h, idx) => (
                     <div key={idx} className="flex items-start gap-2">
                       <span className="font-extrabold text-amber-700 shrink-0">💡</span>
-                      <span>{h}</span>
+                      <span>
+                        <MathText text={h} />
+                      </span>
                     </div>
                   ))}
                   <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
@@ -987,8 +1008,8 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
               )}
 
               <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-600">
-                  Q. 부등식 (a + b)/2 ≥ √(ab)를 증명할 때 a = (√a)², b = (√b)²으로 바꾸어 완전제곱식 (√a − √b)²을 만들 수 있는 조건은?
+                <div className="text-xs font-bold text-slate-600 leading-relaxed">
+                  <MathText text="Q. 부등식 (a + b)/2 ≥ √(ab)를 증명할 때 a = (√a)², b = (√b)²으로 바꾸어 완전제곱식 (√a − √b)²을 만들 수 있는 조건은?" />
                 </div>
                 {(
                   [
@@ -1012,7 +1033,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                       key={val}
                       type="button"
                       onClick={() => onUpdate((prev) => ({ ...prev, amgmConceptChoice: val }))}
-                      className={`w-full rounded-xl border p-3 text-left text-xs sm:text-sm font-semibold transition-all ${
+                      className={`w-full rounded-xl border p-3 text-left text-xs sm:text-sm font-semibold leading-relaxed transition-all ${
                         isSel
                           ? val === 'positive'
                             ? 'border-emerald-500 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-500'
@@ -1020,7 +1041,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                           : 'border-slate-200 bg-slate-50/60 text-slate-800 hover:bg-slate-100/70'
                       }`}
                     >
-                      {label}
+                      <MathText text={label} />
                     </button>
                   );
                 })}
@@ -1035,9 +1056,11 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                   }`}
                 >
                   {state.amgmConceptChoice === 'positive' ? (
-                    <span className="flex items-center gap-1.5 font-bold">
+                    <span className="flex items-center gap-1.5 font-bold leading-relaxed">
                       <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                      정확합니다! a &gt; 0, b &gt; 0 조건이 있어야 √a와 √b가 실수로 정의되며 (√a − √b)² ≥ 0이 성립합니다.
+                      <span>
+                        <MathText text="정확합니다! a > 0, b > 0 조건이 있어야 √a와 √b가 실수로 정의되며 (√a − √b)² ≥ 0이 성립합니다." />
+                      </span>
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 font-bold">
@@ -1077,7 +1100,10 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
             </div>
             <h3 className="mt-1.5 text-lg sm:text-xl font-extrabold text-slate-900">
               [문제 1] <span className="mono">a &gt; 0</span>이고 <span className="mono">b &gt; 0</span>일 때, 부등식{' '}
-              <span className="mono text-blue-700">(a + b) / 2 ≥ √(ab)</span>가 성립함을 증명하시오. (등호 성립 조건 포함)
+              <span className="mono text-blue-700">
+                <MathText text="(a + b) / 2 ≥ √(ab)" />
+              </span>
+              가 성립함을 증명하시오. (등호 성립 조건 포함)
             </h3>
             <p className="mt-1 text-xs sm:text-sm text-slate-600">
               각 단계의 빈칸에 들어갈 추론을 선택하고, 막히면 <strong>[힌트 보기]</strong>를 눌러 단서를 확인하세요.
@@ -1101,9 +1127,9 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="text-sm sm:text-base font-extrabold text-slate-900">
+                    <div className="text-sm sm:text-base font-extrabold text-slate-900 leading-relaxed">
                       <span className="mono text-blue-600 mr-1.5">Step 0{idx + 1}.</span>
-                      {item.q}
+                      <MathText text={item.q} />
                     </div>
                     <button
                       type="button"
@@ -1139,9 +1165,11 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                   {isHintOpen && hintLvl > 0 && (
                     <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/90 p-3 space-y-1.5 text-xs sm:text-sm text-amber-950">
                       {item.hints.slice(0, hintLvl).map((h, hIdx) => (
-                        <div key={hIdx} className="flex items-start gap-2">
+                        <div key={hIdx} className="flex items-start gap-2 leading-relaxed">
                           <span className="font-bold text-amber-700 shrink-0">힌트 {hIdx + 1}:</span>
-                          <span>{h}</span>
+                          <span>
+                            <MathText text={h} />
+                          </span>
                         </div>
                       ))}
                       <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
@@ -1198,7 +1226,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                               };
                             });
                           }}
-                          className={`w-full rounded-xl border p-3 text-left text-xs sm:text-sm font-semibold transition-all ${
+                          className={`w-full rounded-xl border p-3 text-left text-xs sm:text-sm font-semibold leading-relaxed transition-all ${
                             isThisSelected
                               ? isCorrect
                                 ? 'border-emerald-500 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-500'
@@ -1207,7 +1235,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                           }`}
                         >
                           <span className="mono mr-2 font-bold">({oIdx + 1})</span>
-                          {opt}
+                          <MathText text={opt} />
                         </button>
                       );
                     })}
@@ -1246,7 +1274,10 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
               <CharCountBadge text={state.prob1ProofText} min={35} />
             </div>
             <p className="text-xs text-slate-600">
-              <span className="mono font-semibold">(a + b)/2 − √(ab) = (√a − √b)² / 2 ≥ 0</span>임을 보인 뒤 등호 성립 조건을 서술하세요.
+              <span className="mono font-semibold">
+                <MathText text="(a + b)/2 − √(ab) = (√a − √b)² / 2 ≥ 0" />
+              </span>
+              임을 보인 뒤 등호 성립 조건을 서술하세요.
             </p>
             <textarea
               id="l6-prob1-proof"
@@ -1255,6 +1286,10 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, prob1ProofText: e.target.value }))}
               placeholder="a > 0, b > 0일 때 (a+b)/2 - √(ab) = (√a - √b)² / 2 ≥ 0이므로 (a+b)/2 ≥ √(ab)가 성립한다. 여기서 등호는 …일 때 성립한다."
               className="w-full rounded-xl border border-slate-300 bg-white p-3.5 text-sm sm:text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            />
+            <MathPreviewBox
+              text={state.prob1ProofText}
+              placeholder="a > 0, b > 0일 때 (a+b)/2 - √(ab) = (√a - √b)² / 2 ≥ 0이므로 (a+b)/2 ≥ √(ab)가 성립한다. 여기서 등호는 …일 때 성립한다."
             />
           </div>
 
@@ -1288,11 +1323,20 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
             </div>
             <h3 className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">
               [문제 2]를 풀기 위한 두 가지 열쇠: <span className="mono">a + 1/a ≥ 2</span>와{' '}
-              <span className="mono">√(ab) ≥ 2ab / (a + b)</span>
+              <span className="mono">
+                <MathText text="√(ab) ≥ 2ab / (a + b)" />
+              </span>
             </h3>
             <p className="mt-1.5 text-sm sm:text-base text-slate-700 leading-relaxed">
-              [문제 1]에서 증명한 산술·기하평균의 관계 <span className="mono font-bold">(A + B)/2 ≥ √(AB)</span> (또는{' '}
-              <span className="mono font-bold">A + B ≥ 2√(AB)</span>)를 이용하면 역수의 합과 조화평균 부등식도 손쉽게 증명할 수 있습니다.
+              [문제 1]에서 증명한 산술·기하평균의 관계{' '}
+              <span className="mono font-bold">
+                <MathText text="(A + B)/2 ≥ √(AB)" />
+              </span>{' '}
+              (또는{' '}
+              <span className="mono font-bold">
+                <MathText text="A + B ≥ 2√(AB)" />
+              </span>
+              )를 이용하면 역수의 합과 조화평균 부등식도 손쉽게 증명할 수 있습니다.
             </p>
           </div>
 
@@ -1308,7 +1352,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                     열쇠 1 — 역수의 합: a + 1/a ≥ 2 (단, a &gt; 0)
                   </div>
                   <div className="mono text-sm font-bold text-slate-900">
-                    a + 1/a ≥ 2√(a × 1/a) = 2√1 = 2
+                    <MathText text="a + 1/a ≥ 2√(a × 1/a) = 2√1 = 2" />
                   </div>
                   <p className="text-xs text-slate-600">
                     <span className="mono font-bold">a &gt; 0</span>이면 <span className="mono font-bold">1/a &gt; 0</span>이므로 산술·기하평균을 적용하면 근호 안의 곱이 <strong>1로 약분</strong>됩니다. 등호는 <span className="mono font-bold">a = 1/a</span>이고 <span className="mono font-bold">a &gt; 0</span>이므로 <strong>a = 1</strong>일 때 성립합니다.
@@ -1317,14 +1361,21 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
 
                 <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4 space-y-1.5">
                   <div className="text-xs font-extrabold text-indigo-700">
-                    열쇠 2 — 기하평균과 조화평균: √(ab) ≥ 2ab / (a + b)
+                    <MathText text="열쇠 2 — 기하평균과 조화평균: √(ab) ≥ 2ab / (a + b)" />
                   </div>
                   <div className="mono text-sm font-bold text-slate-900">
-                    √(ab) − 2ab/(a+b) = √(ab)(√a − √b)² / (a + b) ≥ 0
+                    <MathText text="√(ab) − 2ab/(a+b) = √(ab)(√a − √b)² / (a + b) ≥ 0" />
                   </div>
-                  <p className="text-xs text-slate-600">
-                    통분하여 완전제곱식으로 묶거나, <span className="mono font-bold">(a + b)/2 ≥ √(ab)</span>의 양변에 양수{' '}
-                    <span className="mono font-bold">2√(ab)/(a + b)</span>를 곱하여 증명할 수 있습니다. 등호는 <strong>a = b</strong>일 때 성립합니다.
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    통분하여 완전제곱식으로 묶거나,{' '}
+                    <span className="mono font-bold">
+                      <MathText text="(a + b)/2 ≥ √(ab)" />
+                    </span>
+                    의 양변에 양수{' '}
+                    <span className="mono font-bold">
+                      <MathText text="2√(ab)/(a + b)" />
+                    </span>
+                    를 곱하여 증명할 수 있습니다. 등호는 <strong>a = b</strong>일 때 성립합니다.
                   </p>
                 </div>
               </div>
@@ -1357,9 +1408,11 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
               {showStep3Hint && state.step3HintLevel > 0 && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 space-y-2 text-xs sm:text-sm text-amber-950">
                   {STEP3_HINTS.slice(0, state.step3HintLevel).map((h, idx) => (
-                    <div key={idx} className="flex items-start gap-2">
+                    <div key={idx} className="flex items-start gap-2 leading-relaxed">
                       <span className="font-extrabold text-amber-700 shrink-0">💡</span>
-                      <span>{h}</span>
+                      <span>
+                        <MathText text={h} />
+                      </span>
                     </div>
                   ))}
                   <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
@@ -1395,13 +1448,13 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                 <button
                   type="button"
                   onClick={() => onUpdate((prev) => ({ ...prev, harmonicChecked: true }))}
-                  className={`w-full rounded-xl border p-3 text-left text-xs sm:text-sm font-semibold transition-all ${
+                  className={`w-full rounded-xl border p-3 text-left text-xs sm:text-sm font-semibold leading-relaxed transition-all ${
                     state.harmonicChecked
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-500'
                       : 'border-slate-200 bg-slate-50/60 text-slate-800 hover:bg-slate-100/70'
                   }`}
                 >
-                  ✓ (a + b)/2 ≥ √(ab) ≥ 2ab/(a + b) 이며, 등호는 모두 a = b일 때 성립한다. (확인 클릭)
+                  <MathText text="✓ (a + b)/2 ≥ √(ab) ≥ 2ab/(a + b) 이며, 등호는 모두 a = b일 때 성립한다. (확인 클릭)" />
                 </button>
               </div>
 
@@ -1420,6 +1473,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                   placeholder="산술·기하평균에서 등호는 두 양수 a와 1/a가 같을 때 성립하므로, a = 1/a이고 a > 0에서 …이다."
                   className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs sm:text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
+                <MathPreviewBox text={state.harmonicReason} />
               </div>
             </div>
           </div>
@@ -1465,7 +1519,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                 (1) a + 1/a ≥ 2
               </div>
               <div className="rounded-lg bg-white/90 border border-indigo-200 px-3 py-2 mono">
-                (2) √(ab) ≥ 2ab / (a + b)
+                <MathText text="(2) √(ab) ≥ 2ab / (a + b)" />
               </div>
             </div>
           </div>
@@ -1487,9 +1541,9 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="text-sm sm:text-base font-extrabold text-slate-900">
+                    <div className="text-sm sm:text-base font-extrabold text-slate-900 leading-relaxed">
                       <span className="mono text-indigo-600 mr-1.5">Step 0{idx + 1}.</span>
-                      {item.q}
+                      <MathText text={item.q} />
                     </div>
                     <button
                       type="button"
@@ -1525,9 +1579,11 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                   {isHintOpen && hintLvl > 0 && (
                     <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/90 p-3 space-y-1.5 text-xs sm:text-sm text-amber-950">
                       {item.hints.slice(0, hintLvl).map((h, hIdx) => (
-                        <div key={hIdx} className="flex items-start gap-2">
+                        <div key={hIdx} className="flex items-start gap-2 leading-relaxed">
                           <span className="font-bold text-amber-700 shrink-0">힌트 {hIdx + 1}:</span>
-                          <span>{h}</span>
+                          <span>
+                            <MathText text={h} />
+                          </span>
                         </div>
                       ))}
                       <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
@@ -1584,7 +1640,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                               };
                             });
                           }}
-                          className={`w-full rounded-xl border p-3 text-left text-xs sm:text-sm font-semibold transition-all ${
+                          className={`w-full rounded-xl border p-3 text-left text-xs sm:text-sm font-semibold leading-relaxed transition-all ${
                             isThisSelected
                               ? isCorrect
                                 ? 'border-emerald-500 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-500'
@@ -1593,7 +1649,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                           }`}
                         >
                           <span className="mono mr-2 font-bold">({oIdx + 1})</span>
-                          {opt}
+                          <MathText text={opt} />
                         </button>
                       );
                     })}
@@ -1632,7 +1688,11 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
               <CharCountBadge text={state.prob2ProofText} min={40} />
             </div>
             <p className="text-xs text-slate-600">
-              (1) <span className="mono">a + 1/a ≥ 2</span>와 (2) <span className="mono">√(ab) ≥ 2ab / (a + b)</span>의 증명 과정과 각각의 등호 성립 조건을 서술하세요.
+              (1) <span className="mono">a + 1/a ≥ 2</span>와 (2){' '}
+              <span className="mono">
+                <MathText text="√(ab) ≥ 2ab / (a + b)" />
+              </span>
+              의 증명 과정과 각각의 등호 성립 조건을 서술하세요.
             </p>
             <textarea
               id="l6-prob2-proof"
@@ -1641,6 +1701,10 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
               onChange={(e) => onUpdate((prev) => ({ ...prev, prob2ProofText: e.target.value }))}
               placeholder="(1) a > 0이면 1/a > 0이므로 산술·기하평균에 의해 a + 1/a ≥ 2√(a · 1/a) = 2이고 등호는 a=1일 때 성립한다. (2) √(ab) - 2ab/(a+b) = … ≥ 0이므로 성립하며 등호는 a=b일 때 성립한다."
               className="w-full rounded-xl border border-slate-300 bg-white p-3.5 text-sm sm:text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            />
+            <MathPreviewBox
+              text={state.prob2ProofText}
+              placeholder="(1) a > 0이면 1/a > 0이므로 산술·기하평균에 의해 a + 1/a ≥ 2√(a · 1/a) = 2이고 등호는 a=1일 때 성립한다. (2) √(ab) - 2ab/(a+b) = … ≥ 0이므로 성립하며 등호는 a=b일 때 성립한다."
             />
           </div>
 
@@ -1684,13 +1748,15 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
             <div className="text-sm font-bold text-slate-900">6차시 수사 점검표</div>
             <div className="grid gap-2 sm:grid-cols-2 text-xs sm:text-sm">
-              {[
-                ['1단계: 양수 (a, b) 대입 실험 3개 이상 & 양수 조건 확인', rubric[0]],
-                ['2단계: [문제 1] ((a+b)/2≥√ab) 4단계 추론 & 증명 보고서 작성', rubric[1]],
-                ['3단계: 역수의 합 & 조화평균 원리 탐색 및 서술', rubric[2]],
-                ['4단계: [문제 2] (1)·(2) 4단계 추론 & 증명 보고서 작성', rubric[3]],
-                ['5단계: 절대부등식2 탐구 성찰 작성', done[4]],
-              ].map(([label, ok], idx) => (
+              {(
+                [
+                  ['1단계: 양수 (a, b) 대입 실험 3개 이상 & 양수 조건 확인', rubric[0]],
+                  ['2단계: [문제 1] ((a+b)/2 ≥ √(ab)) 4단계 추론 & 증명 보고서 작성', rubric[1]],
+                  ['3단계: 역수의 합 & 조화평균 원리 탐색 및 서술', rubric[2]],
+                  ['4단계: [문제 2] (1)·(2) 4단계 추론 & 증명 보고서 작성', rubric[3]],
+                  ['5단계: 절대부등식2 탐구 성찰 작성', done[4]],
+                ] as const
+              ).map(([label, ok], idx) => (
                 <div
                   key={idx}
                   className={`flex items-center gap-2 rounded-lg border p-2.5 font-semibold ${
@@ -1702,7 +1768,9 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                   <CheckCircle2
                     className={`h-4 w-4 shrink-0 ${ok ? 'text-emerald-600' : 'text-slate-400'}`}
                   />
-                  <span>{label}</span>
+                  <span>
+                    <MathText text={label} />
+                  </span>
                 </div>
               ))}
             </div>
@@ -1711,8 +1779,8 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
           <div className="space-y-4">
             <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-2.5">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <label htmlFor="l6-ref1" className="text-sm sm:text-base font-bold text-slate-900">
-                  성찰 1. 산술평균과 기하평균의 관계 (a + b)/2 ≥ √(ab)를 적용할 때 왜 반드시 두 수가 양수(a &gt; 0, b &gt; 0)인지 먼저 확인해야 하나요?
+                <label htmlFor="l6-ref1" className="text-sm sm:text-base font-bold text-slate-900 leading-relaxed">
+                  <MathText text="성찰 1. 산술평균과 기하평균의 관계 (a + b)/2 ≥ √(ab)를 적용할 때 왜 반드시 두 수가 양수(a > 0, b > 0)인지 먼저 확인해야 하나요?" />
                 </label>
                 <CharCountBadge text={state.reflection1} min={20} />
               </div>
@@ -1723,6 +1791,10 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                 onChange={(e) => onUpdate((prev) => ({ ...prev, reflection1: e.target.value }))}
                 placeholder="양수 조건이 있어야 √a와 √b가 실수로 존재하고, a = (√a)², b = (√b)²으로 바꾸어 완전제곱식 …을 만들 수 있기 때문이다."
                 className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+              <MathPreviewBox
+                text={state.reflection1}
+                placeholder="양수 조건이 있어야 √a와 √b가 실수로 존재하고, a = (√a)², b = (√b)²으로 바꾸어 완전제곱식 …을 만들 수 있기 때문이다."
               />
             </div>
 
@@ -1741,6 +1813,7 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                 placeholder="두 양수 a, b에 대하여 항상 산술평균 ≥ 기하평균 ≥ 조화평균이 성립하며, 등호는 모두 …일 때 성립한다."
                 className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
+              <MathPreviewBox text={state.reflection2} />
             </div>
           </div>
 

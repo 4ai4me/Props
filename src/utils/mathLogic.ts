@@ -2440,4 +2440,151 @@ export function convertMathShorthand(
   };
 }
 
+export interface MathTextToken {
+  type: 'text' | 'radical';
+  /** type === 'text'일 때는 일반 문자열, type === 'radical'일 때는 근호(윗줄) 아래에 들어갈 피개방수(radicand) */
+  value: string;
+  /** 원본 표현이 √(...) 형태였는지 여부 */
+  hasParens?: boolean;
+  /** 원본 부분 문자열 */
+  raw: string;
+}
+
+/**
+ * 문자열 내의 루트(근호, √) 수식을 파싱하여 일반 텍스트 토큰과 근호(radical + 윗줄 피개방수) 토큰으로 분리한다.
+ * - √(ab), √(a × 1/a), √(□) 등 괄호로 감싸진 경우 괄호 내부 전체를 피개방수(value)로 추출한다.
+ * - √2, √2m 등 숫자가 바로 뒤따르는 경우 숫자 부분만 피개방수로 추출하여 √2m이 (√2)m으로 정확히 해석되게 한다.
+ * - √a, √b, √ab, √a√b, √□ 등 문자나 빈칸 기호가 뒤따르는 경우 해당 문자/기호를 피개방수로 추출한다.
+ */
+export function tokenizeMathRadicals(text: string): MathTextToken[] {
+  if (!text) return [];
+  const normalized = text.replace(/\u0305/g, '');
+  if (!normalized.includes('√')) {
+    return [{ type: 'text', value: normalized, raw: normalized }];
+  }
+
+  const tokens: MathTextToken[] = [];
+  let i = 0;
+  const len = normalized.length;
+
+  while (i < len) {
+    const idx = normalized.indexOf('√', i);
+    if (idx === -1) {
+      const rest = normalized.slice(i);
+      tokens.push({ type: 'text', value: rest, raw: rest });
+      break;
+    }
+
+    if (idx > i) {
+      const before = normalized.slice(i, idx);
+      tokens.push({ type: 'text', value: before, raw: before });
+    }
+
+    const afterIdx = idx + 1;
+    if (afterIdx >= len) {
+      tokens.push({ type: 'radical', value: '', hasParens: false, raw: '√' });
+      break;
+    }
+
+    const nextChar = normalized[afterIdx];
+
+    // 1. √(...) 형태: 짝이 맞는 닫는 괄호 ')'까지를 피개방수로 추출
+    if (nextChar === '(') {
+      let depth = 1;
+      let k = afterIdx + 1;
+      let foundClose = -1;
+      while (k < len) {
+        const ch = normalized[k];
+        if (ch === '\n') break;
+        if (ch === '(') depth++;
+        else if (ch === ')') {
+          depth--;
+          if (depth === 0) {
+            foundClose = k;
+            break;
+          }
+        }
+        k++;
+      }
+
+      if (foundClose !== -1) {
+        const inner = normalized.slice(afterIdx + 1, foundClose);
+        const raw = normalized.slice(idx, foundClose + 1);
+        tokens.push({
+          type: 'radical',
+          value: inner,
+          hasParens: true,
+          raw,
+        });
+        i = foundClose + 1;
+        continue;
+      } else {
+        // 아직 닫는 괄호를 입력 중인 경우 (예: '√(ab' 또는 단축어 안내 'sqrt(→√(')
+        const unclosedMatch = normalized.slice(afterIdx + 1).match(/^[0-9a-zA-Z□+\-×·*/]+/);
+        if (unclosedMatch && unclosedMatch[0].length > 0) {
+          const inner = unclosedMatch[0];
+          const raw = `√(${inner}`;
+          tokens.push({
+            type: 'radical',
+            value: `(${inner}`,
+            hasParens: false,
+            raw,
+          });
+          i = afterIdx + 1 + inner.length;
+          continue;
+        } else {
+          tokens.push({
+            type: 'radical',
+            value: '(',
+            hasParens: false,
+            raw: '√(',
+          });
+          i = afterIdx + 1;
+          continue;
+        }
+      }
+    }
+
+    // 2. √2, √1, √2m 형태: 연속된 숫자만 근호 안(피개방수)으로 묶고 뒤따르는 문자(m 등)는 근호 밖에 배치
+    const numMatch = normalized.slice(afterIdx).match(/^[0-9]+(?:\.[0-9]+)?/);
+    if (numMatch) {
+      const digits = numMatch[0];
+      tokens.push({
+        type: 'radical',
+        value: digits,
+        hasParens: false,
+        raw: `√${digits}`,
+      });
+      i = afterIdx + digits.length;
+      continue;
+    }
+
+    // 3. √a, √b, √ab, √a√b, √□ 형태: 연속된 영문자 또는 □를 피개방수로 추출
+    const varMatch = normalized.slice(afterIdx).match(/^(?:□|[a-zA-Z]+)/);
+    if (varMatch) {
+      const vars = varMatch[0];
+      tokens.push({
+        type: 'radical',
+        value: vars,
+        hasParens: false,
+        raw: `√${vars}`,
+      });
+      i = afterIdx + vars.length;
+      continue;
+    }
+
+    // 4. 단독 근호 기호 '√'
+    tokens.push({
+      type: 'radical',
+      value: '',
+      hasParens: false,
+      raw: '√',
+    });
+    i = afterIdx;
+  }
+
+  return tokens;
+}
+
+
 

@@ -40,6 +40,7 @@ import { TeacherView } from './components/TeacherView';
 import { AuthGateView, FirestoreStudentRegistrationDoc } from './components/AuthGateView';
 import { StudentEvaluationModal } from './components/StudentEvaluationModal';
 import { MathSymbolInputBar } from './components/MathSymbolInputBar';
+import { MathText } from './components/MathText';
 import {
   Printer,
   CheckCircle2,
@@ -436,11 +437,11 @@ export default function App() {
                     </div>
                     <div className="flex items-center justify-between gap-3 text-slate-300 whitespace-nowrap">
                       <span>대우·귀류</span>
-                      <span className="text-sky-300 font-semibold">~q → ~p, √2 ∉ ℚ</span>
+                      <MathText text="~q → ~p, √2 ∉ ℚ" className="text-sky-300 font-semibold" />
                     </div>
                     <div className="flex items-center justify-between gap-3 text-slate-400 whitespace-nowrap">
                       <span>절대부등식</span>
-                      <span className="text-emerald-300 font-semibold">(a+b)/2 ≥ √ab, |a+b| ≤ |a|+|b|</span>
+                      <MathText text="(a+b)/2 ≥ √(ab), |a+b| ≤ |a|+|b|" className="text-emerald-300 font-semibold" />
                     </div>
                   </div>
                   <div className="pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
@@ -696,9 +697,13 @@ export default function App() {
                     {activeLessonTab === 1 && '홀수의 제곱에서 발견한 단서는 우연일까요, 필연일까요?'}
                     {activeLessonTab === 2 && '새롭게 만든 명제는 진실일까요? 반례와 증명으로 사건을 해결해 보세요.'}
                     {activeLessonTab === 3 && '직접 증명하기 까다로운 두 사건(짝수·홀수, 3의 배수)을 대우 명제와 단계별 힌트로 해결해 보세요.'}
-                    {activeLessonTab === 4 && '결론을 부정했을 때 발생하는 논리적 모순을 추적하여 √2와 1+√2가 유리수가 아님을 증명해 보세요.'}
+                    {activeLessonTab === 4 && (
+                      <MathText text="결론을 부정했을 때 발생하는 논리적 모순을 추적하여 √2와 1+√2가 유리수가 아님을 증명해 보세요." />
+                    )}
                     {activeLessonTab === 5 && '교과서 예제 3을 변환한 [문제 1] (a²+b² ≥ ab)과 [문제 2] ((a+b)² ≥ 4ab, a²−4ab+5b² ≥ 0)를 완전제곱식으로 증명해 보세요.'}
-                    {activeLessonTab === 6 && '교과서 예제 4를 변환한 [문제 1] ((a+b)/2 ≥ √ab)과 [문제 2] (a+1/a ≥ 2, √ab ≥ 2ab/(a+b))를 증명해 보세요.'}
+                    {activeLessonTab === 6 && (
+                      <MathText text="교과서 예제 4를 변환한 [문제 1] ((a+b)/2 ≥ √(ab))과 [문제 2] (a+1/a ≥ 2, √(ab) ≥ 2ab/(a+b))를 증명해 보세요." />
+                    )}
                     {activeLessonTab === 7 && '교과서 예제 5를 변환한 [문제 1] (|a+b| ≤ |a|+|b|)과 [문제 2] (|a−b| ≤ |a|+|b|, |a|−|b| ≤ |a−b|)를 증명해 보세요.'}
                   </p>
 
@@ -739,7 +744,7 @@ export default function App() {
                         0{idx + 1} {isComplete ? '✓' : ''}
                       </strong>
                       <span className="mt-1 text-[11px] sm:text-sm font-bold leading-tight break-keep">
-                        {title}
+                        <MathText text={title} />
                       </span>
                     </button>
                   );
@@ -1074,22 +1079,28 @@ export default function App() {
               <strong>3차시 대우법 [문제 2·3의 배수]:</strong> {printingStudent.l3?.prob2ProofText || '미작성'}
             </div>
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
-              <strong>4차시 귀류법 [문제 1·√2]:</strong> {printingStudent.l4?.prob1ProofText || '미작성'}
+              <strong><MathText text="4차시 귀류법 [문제 1·√2]:" /></strong>{' '}
+              <MathText text={printingStudent.l4?.prob1ProofText || '미작성'} />
             </div>
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
-              <strong>4차시 귀류법 [문제 2·1+√2]:</strong> {printingStudent.l4?.prob2ProofText || '미작성'}
+              <strong><MathText text="4차시 귀류법 [문제 2·1+√2]:" /></strong>{' '}
+              <MathText text={printingStudent.l4?.prob2ProofText || '미작성'} />
             </div>
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
-              <strong>5차시 절대부등식1 [문제 1·a²+b²≥ab]:</strong> {printingStudent.l5?.prob1ProofText || '미작성'}
+              <strong>5차시 절대부등식1 [문제 1·a²+b²≥ab]:</strong>{' '}
+              <MathText text={printingStudent.l5?.prob1ProofText || '미작성'} />
             </div>
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
-              <strong>5차시 절대부등식1 [문제 2·(a+b)²≥4ab 외]:</strong> {printingStudent.l5?.prob2ProofText || '미작성'}
+              <strong>5차시 절대부등식1 [문제 2·(a+b)²≥4ab 외]:</strong>{' '}
+              <MathText text={printingStudent.l5?.prob2ProofText || '미작성'} />
             </div>
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
-              <strong>6차시 절대부등식2 [문제 1·산술·기하평균]:</strong> {printingStudent.l6?.prob1ProofText || '미작성'}
+              <strong>6차시 절대부등식2 [문제 1·산술·기하평균]:</strong>{' '}
+              <MathText text={printingStudent.l6?.prob1ProofText || '미작성'} />
             </div>
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
-              <strong>6차시 절대부등식2 [문제 2·역수·조화평균]:</strong> {printingStudent.l6?.prob2ProofText || '미작성'}
+              <strong>6차시 절대부등식2 [문제 2·역수·조화평균]:</strong>{' '}
+              <MathText text={printingStudent.l6?.prob2ProofText || '미작성'} />
             </div>
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
               <strong>7차시 절대부등식3 [문제 1·|a+b|≤|a|+|b|]:</strong> {printingStudent.l7?.prob1ProofText || '미작성'}

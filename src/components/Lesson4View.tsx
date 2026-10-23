@@ -14,6 +14,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { CharCountBadge, getCharCountBorderClass } from './CharCountBadge';
+import { MathText, MathPreviewBox } from './MathText';
 
 export interface Lesson4ViewProps {
   state: Lesson4State;
@@ -153,7 +154,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
       return { ...prev, prob2Verified: nextVer };
     });
     if (isCorrect) {
-      showNotice(`prob2_${i}`, '정확합니다! 1 + √2의 무리수 증명 단계가 확인되었습니다.', 'good');
+      showNotice(`prob2_${i}`, '정확합니다! 1 + √(2)의 무리수 증명 단계가 확인되었습니다.', 'good');
     } else {
       showNotice(`prob2_${i}`, '다시 점검해 보세요. [힌트 보기]를 누르면 단서를 확인할 수 있습니다.', 'warn');
     }
@@ -210,7 +211,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
           </p>
 
           <div className="mt-4 rounded-xl bg-blue-50/70 px-4 py-3.5 text-sm sm:text-base font-bold text-slate-900 border border-blue-200/80">
-            수사 의뢰 [문제 1]: √2는 유리수가 아니다.
+            <MathText text="수사 의뢰 [문제 1]: √2는 유리수가 아니다." />
           </div>
 
           <div className="mt-5 grid gap-5 lg:grid-cols-12">
@@ -220,7 +221,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                 <div>
                   <h3 className="text-base font-bold text-slate-900">① 기약분수(n/m) 제곱 비교 실험기</h3>
                   <p className="mt-1 text-xs text-slate-500">
-                    만약 √2 = n/m이라면 n² = 2m²이어야 합니다. 자연수 m, n을 최소 3쌍 이상 대입해 n²과 2m²이 같아질 수 있는지 실험하세요.
+                    <MathText text="만약 √2 = n/m이라면 n² = 2m²이어야 합니다. 자연수 m, n을 최소 3쌍 이상 대입해 n²과 2m²이 같아질 수 있는지 실험하세요." />
                   </p>
                 </div>
 
@@ -264,7 +265,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
 
                 <div>
                   <div className="text-xs font-semibold text-slate-500 mb-2">
-                    √2 (≈ 1.4142...)에 가까운 기약분수 추천
+                    <MathText text="√2 (≈ 1.4142...)에 가까운 기약분수 추천" />
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {[
@@ -416,7 +417,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                   <div className="rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1.5">
                     {STEP1_CONTRADICTION_HINTS.slice(0, state.step1HintLevel).map((h, idx) => (
                       <div key={idx}>
-                        <strong>힌트 {idx + 1}:</strong> {h}
+                        <strong>힌트 {idx + 1}:</strong> <MathText text={h} />
                       </div>
                     ))}
                     <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
@@ -494,16 +495,16 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
         <div>
           <div className="text-xs font-bold text-blue-600">04차시 · 2 / 5단계</div>
           <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-            [문제 1] 귀류법을 이용한 명제의 증명 (√2)
+            <MathText text="[문제 1] 귀류법을 이용한 명제의 증명 (√2)" />
           </h2>
           <p className="mt-1 text-sm sm:text-base text-slate-500">
-            1차시처럼 단계별 힌트를 활용하여 ‘√2가 유리수’라고 가정했을 때 어떤 모순이 생기는지 증명해 봅시다.
+            <MathText text="1차시처럼 단계별 힌트를 활용하여 ‘√2가 유리수’라고 가정했을 때 어떤 모순이 생기는지 증명해 봅시다." />
           </p>
 
           <div className="mt-4 rounded-xl bg-blue-50/70 px-4 py-3.5 text-sm sm:text-base font-bold text-slate-900 border border-blue-200/80">
             문제 1. 귀류법을 이용하여 다음 명제가 참임을 증명하시오.
             <div className="mt-1.5 text-base sm:text-lg text-blue-950">
-              ‘√2는 유리수가 아니다.’
+              <MathText text="‘√2는 유리수가 아니다.’" />
             </div>
           </div>
 
@@ -521,7 +522,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                 >
                   <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
                     <h3 className="text-base font-bold text-slate-900">
-                      {i + 1}. {t.q}
+                      {i + 1}. <MathText text={t.q} />
                     </h3>
                     <span
                       className={`text-xs font-extrabold ${
@@ -532,32 +533,32 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                     </span>
                   </div>
 
-                  <div>
-                    <label htmlFor={`prob4_1_choice_${i}`} className="sr-only">
-                      4차시 문제 1 증명 {i + 1}단계 선택
-                    </label>
-                    <select
-                      id={`prob4_1_choice_${i}`}
-                      value={state.prob1Choices[i] === null ? '' : String(state.prob1Choices[i])}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? null : Number(e.target.value);
-                        onUpdate((prev) => {
-                          const nextChoices = [...prev.prob1Choices];
-                          const nextVer = [...prev.prob1Verified];
-                          nextChoices[i] = val;
-                          nextVer[i] = false;
-                          return { ...prev, prob1Choices: nextChoices, prob1Verified: nextVer };
-                        });
-                      }}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white px-3.5 py-2.5 text-base text-slate-900"
-                    >
-                      <option value="">답을 선택하세요</option>
-                      {t.opts.map((opt, j) => (
-                        <option key={j} value={j}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {t.opts.map((opt, j) => {
+                      const isPicked = state.prob1Choices[i] === j;
+                      return (
+                        <button
+                          key={j}
+                          type="button"
+                          onClick={() => {
+                            onUpdate((prev) => {
+                              const nextChoices = [...prev.prob1Choices];
+                              const nextVer = [...prev.prob1Verified];
+                              nextChoices[i] = j;
+                              nextVer[i] = false;
+                              return { ...prev, prob1Choices: nextChoices, prob1Verified: nextVer };
+                            });
+                          }}
+                          className={`min-h-[42px] rounded-xl border px-3.5 py-2 text-xs sm:text-sm font-bold text-left transition-all ${
+                            isPicked
+                              ? 'border-blue-600 bg-blue-50/80 text-blue-950 ring-1 ring-blue-600'
+                              : 'border-slate-200 bg-slate-50/60 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          <MathText text={opt} />
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -589,7 +590,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                     <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1.5">
                       {t.hints.slice(0, hintCount).map((h, hIdx) => (
                         <div key={hIdx}>
-                          <strong>힌트 {hIdx + 1}:</strong> {h}
+                          <strong>힌트 {hIdx + 1}:</strong> <MathText text={h} />
                         </div>
                       ))}
                       <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
@@ -626,7 +627,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                           : 'bg-amber-50 text-amber-900 border border-amber-200'
                       }`}
                     >
-                      {fb.text}
+                      <MathText text={fb.text} />
                     </div>
                   )}
                 </div>
@@ -642,19 +643,20 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
               <CharCountBadge current={state.prob1ProofText.trim().length} min={40} />
             </div>
             <label htmlFor="l4prob1proof" className="block text-xs sm:text-sm text-slate-600 font-semibold mb-2">
-              위에서 확인한 4단계를 연결하여 ‘√2는 유리수가 아니다.’의 귀류법 증명을 완결된 문장으로 서술하세요. (40자 이상)
+              <MathText text="위에서 확인한 4단계를 연결하여 ‘√2는 유리수가 아니다.’의 귀류법 증명을 완결된 문장으로 서술하세요. (40자 이상)" />
             </label>
             <textarea
               id="l4prob1proof"
               rows={6}
               value={state.prob1ProofText}
               onChange={(e) => onUpdate((prev) => ({ ...prev, prob1ProofText: e.target.value }))}
-              placeholder="명제를 부정하여 √2가 …라 하면, 서로소인 두 자연수 m과 n에 대하여 √2 = …으로 나타낼 수 있다. 양변을 제곱하면 … 이므로 …이다. 다시 n = 2k를 대입하면 … 이므로 …이다. 그런데 … 이므로 서로소임에 모순이다. 따라서 …"
+              placeholder="명제를 부정하여 √(2)가 …라 하면, 서로소인 두 자연수 m과 n에 대하여 √(2) = …으로 나타낼 수 있다. 양변을 제곱하면 … 이므로 …이다. 다시 n = 2k를 대입하면 … 이므로 …이다. 그런데 … 이므로 서로소임에 모순이다. 따라서 …"
               className={`w-full rounded-xl border bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
                 state.prob1ProofText.trim().length,
                 40
               )}`}
             />
+            <MathPreviewBox text={state.prob1ProofText} />
           </div>
         </div>
       )}
@@ -667,11 +669,11 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
             유리수의 연산 닫힘 성질과 무리수 단서 연결
           </h2>
           <p className="mt-1 text-sm sm:text-base text-slate-500">
-            문제 1에서 증명한 ‘√2는 유리수가 아니다’라는 사실을 활용하여 ‘1 + √2는 유리수가 아니다’를 어떻게 증명할지 단서를 찾아봅시다.
+            <MathText text="문제 1에서 증명한 ‘√2는 유리수가 아니다’라는 사실을 활용하여 ‘1 + √2는 유리수가 아니다’를 어떻게 증명할지 단서를 찾아봅시다." />
           </p>
 
           <div className="mt-4 rounded-xl bg-blue-50/70 px-4 py-3.5 text-sm sm:text-base font-bold text-slate-900 border border-blue-200/80">
-            수사 의뢰 [문제 2]: 1 + √2는 유리수가 아니다.
+            <MathText text="수사 의뢰 [문제 2]: 1 + √2는 유리수가 아니다." />
           </div>
 
           <div className="mt-5 rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 space-y-4">
@@ -712,7 +714,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
               <div className="rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1.5">
                 {STEP3_CLOSURE_HINTS.slice(0, state.step3HintLevel).map((h, idx) => (
                   <div key={idx}>
-                    <strong>힌트 {idx + 1}:</strong> {h}
+                    <strong>힌트 {idx + 1}:</strong> <MathText text={h} />
                   </div>
                 ))}
                 <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
@@ -747,10 +749,13 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 space-y-2">
               <div>
-                <strong>가정 (결론 부정):</strong> <span className="mono font-bold">1 + √2 = r</span> (단, <span className="mono font-bold">r</span>은 유리수)
+                <strong>가정 (결론 부정):</strong>{' '}
+                <MathText text="1 + √2 = r" className="mono font-bold" /> (단,{' '}
+                <span className="mono font-bold">r</span>은 유리수)
               </div>
               <div>
-                <strong>√2에 대하여 정리:</strong> <span className="mono font-bold text-blue-700">√2 = r − 1</span>
+                <strong><MathText text="√2에 대하여 정리:" /></strong>{' '}
+                <MathText text="√2 = r − 1" className="mono font-bold text-blue-700" />
               </div>
             </div>
 
@@ -783,7 +788,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
             <div className="pt-2">
               <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                 <label htmlFor="l4closureReason" className="block text-sm font-bold text-slate-800">
-                  ② 등식 √2 = r − 1에서 왜 모순이 발생하는지 한 문장으로 정리해 보세요. (15자 이상)
+                  <MathText text="② 등식 √2 = r − 1에서 왜 모순이 발생하는지 한 문장으로 정리해 보세요. (15자 이상)" />
                 </label>
                 <CharCountBadge current={state.closureReason.trim().length} min={15} />
               </div>
@@ -792,12 +797,13 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                 rows={3}
                 value={state.closureReason}
                 onChange={(e) => onUpdate((prev) => ({ ...prev, closureReason: e.target.value }))}
-                placeholder="우변 r − 1은 …인데 좌변 √2는 …이므로 서로 같을 수 없어 모순이다."
+                placeholder="우변 r − 1은 …인데 좌변 √(2)는 …이므로 서로 같을 수 없어 모순이다."
                 className={`w-full rounded-xl border bg-slate-50/50 focus:bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
                   state.closureReason.trim().length,
                   15
                 )}`}
               />
+              <MathPreviewBox text={state.closureReason} />
             </div>
           </div>
         </div>
@@ -808,16 +814,16 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
         <div>
           <div className="text-xs font-bold text-blue-600">04차시 · 4 / 5단계</div>
           <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-            [문제 2] 귀류법을 이용한 명제의 증명 (1 + √2)
+            <MathText text="[문제 2] 귀류법을 이용한 명제의 증명 (1 + √2)" />
           </h2>
           <p className="mt-1 text-sm sm:text-base text-slate-500">
-            단계별 힌트를 활용하여 ‘1 + √2는 유리수가 아니다.’의 귀류법 증명을 완성해 봅시다.
+            <MathText text="단계별 힌트를 활용하여 ‘1 + √2는 유리수가 아니다.’의 귀류법 증명을 완성해 봅시다." />
           </p>
 
           <div className="mt-4 rounded-xl bg-blue-50/70 px-4 py-3.5 text-sm sm:text-base font-bold text-slate-900 border border-blue-200/80">
             문제 2. 귀류법을 이용하여 다음 명제가 참임을 증명하시오.
             <div className="mt-1.5 text-base sm:text-lg text-blue-950">
-              ‘1 + √2는 유리수가 아니다.’
+              <MathText text="‘1 + √2는 유리수가 아니다.’" />
             </div>
           </div>
 
@@ -835,7 +841,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                 >
                   <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
                     <h3 className="text-base font-bold text-slate-900">
-                      {i + 1}. {t.q}
+                      {i + 1}. <MathText text={t.q} />
                     </h3>
                     <span
                       className={`text-xs font-extrabold ${
@@ -846,32 +852,32 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                     </span>
                   </div>
 
-                  <div>
-                    <label htmlFor={`prob4_2_choice_${i}`} className="sr-only">
-                      4차시 문제 2 증명 {i + 1}단계 선택
-                    </label>
-                    <select
-                      id={`prob4_2_choice_${i}`}
-                      value={state.prob2Choices[i] === null ? '' : String(state.prob2Choices[i])}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? null : Number(e.target.value);
-                        onUpdate((prev) => {
-                          const nextChoices = [...prev.prob2Choices];
-                          const nextVer = [...prev.prob2Verified];
-                          nextChoices[i] = val;
-                          nextVer[i] = false;
-                          return { ...prev, prob2Choices: nextChoices, prob2Verified: nextVer };
-                        });
-                      }}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white px-3.5 py-2.5 text-base text-slate-900"
-                    >
-                      <option value="">답을 선택하세요</option>
-                      {t.opts.map((opt, j) => (
-                        <option key={j} value={j}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {t.opts.map((opt, j) => {
+                      const isPicked = state.prob2Choices[i] === j;
+                      return (
+                        <button
+                          key={j}
+                          type="button"
+                          onClick={() => {
+                            onUpdate((prev) => {
+                              const nextChoices = [...prev.prob2Choices];
+                              const nextVer = [...prev.prob2Verified];
+                              nextChoices[i] = j;
+                              nextVer[i] = false;
+                              return { ...prev, prob2Choices: nextChoices, prob2Verified: nextVer };
+                            });
+                          }}
+                          className={`min-h-[42px] rounded-xl border px-3.5 py-2 text-xs sm:text-sm font-bold text-left transition-all ${
+                            isPicked
+                              ? 'border-blue-600 bg-blue-50/80 text-blue-950 ring-1 ring-blue-600'
+                              : 'border-slate-200 bg-slate-50/60 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          <MathText text={opt} />
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -903,7 +909,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                     <div className="mt-3 rounded-xl bg-amber-50/70 border border-amber-200/70 p-3 text-xs sm:text-sm text-amber-900 space-y-1.5">
                       {t.hints.slice(0, hintCount).map((h, hIdx) => (
                         <div key={hIdx}>
-                          <strong>힌트 {hIdx + 1}:</strong> {h}
+                          <strong>힌트 {hIdx + 1}:</strong> <MathText text={h} />
                         </div>
                       ))}
                       <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
@@ -940,7 +946,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                           : 'bg-amber-50 text-amber-900 border border-amber-200'
                       }`}
                     >
-                      {fb.text}
+                      <MathText text={fb.text} />
                     </div>
                   )}
                 </div>
@@ -956,19 +962,20 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
               <CharCountBadge current={state.prob2ProofText.trim().length} min={35} />
             </div>
             <label htmlFor="l4prob2proof" className="block text-xs sm:text-sm text-slate-600 font-semibold mb-2">
-              위에서 확인한 4단계를 연결하여 ‘1 + √2는 유리수가 아니다.’의 귀류법 증명을 완성하세요. (35자 이상)
+              <MathText text="위에서 확인한 4단계를 연결하여 ‘1 + √2는 유리수가 아니다.’의 귀류법 증명을 완성하세요. (35자 이상)" />
             </label>
             <textarea
               id="l4prob2proof"
               rows={5}
               value={state.prob2ProofText}
               onChange={(e) => onUpdate((prev) => ({ ...prev, prob2ProofText: e.target.value }))}
-              placeholder="명제를 부정하여 1 + √2가 …라 하면, 유리수 r에 대하여 1 + √2 = r, 즉 √2 = …로 나타낼 수 있다. 이때 r과 1이 모두 유리수이므로 …도 유리수이다. 그런데 이는 √2가 …라는 사실에 모순이다. 따라서 …"
+              placeholder="명제를 부정하여 1 + √(2)가 …라 하면, 유리수 r에 대하여 1 + √(2) = r, 즉 √(2) = …로 나타낼 수 있다. 이때 r과 1이 모두 유리수이므로 …도 유리수이다. 그런데 이는 √(2)가 …라는 사실에 모순이다. 따라서 …"
               className={`w-full rounded-xl border bg-white p-3.5 text-base text-slate-900 transition-colors ${getCharCountBorderClass(
                 state.prob2ProofText.trim().length,
                 35
               )}`}
             />
+            <MathPreviewBox text={state.prob2ProofText} />
           </div>
         </div>
       )}
@@ -1003,6 +1010,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                   20
                 )}`}
               />
+              <MathPreviewBox text={state.reflection1} />
             </div>
 
             <div>
@@ -1023,6 +1031,7 @@ export const Lesson4View: React.FC<Lesson4ViewProps> = ({
                   20
                 )}`}
               />
+              <MathPreviewBox text={state.reflection2} />
             </div>
           </div>
 

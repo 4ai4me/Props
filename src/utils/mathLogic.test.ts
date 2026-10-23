@@ -16,6 +16,7 @@ import {
   calc7Abs,
   applyMathSymbolInsertion,
   convertMathShorthand,
+  tokenizeMathRadicals,
   LESSON_RECOMMENDED_SYMBOLS,
   MATH_SYMBOL_CATEGORIES,
   PROOF3_PROB1_STEPS,
@@ -511,8 +512,45 @@ test('applyMathSymbolInsertion and convertMathShorthand support smart wrapping, 
   assert.ok(MATH_SYMBOL_CATEGORIES.length >= 5);
 });
 
+test('tokenizeMathRadicals parses parenthesized, numeric, variable, and bare square root expressions accurately', () => {
+  // 1. Parenthesized radical √(ab) -> strips outer parens and keeps 'ab' under the vinculum
+  const t1 = tokenizeMathRadicals('(a + b)/2 − √(ab) = ((√a − √b)²)/2 ≥ 0');
+  const radicals1 = t1.filter((tok) => tok.type === 'radical');
+  assert.equal(radicals1.length, 3);
+  assert.equal(radicals1[0].value, 'ab');
+  assert.equal(radicals1[0].hasParens, true);
+  assert.equal(radicals1[1].value, 'a');
+  assert.equal(radicals1[1].hasParens, false);
+  assert.equal(radicals1[2].value, 'b');
+  assert.equal(radicals1[2].hasParens, false);
 
+  // 2. Numeric radical followed by multiplier variable: n = √2m -> radicand is '2', 'm' stays outside
+  const t2 = tokenizeMathRadicals('n = √2m의 양변을 제곱하면 n² = 2m²');
+  assert.deepEqual(t2, [
+    { type: 'text', value: 'n = ', raw: 'n = ' },
+    { type: 'radical', value: '2', hasParens: false, raw: '√2' },
+    { type: 'text', value: 'm의 양변을 제곱하면 n² = 2m²', raw: 'm의 양변을 제곱하면 n² = 2m²' },
+  ]);
 
+  // 3. Consecutive radicals √a√b -> two distinct radicals
+  const t3 = tokenizeMathRadicals('(√a)² − 2√a√b + (√b)²');
+  const radicals3 = t3.filter((tok) => tok.type === 'radical');
+  assert.equal(radicals3.length, 4);
+  assert.deepEqual(
+    radicals3.map((r) => r.value),
+    ['a', 'a', 'b', 'b']
+  );
 
+  // 4. Complex parenthesized expression √(a × 1/a) and template √(□)
+  const t4 = tokenizeMathRadicals('a + 1/a ≥ 2√(a × 1/a) = 2 · 템플릿 √(□)');
+  const radicals4 = t4.filter((tok) => tok.type === 'radical');
+  assert.equal(radicals4.length, 2);
+  assert.equal(radicals4[0].value, 'a × 1/a');
+  assert.equal(radicals4[0].hasParens, true);
+  assert.equal(radicals4[1].value, '□');
+  assert.equal(radicals4[1].hasParens, true);
 
-
+  // 5. Bare √ symbol (e.g., on keypad button)
+  const t5 = tokenizeMathRadicals('√');
+  assert.deepEqual(t5, [{ type: 'radical', value: '', hasParens: false, raw: '√' }]);
+});

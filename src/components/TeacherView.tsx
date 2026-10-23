@@ -60,6 +60,7 @@ import {
   SlidersHorizontal,
   Layers,
 } from 'lucide-react';
+import { MathText } from './MathText';
 
 interface TeacherViewProps {
   adminEmail: string;
@@ -1661,9 +1662,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       ['4차시 성찰', selectedStudent.l4?.reflection1],
                     ].map(([label, val]) => (
                       <div key={label}>
-                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="text-xs font-bold text-slate-700">
+                          <MathText text={label || ''} />
+                        </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <MathText text={val || '미작성'} />
                         </div>
                       </div>
                     ))}
@@ -1685,7 +1688,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">{label}</div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <MathText text={val || '미작성'} />
                         </div>
                       </div>
                     ))}
@@ -1695,19 +1698,21 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                     <div className="text-xs font-bold text-teal-700">6차시 · 절대부등식2 수사 (문제 1·2)</div>
                     {[
                       [
-                        '문제 1 ((a+b)/2 ≥ √ab) 증명',
+                        '문제 1 ((a+b)/2 ≥ √(ab)) 증명',
                         `단계 확인: ${selectedStudent.l6?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob1ProofText || '미작성'}`,
                       ],
                       [
-                        '문제 2 (a+1/a ≥ 2, √ab ≥ 2ab/(a+b)) 증명',
+                        '문제 2 (a+1/a ≥ 2, √(ab) ≥ 2ab/(a+b)) 증명',
                         `단계 확인: ${selectedStudent.l6?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob2ProofText || '미작성'}`,
                       ],
                       ['6차시 성찰', selectedStudent.l6?.reflection1],
                     ].map(([label, val]) => (
                       <div key={label}>
-                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="text-xs font-bold text-slate-700">
+                          <MathText text={label || ''} />
+                        </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <MathText text={val || '미작성'} />
                         </div>
                       </div>
                     ))}
@@ -2078,9 +2083,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       ['4차시 성찰 2', selectedStudent.l4?.reflection2],
                     ].map(([label, val]) => (
                       <div key={label}>
-                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="text-xs font-bold text-slate-700">
+                          <MathText text={label || ''} />
+                        </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <MathText text={val || '미작성'} />
                         </div>
                       </div>
                     ))}
@@ -2106,7 +2113,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">{label}</div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <MathText text={val || '미작성'} />
                         </div>
                       </div>
                     ))}
@@ -2119,20 +2126,22 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                     </div>
                     {[
                       [
-                        '문제 1 ((a+b)/2 ≥ √ab)',
+                        '문제 1 ((a+b)/2 ≥ √(ab))',
                         `단계 확인: ${selectedStudent.l6?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob1ProofText || '미작성'}`,
                       ],
                       [
-                        '문제 2 (a+1/a ≥ 2, √ab ≥ 2ab/(a+b))',
+                        '문제 2 (a+1/a ≥ 2, √(ab) ≥ 2ab/(a+b))',
                         `단계 확인: ${selectedStudent.l6?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob2ProofText || '미작성'}`,
                       ],
                       ['6차시 성찰 1', selectedStudent.l6?.reflection1],
                       ['6차시 성찰 2', selectedStudent.l6?.reflection2],
                     ].map(([label, val]) => (
                       <div key={label}>
-                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="text-xs font-bold text-slate-700">
+                          <MathText text={label || ''} />
+                        </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <MathText text={val || '미작성'} />
                         </div>
                       </div>
                     ))}

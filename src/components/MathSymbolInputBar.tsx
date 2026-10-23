@@ -22,6 +22,7 @@ import {
   Maximize2,
   HelpCircle,
 } from 'lucide-react';
+import { MathText } from './MathText';
 
 interface MathSymbolInputBarProps {
   activeLesson: 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -368,13 +369,13 @@ export const MathSymbolInputBar: React.FC<MathSymbolInputBarProps> = ({ activeLe
             </span>
             {selectedTextPreview && (
               <span className="rounded-md bg-amber-500/20 border border-amber-400/40 px-2 py-0.5 text-[11px] font-bold text-amber-200 mono">
-                선택 영역 감싸기 준비됨: &ldquo;{selectedTextPreview}&rdquo; → √(□), (□)², |□| 클릭!
+                <MathText text={`선택 영역 감싸기 준비됨: “${selectedTextPreview}” → √(□), (□)², |□| 클릭!`} />
               </span>
             )}
             {lastConversionNotice && (
               <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/20 border border-emerald-400/40 px-2 py-0.5 text-[11px] font-bold text-emerald-200 mono">
                 <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                {lastConversionNotice}
+                <MathText text={lastConversionNotice} />
               </span>
             )}
           </div>
@@ -458,16 +459,16 @@ export const MathSymbolInputBar: React.FC<MathSymbolInputBarProps> = ({ activeLe
                 <div className="font-bold text-amber-300 mb-1">1. 블록 감싸기 (□ 템플릿)</div>
                 <p className="text-slate-300">
                   입력창에서 <span className="mono text-white">a+b</span>를 드래그한 뒤{' '}
-                  <span className="mono font-bold text-sky-300">√(□)</span>,{' '}
+                  <MathText text="√(□)" className="mono font-bold text-sky-300" />,{' '}
                   <span className="mono font-bold text-sky-300">(□)²</span>,{' '}
                   <span className="mono font-bold text-sky-300">|□|</span>를 누르면 자동으로{' '}
-                  <span className="mono text-emerald-300">√(a+b), (a+b)², |a+b|</span>로 감싸집니다.
+                  <MathText text="√(a+b), (a+b)², |a+b|" className="mono text-emerald-300" />로 감싸집니다.
                 </p>
               </div>
               <div className="rounded-xl bg-slate-900/80 border border-white/10 p-2.5">
                 <div className="font-bold text-emerald-300 mb-1">2. PC·노트북 키보드 단축어</div>
                 <p className="text-slate-300 mono">
-                  {MATH_SHORTHAND_RULES.map((r) => `${r.shorthand}→${r.replacement}`).join(' · ')}
+                  <MathText text={MATH_SHORTHAND_RULES.map((r) => `${r.shorthand}→${r.replacement}`).join(' · ')} />
                 </p>
               </div>
               <div className="rounded-xl bg-slate-900/80 border border-white/10 p-2.5">
@@ -576,7 +577,7 @@ export const MathSymbolInputBar: React.FC<MathSymbolInputBarProps> = ({ activeLe
                     : 'border-white/15 bg-white/10 text-white hover:bg-white/20 hover:border-white/30'
                 }`}
               >
-                <span>{item.label}</span>
+                <MathText text={item.label} />
                 {isExpanded && item.shorthand && (
                   <span className="ml-1 rounded bg-slate-950/70 px-1 py-0.2 text-[10px] font-normal text-slate-300">
                     {item.shorthand}
@@ -655,7 +656,7 @@ export const MathSymbolInputBar: React.FC<MathSymbolInputBarProps> = ({ activeLe
                   className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs font-bold mono text-slate-200 hover:bg-white/15"
                   title={`${item.desc} 다시 입력`}
                 >
-                  {item.label}
+                  <MathText text={item.label} />
                 </button>
               ))}
             </div>
