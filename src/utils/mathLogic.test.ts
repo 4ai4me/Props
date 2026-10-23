@@ -12,7 +12,12 @@ import {
   calc4Coprime,
   calc5Inequality,
   calc6Means,
+  calc6GeometrySimulation,
   calc7Abs,
+  applyMathSymbolInsertion,
+  convertMathShorthand,
+  LESSON_RECOMMENDED_SYMBOLS,
+  MATH_SYMBOL_CATEGORIES,
   PROOF3_PROB1_STEPS,
   PROOF3_PROB2_STEPS,
   PROOF4_PROB1_STEPS,
@@ -430,6 +435,82 @@ test('when lessons are added, previously completed evaluations revoke complete s
     assert.equal(p.ungradedRubricCount, 3);
   }
 });
+
+test('calc6GeometrySimulation computes semicircle length and square/rectangle area properties accurately', () => {
+  // Unequal positive pair (a = 1, b = 9)
+  const sim19 = calc6GeometrySimulation(1, 9);
+  assert.equal(sim19.diameter, 10);
+  assert.equal(sim19.arith, 5); // radius (1+9)/2 = 5
+  assert.equal(sim19.geom, 3); // altitude sqrt(1*9) = 3
+  assert.equal(sim19.harm, 1.8); // 2*9 / 10 = 1.8
+  assert.equal(sim19.centerOffset, 4); // |1-9|/2 = 4 (note 3^2 + 4^2 = 5^2)
+  assert.equal(sim19.arithSquareArea, 25); // 5^2 = 25
+  assert.equal(sim19.rectArea, 9); // 1 * 9 = 9
+  assert.equal(sim19.areaDiff, 16); // 25 - 9 = 16 = (1-9)^2 / 4
+  assert.equal(sim19.bigSquareArea, 100); // (1+9)^2 = 100
+  assert.equal(sim19.fourRectArea, 36); // 4 * 1 * 9 = 36
+  assert.equal(sim19.innerHoleArea, 64); // (1-9)^2 = 64 (36 + 64 = 100)
+  assert.equal(sim19.isEqual, false);
+
+  // Equal positive pair (a = 4, b = 4) -> Equality holds across all lengths and areas
+  const sim44 = calc6GeometrySimulation(4, 4);
+  assert.equal(sim44.diameter, 8);
+  assert.equal(sim44.arith, 4);
+  assert.equal(sim44.geom, 4);
+  assert.equal(sim44.harm, 4);
+  assert.equal(sim44.centerOffset, 0);
+  assert.equal(sim44.arithSquareArea, 16);
+  assert.equal(sim44.rectArea, 16);
+  assert.equal(sim44.areaDiff, 0);
+  assert.equal(sim44.innerHoleArea, 0);
+  assert.equal(sim44.isEqual, true);
+});
+
+test('applyMathSymbolInsertion and convertMathShorthand support smart wrapping, cursor placement, and PC shorthands', () => {
+  // 1. Plain symbol insertion at cursor
+  const r1 = applyMathSymbolInsertion('a + b', 5, 5, ' ≥ ');
+  assert.equal(r1.nextValue, 'a + b ≥ ');
+  assert.equal(r1.nextCursorStart, 8);
+
+  // 2. Template insertion with NO selection places cursor inside □
+  const r2 = applyMathSymbolInsertion('좌변 = ', 5, 5, '√(□)');
+  assert.equal(r2.nextValue, '좌변 = √()');
+  assert.equal(r2.nextCursorStart, 7); // Right between '(' and ')'
+
+  // 3. Template insertion WITH selection wraps selected text
+  const r3 = applyMathSymbolInsertion('(a+b)/2 - ab', 10, 12, '√(□)');
+  assert.equal(r3.nextValue, '(a+b)/2 - √(ab)');
+  assert.equal(r3.nextCursorStart, 15);
+
+  // 4. Multi-slot fraction template (□)/(□) with selection wraps numerator and puts cursor in denominator
+  const r4 = applyMathSymbolInsertion('a+b', 0, 3, '(□)/(□)');
+  assert.equal(r4.nextValue, '(a+b)/()');
+  assert.equal(r4.nextCursorStart, 7); // Inside denominator parentheses
+
+  // 5. Shorthand conversions
+  const c1 = convertMathShorthand('(a+b)/2 >=', 10);
+  assert.equal(c1.converted, true);
+  assert.equal(c1.nextValue, '(a+b)/2 ≥');
+
+  const c2 = convertMathShorthand('(a-b)^2', 7);
+  assert.equal(c2.converted, true);
+  assert.equal(c2.nextValue, '(a-b)²');
+
+  const c3 = convertMathShorthand('sqrt(ab)', 5);
+  assert.equal(c3.converted, true);
+  assert.equal(c3.nextValue, '√(ab)');
+
+  const c4 = convertMathShorthand(':. a = b', 2);
+  assert.equal(c4.converted, true);
+  assert.equal(c4.nextValue, '∴ a = b');
+
+  // Ensure all 7 lessons have recommended symbols and all categories are populated
+  for (const lesson of [1, 2, 3, 4, 5, 6, 7] as const) {
+    assert.ok(LESSON_RECOMMENDED_SYMBOLS[lesson].length >= 8);
+  }
+  assert.ok(MATH_SYMBOL_CATEGORIES.length >= 5);
+});
+
 
 
 

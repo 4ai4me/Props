@@ -39,6 +39,7 @@ import { Lesson7View } from './components/Lesson7View';
 import { TeacherView } from './components/TeacherView';
 import { AuthGateView, FirestoreStudentRegistrationDoc } from './components/AuthGateView';
 import { StudentEvaluationModal } from './components/StudentEvaluationModal';
+import { MathSymbolInputBar } from './components/MathSymbolInputBar';
 import {
   Printer,
   CheckCircle2,
@@ -941,6 +942,10 @@ export default function App() {
                 onRequestConfirm={requestConfirm}
               />
             </section>
+          )}
+
+          {sessionMode !== 'gate' && (
+            <MathSymbolInputBar activeLesson={activeLessonTab} />
           )}
         </main>
 

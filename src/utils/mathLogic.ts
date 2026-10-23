@@ -1450,6 +1450,55 @@ export function calc6Means(a: number, b: number): L6MeanExample {
   };
 }
 
+export interface L6GeometrySimulation {
+  a: number;
+  b: number;
+  diameter: number;
+  arith: number;
+  geom: number;
+  harm: number;
+  centerOffset: number;
+  arithSquareArea: number;
+  rectArea: number;
+  areaDiff: number;
+  bigSquareArea: number;
+  fourRectArea: number;
+  innerHoleArea: number;
+  isEqual: boolean;
+}
+
+export function calc6GeometrySimulation(aRaw: number, bRaw: number): L6GeometrySimulation {
+  const a = Math.max(0.1, Number.isFinite(aRaw) ? aRaw : 1);
+  const b = Math.max(0.1, Number.isFinite(bRaw) ? bRaw : 1);
+  const diameter = Number((a + b).toFixed(4));
+  const arith = Number(((a + b) / 2).toFixed(4));
+  const geom = Number(Math.sqrt(a * b).toFixed(4));
+  const harm = Number(((2 * a * b) / (a + b)).toFixed(4));
+  const centerOffset = Number((Math.abs(a - b) / 2).toFixed(4));
+  const arithSquareArea = Number((((a + b) / 2) * ((a + b) / 2)).toFixed(4));
+  const rectArea = Number((a * b).toFixed(4));
+  const areaDiff = Number((arithSquareArea - rectArea).toFixed(4));
+  const bigSquareArea = Number(((a + b) * (a + b)).toFixed(4));
+  const fourRectArea = Number((4 * a * b).toFixed(4));
+  const innerHoleArea = Number(((a - b) * (a - b)).toFixed(4));
+  return {
+    a,
+    b,
+    diameter,
+    arith,
+    geom,
+    harm,
+    centerOffset,
+    arithSquareArea,
+    rectArea,
+    areaDiff,
+    bigSquareArea,
+    fourRectArea,
+    innerHoleArea,
+    isEqual: Math.abs(a - b) < 1e-9,
+  };
+}
+
 export function calc7Abs(a: number, b: number): L7AbsExample {
   const lhsSum = Number(Math.abs(a + b).toFixed(4));
   const rhsSum = Number((Math.abs(a) + Math.abs(b)).toFixed(4));
@@ -2049,4 +2098,346 @@ export function createSampleTeacherDataset(): StudentRecord[] {
 
   return [s1, s2];
 }
+
+export interface MathSymbolItem {
+  label: string;
+  token: string;
+  desc: string;
+  shorthand?: string;
+  isTemplate?: boolean;
+}
+
+export type MathSymbolCategoryId =
+  | 'recommended'
+  | 'inequality'
+  | 'power_root'
+  | 'abs_op'
+  | 'logic_set'
+  | 'greek_var';
+
+export interface MathSymbolCategory {
+  id: MathSymbolCategoryId;
+  name: string;
+  shortName: string;
+  items: MathSymbolItem[];
+}
+
+export const LESSON_RECOMMENDED_SYMBOLS: Record<1 | 2 | 3 | 4 | 5 | 6 | 7, MathSymbolItem[]> = {
+  1: [
+    { label: '²', token: '²', desc: '제곱', shorthand: '^2' },
+    { label: '(□)²', token: '(□)²', desc: '선택한 식을 괄호 제곱으로 감싸기', isTemplate: true },
+    { label: '2k+1', token: '2k+1', desc: '홀수 일반항 표현', isTemplate: true },
+    { label: '(2k+1)²', token: '(2k+1)²', desc: '홀수의 제곱', isTemplate: true },
+    { label: '4k(k+1)+1', token: '4k(k+1)+1', desc: '홀수 제곱 전개식', isTemplate: true },
+    { label: '8m+1', token: '8m+1', desc: '8로 나눈 나머지 1 표현', isTemplate: true },
+    { label: '=', token: ' = ', desc: '등호' },
+    { label: '≠', token: ' ≠ ', desc: '같지 않다', shorthand: '!=' },
+    { label: '∴', token: '∴ ', desc: '따라서', shorthand: ':.' },
+    { label: '∵', token: '∵ ', desc: '왜냐하면', shorthand: 'because' },
+  ],
+  2: [
+    { label: '²', token: '²', desc: '제곱', shorthand: '^2' },
+    { label: '(□)²', token: '(□)²', desc: '선택한 식을 괄호 제곱으로 감싸기', isTemplate: true },
+    { label: '2k', token: '2k', desc: '짝수 일반항', isTemplate: true },
+    { label: '4k(k+1)', token: '4k(k+1)', desc: '연속한 두 짝수의 곱', isTemplate: true },
+    { label: '=', token: ' = ', desc: '등호' },
+    { label: '≠', token: ' ≠ ', desc: '같지 않다 (반례)', shorthand: '!=' },
+    { label: '≥', token: ' ≥ ', desc: '크거나 같다', shorthand: '>=' },
+    { label: '≤', token: ' ≤ ', desc: '작거나 같다', shorthand: '<=' },
+    { label: '∴', token: '∴ ', desc: '따라서', shorthand: ':.' },
+    { label: '⇒', token: ' ⇒ ', desc: '이면 (함의)', shorthand: '=>' },
+  ],
+  3: [
+    { label: '→', token: ' → ', desc: '명제 화살표 (p → q)', shorthand: '->' },
+    { label: '~q → ~p', token: '~q → ~p', desc: '명제의 대우', isTemplate: true },
+    { label: '²', token: '²', desc: '제곱', shorthand: '^2' },
+    { label: '2k−1', token: '2k−1', desc: '홀수 표현 (k는 자연수)', isTemplate: true },
+    { label: '3k−1', token: '3k−1', desc: '3으로 나눈 나머지가 2인 자연수', isTemplate: true },
+    { label: '3k−2', token: '3k−2', desc: '3으로 나눈 나머지가 1인 자연수', isTemplate: true },
+    { label: '=', token: ' = ', desc: '등호' },
+    { label: '≠', token: ' ≠ ', desc: '같지 않다', shorthand: '!=' },
+    { label: '⇔', token: ' ⇔ ', desc: '동치', shorthand: '<=>' },
+    { label: '∴', token: '∴ ', desc: '따라서', shorthand: ':.' },
+  ],
+  4: [
+    { label: '√2', token: '√2', desc: '루트 2', isTemplate: true },
+    { label: '√(□)', token: '√(□)', desc: '제곱근 감싸기', shorthand: 'sqrt(', isTemplate: true },
+    { label: '1+√2', token: '1+√2', desc: '1 더하기 루트 2', isTemplate: true },
+    { label: 'n/m', token: 'n/m', desc: '기약분수 표현', isTemplate: true },
+    { label: 'n² = 2m²', token: 'n² = 2m²', desc: '양변 제곱 정리식', isTemplate: true },
+    { label: '²', token: '²', desc: '제곱', shorthand: '^2' },
+    { label: '∈', token: ' ∈ ', desc: '원소이다' },
+    { label: '∉', token: ' ∉ ', desc: '원소가 아니다' },
+    { label: '≠', token: ' ≠ ', desc: '같지 않다', shorthand: '!=' },
+    { label: '∴', token: '∴ ', desc: '따라서', shorthand: ':.' },
+  ],
+  5: [
+    { label: '≥', token: ' ≥ ', desc: '크거나 같다 (이상)', shorthand: '>=' },
+    { label: '≤', token: ' ≤ ', desc: '작거나 같다 (이하)', shorthand: '<=' },
+    { label: '²', token: '²', desc: '제곱', shorthand: '^2' },
+    { label: '(□)²', token: '(□)²', desc: '완전제곱식 감싸기', isTemplate: true },
+    { label: '(a−b/2)²', token: '(a−b/2)²', desc: '예제3 완전제곱 항', isTemplate: true },
+    { label: '(3/4)b²', token: '(3/4)b²', desc: '예제3 나머지 제곱 항', isTemplate: true },
+    { label: '(a−b)² ≥ 0', token: '(a−b)² ≥ 0', desc: '실수의 제곱 성질', isTemplate: true },
+    { label: '(a−2b)²+b²', token: '(a−2b)²+b²', desc: '문제3-(2) 완전제곱식의 합', isTemplate: true },
+    { label: 'a = b = 0', token: 'a = b = 0', desc: '등호 성립 조건', isTemplate: true },
+    { label: '∴', token: '∴ ', desc: '따라서', shorthand: ':.' },
+  ],
+  6: [
+    { label: '≥', token: ' ≥ ', desc: '크거나 같다 (이상)', shorthand: '>=' },
+    { label: '√(□)', token: '√(□)', desc: '제곱근 감싸기', shorthand: 'sqrt(', isTemplate: true },
+    { label: '√(ab)', token: '√(ab)', desc: '기하평균 √(ab)', isTemplate: true },
+    { label: '(a+b)/2', token: '(a+b)/2', desc: '산술평균 (a+b)/2', isTemplate: true },
+    { label: '(√a−√b)²/2', token: '(√a−√b)²/2', desc: '산술·기하평균의 차 변형식', isTemplate: true },
+    { label: '2ab/(a+b)', token: '2ab/(a+b)', desc: '조화평균 2ab/(a+b)', isTemplate: true },
+    { label: 'a + 1/a ≥ 2', token: 'a + 1/a ≥ 2', desc: '역수의 합 부등식', isTemplate: true },
+    { label: '²', token: '²', desc: '제곱', shorthand: '^2' },
+    { label: 'a = b', token: 'a = b', desc: '등호 성립 조건', isTemplate: true },
+    { label: '∴', token: '∴ ', desc: '따라서', shorthand: ':.' },
+  ],
+  7: [
+    { label: '|□|', token: '|□|', desc: '절댓값 기호 감싸기', isTemplate: true },
+    { label: '≤', token: ' ≤ ', desc: '작거나 같다 (이하)', shorthand: '<=' },
+    { label: '≥', token: ' ≥ ', desc: '크거나 같다 (이상)', shorthand: '>=' },
+    { label: '²', token: '²', desc: '제곱', shorthand: '^2' },
+    { label: '|a+b|', token: '|a+b|', desc: '합의 절댓값', isTemplate: true },
+    { label: '|a|+|b|', token: '|a|+|b|', desc: '절댓값의 합', isTemplate: true },
+    { label: '|a−b|', token: '|a−b|', desc: '차의 절댓값', isTemplate: true },
+    { label: '2(|ab|−ab)', token: '2(|ab|−ab)', desc: '제곱의 차 정리식', isTemplate: true },
+    { label: 'ab ≥ 0', token: 'ab ≥ 0', desc: '등호 성립 조건 (같은 부호)', isTemplate: true },
+    { label: 'ab ≤ 0', token: 'ab ≤ 0', desc: '등호 성립 조건 (반대 부호)', isTemplate: true },
+  ],
+};
+
+export const MATH_SYMBOL_CATEGORIES: MathSymbolCategory[] = [
+  {
+    id: 'inequality',
+    name: '부등호 · 등호',
+    shortName: '부등호·등호',
+    items: [
+      { label: '≥', token: ' ≥ ', desc: '크거나 같다 (이상)', shorthand: '>=' },
+      { label: '≤', token: ' ≤ ', desc: '작거나 같다 (이하)', shorthand: '<=' },
+      { label: '>', token: ' > ', desc: '크다 (초과)' },
+      { label: '<', token: ' < ', desc: '작다 (미만)' },
+      { label: '=', token: ' = ', desc: '같다 (등호)' },
+      { label: '≠', token: ' ≠ ', desc: '같지 않다', shorthand: '!=' },
+      { label: '±', token: '±', desc: '플러스마이너스', shorthand: '+-' },
+      { label: '≈', token: ' ≈ ', desc: '근사값 (약)' },
+      { label: '≡', token: ' ≡ ', desc: '합동 / 항등' },
+      { label: '≥ 0', token: ' ≥ 0', desc: '0 이상 (음이 아닌 실수)', isTemplate: true },
+      { label: '≤ 0', token: ' ≤ 0', desc: '0 이하', isTemplate: true },
+      { label: '= 0', token: ' = 0', desc: '0과 같다', isTemplate: true },
+    ],
+  },
+  {
+    id: 'power_root',
+    name: '제곱 · 근호 · 분수',
+    shortName: '제곱·근호·분수',
+    items: [
+      { label: '²', token: '²', desc: '제곱 (위첨자 2)', shorthand: '^2' },
+      { label: '³', token: '³', desc: '세제곱 (위첨자 3)', shorthand: '^3' },
+      { label: 'ⁿ', token: 'ⁿ', desc: 'n제곱 (위첨자 n)', shorthand: '^n' },
+      { label: '√(□)', token: '√(□)', desc: '제곱근 감싸기', shorthand: 'sqrt(', isTemplate: true },
+      { label: '√', token: '√', desc: '근호 기호' },
+      { label: '(□)²', token: '(□)²', desc: '괄호 제곱 감싸기', isTemplate: true },
+      { label: '(□)/(□)', token: '(□)/(□)', desc: '분수 틀 삽입', isTemplate: true },
+      { label: '□/2', token: '(□)/2', desc: '2로 나눈 분수 (절반)', isTemplate: true },
+      { label: '1/a', token: '1/a', desc: 'a의 역수', isTemplate: true },
+      { label: '√a', token: '√a', desc: '루트 a', isTemplate: true },
+      { label: '√b', token: '√b', desc: '루트 b', isTemplate: true },
+      { label: '√(ab)', token: '√(ab)', desc: '루트 ab', isTemplate: true },
+    ],
+  },
+  {
+    id: 'abs_op',
+    name: '절댓값 · 괄호 · 연산',
+    shortName: '절댓값·연산',
+    items: [
+      { label: '|□|', token: '|□|', desc: '절댓값 감싸기', isTemplate: true },
+      { label: '|', token: '|', desc: '절댓값 세로선' },
+      { label: '(□)', token: '(□)', desc: '소괄호 감싸기', isTemplate: true },
+      { label: '[□]', token: '[□]', desc: '대괄호 감싸기', isTemplate: true },
+      { label: '|□|²', token: '|□|²', desc: '절댓값의 제곱 감싸기', isTemplate: true },
+      { label: '−', token: ' − ', desc: '뺄셈 (마이너스)' },
+      { label: '+', token: ' + ', desc: '덧셈 (플러스)' },
+      { label: '×', token: ' × ', desc: '곱셈 기호' },
+      { label: '·', token: '·', desc: '가운데점 곱셈' },
+      { label: '÷', token: ' ÷ ', desc: '나눗셈 기호' },
+      { label: '/', token: '/', desc: '분수 슬래시' },
+    ],
+  },
+  {
+    id: 'logic_set',
+    name: '논리 · 증명 · 집합',
+    shortName: '논리·집합',
+    items: [
+      { label: '∴', token: '∴ ', desc: '따라서 (결론)', shorthand: ':.' },
+      { label: '∵', token: '∵ ', desc: '왜냐하면 (이유)', shorthand: 'because' },
+      { label: '⇒', token: ' ⇒ ', desc: '이면 (논리적 함의)', shorthand: '=>' },
+      { label: '⇔', token: ' ⇔ ', desc: '동치 (필요충분조건)', shorthand: '<=>' },
+      { label: '→', token: ' → ', desc: '화살표 (명제 p → q)', shorthand: '->' },
+      { label: '~', token: '~', desc: '부정 (~p)' },
+      { label: '∈', token: ' ∈ ', desc: '원소이다 (속한다)' },
+      { label: '∉', token: ' ∉ ', desc: '원소가 아니다' },
+      { label: '⊂', token: ' ⊂ ', desc: '부분집합이다' },
+      { label: '∪', token: ' ∪ ', desc: '합집합' },
+      { label: '∩', token: ' ∩ ', desc: '교집합' },
+      { label: '∅', token: '∅', desc: '공집합' },
+    ],
+  },
+  {
+    id: 'greek_var',
+    name: '수식 문자 · 그리스 문자',
+    shortName: '문자·그리스',
+    items: [
+      { label: 'a', token: 'a', desc: '문자 a' },
+      { label: 'b', token: 'b', desc: '문자 b' },
+      { label: 'c', token: 'c', desc: '문자 c' },
+      { label: 'k', token: 'k', desc: '정수/상수 k' },
+      { label: 'm', token: 'm', desc: '정수/자연수 m' },
+      { label: 'n', token: 'n', desc: '정수/자연수 n' },
+      { label: 'x', token: 'x', desc: '미지수 x' },
+      { label: 'y', token: 'y', desc: '미지수 y' },
+      { label: 'α', token: 'α', desc: '알파 (alpha)' },
+      { label: 'β', token: 'β', desc: '베타 (beta)' },
+      { label: 'θ', token: 'θ', desc: '세타 (theta)' },
+      { label: 'π', token: 'π', desc: '원주율 파이 (pi)' },
+      { label: '∞', token: '∞', desc: '무한대' },
+    ],
+  },
+];
+
+export interface MathSymbolInsertionResult {
+  nextValue: string;
+  nextCursorStart: number;
+  nextCursorEnd: number;
+}
+
+/**
+ * 주관식 입력창의 현재 문자열과 커서/선택 영역(selectionStart, selectionEnd)을 기준으로
+ * 수학 기호 또는 템플릿('□' 포함)을 스마트하게 삽입하거나 감싼다.
+ */
+export function applyMathSymbolInsertion(
+  currentValue: string,
+  selectionStart: number,
+  selectionEnd: number,
+  token: string
+): MathSymbolInsertionResult {
+  const safeStart = Math.max(0, Math.min(selectionStart, currentValue.length));
+  const safeEnd = Math.max(safeStart, Math.min(selectionEnd, currentValue.length));
+  const before = currentValue.slice(0, safeStart);
+  const selected = currentValue.slice(safeStart, safeEnd);
+  const after = currentValue.slice(safeEnd);
+
+  const firstBoxIdx = token.indexOf('□');
+  if (firstBoxIdx !== -1) {
+    if (selected.length > 0) {
+      // 첫 번째 □ 자리에 드래그로 선택한 수식을 넣고, 두 번째 □가 있으면 그 위치로 커서를 이동한다.
+      const prefix = token.slice(0, firstBoxIdx);
+      const restTemplate = token.slice(firstBoxIdx + 1);
+      const secondBoxIdx = restTemplate.indexOf('□');
+      if (secondBoxIdx !== -1) {
+        const middle = restTemplate.slice(0, secondBoxIdx);
+        const suffix = restTemplate.slice(secondBoxIdx + 1).replace(/□/g, '');
+        const inserted = `${prefix}${selected}${middle}${suffix}`;
+        const cursorTarget = before.length + prefix.length + selected.length + middle.length;
+        return {
+          nextValue: `${before}${inserted}${after}`,
+          nextCursorStart: cursorTarget,
+          nextCursorEnd: cursorTarget,
+        };
+      }
+      const suffix = restTemplate.replace(/□/g, '');
+      const inserted = `${prefix}${selected}${suffix}`;
+      const cursorTarget = before.length + inserted.length;
+      return {
+        nextValue: `${before}${inserted}${after}`,
+        nextCursorStart: cursorTarget,
+        nextCursorEnd: cursorTarget,
+      };
+    } else {
+      // 선택 영역이 없을 때는 모든 □를 빈칸으로 치환하되, 첫 번째 □ 위치에 커서를 정확히 배치한다.
+      const prefix = token.slice(0, firstBoxIdx);
+      const suffix = token.slice(firstBoxIdx + 1).replace(/□/g, '');
+      const inserted = `${prefix}${suffix}`;
+      const cursorTarget = before.length + prefix.length;
+      return {
+        nextValue: `${before}${inserted}${after}`,
+        nextCursorStart: cursorTarget,
+        nextCursorEnd: cursorTarget,
+      };
+    }
+  }
+
+  const nextValue = `${before}${token}${after}`;
+  const cursorTarget = before.length + token.length;
+  return {
+    nextValue,
+    nextCursorStart: cursorTarget,
+    nextCursorEnd: cursorTarget,
+  };
+}
+
+export const MATH_SHORTHAND_RULES: ReadonlyArray<{
+  shorthand: string;
+  replacement: string;
+  desc: string;
+}> = [
+  { shorthand: '<=>', replacement: '⇔', desc: '동치' },
+  { shorthand: 'because', replacement: '∵', desc: '왜냐하면' },
+  { shorthand: 'sqrt(', replacement: '√(', desc: '제곱근' },
+  { shorthand: '>=', replacement: '≥', desc: '크거나 같다' },
+  { shorthand: '<=', replacement: '≤', desc: '작거나 같다' },
+  { shorthand: '!=', replacement: '≠', desc: '같지 않다' },
+  { shorthand: '+-', replacement: '±', desc: '플러스마이너스' },
+  { shorthand: '^2', replacement: '²', desc: '제곱' },
+  { shorthand: '^3', replacement: '³', desc: '세제곱' },
+  { shorthand: '^n', replacement: 'ⁿ', desc: 'n제곱' },
+  { shorthand: '=>', replacement: '⇒', desc: '이면' },
+  { shorthand: '->', replacement: '→', desc: '화살표' },
+  { shorthand: ':.', replacement: '∴', desc: '따라서' },
+];
+
+export interface MathShorthandConversionResult {
+  converted: boolean;
+  nextValue: string;
+  nextCursorPos: number;
+  matchedShorthand?: string;
+  replacement?: string;
+}
+
+/**
+ * PC/노트북 키보드 타이핑 중 커서 직전의 문자열이 수학 단축어('>=', '^2', 'sqrt(' 등)와 일치하면
+ * 즉시 유니코드 수학 기호로 변환한 문자열과 새 커서 위치를 반환한다.
+ */
+export function convertMathShorthand(
+  value: string,
+  cursorPos: number
+): MathShorthandConversionResult {
+  const safeCursor = Math.max(0, Math.min(cursorPos, value.length));
+  const beforeCursor = value.slice(0, safeCursor);
+  const afterCursor = value.slice(safeCursor);
+
+  for (const rule of MATH_SHORTHAND_RULES) {
+    if (beforeCursor.endsWith(rule.shorthand)) {
+      const prefix = beforeCursor.slice(0, beforeCursor.length - rule.shorthand.length);
+      const nextValue = `${prefix}${rule.replacement}${afterCursor}`;
+      const nextCursorPos = prefix.length + rule.replacement.length;
+      return {
+        converted: true,
+        nextValue,
+        nextCursorPos,
+        matchedShorthand: rule.shorthand,
+        replacement: rule.replacement,
+      };
+    }
+  }
+
+  return {
+    converted: false,
+    nextValue: value,
+    nextCursorPos: safeCursor,
+  };
+}
+
 

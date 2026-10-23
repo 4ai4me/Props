@@ -3,6 +3,7 @@ import {
   Lesson6State,
   PROOF6_PROB1_STEPS,
   PROOF6_PROB2_STEPS,
+  calc6GeometrySimulation,
   calc6Means,
   evaluateLevel6Completion,
   evaluateRubricL6,
@@ -16,6 +17,10 @@ import {
   ArrowLeft,
   Sparkles,
   Trash2,
+  CircleDot,
+  Square,
+  Layers,
+  PlusCircle,
 } from 'lucide-react';
 import { CharCountBadge } from './CharCountBadge';
 
@@ -48,8 +53,12 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
   onGoToLesson7,
   onRequestConfirm,
 }) => {
-  const [inputA, setInputA] = useState<string>('');
-  const [inputB, setInputB] = useState<string>('');
+  const [simA, setSimA] = useState<number>(4);
+  const [simB, setSimB] = useState<number>(12);
+  const [inputA, setInputA] = useState<string>('4');
+  const [inputB, setInputB] = useState<string>('12');
+  const [simViewMode, setSimViewMode] = useState<'both' | 'length' | 'area'>('both');
+  const [showFullCircle, setShowFullCircle] = useState<boolean>(true);
   const [inputWarning, setInputWarning] = useState<string | null>(null);
 
   // Toggle visibility states for hints
@@ -60,16 +69,30 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
 
   const done = evaluateLevel6Completion(state);
   const rubric = evaluateRubricL6(state);
+  const geoSim = calc6GeometrySimulation(simA, simB);
+
+  const syncSimPair = (nextA: number, nextB: number) => {
+    const clampedA = Math.max(0.5, Math.min(20, Number(nextA.toFixed(1))));
+    const clampedB = Math.max(0.5, Math.min(20, Number(nextB.toFixed(1))));
+    setSimA(clampedA);
+    setSimB(clampedB);
+    setInputA(String(clampedA));
+    setInputB(String(clampedB));
+    setInputWarning(null);
+  };
 
   const handleAddExample = (aVal?: number, bVal?: number) => {
-    const a = aVal !== undefined ? aVal : safeN(inputA);
-    const b = bVal !== undefined ? bVal : safeN(inputB);
+    const parsedA = aVal !== undefined ? aVal : Number(inputA);
+    const parsedB = bVal !== undefined ? bVal : Number(inputB);
+    const a = Number.isFinite(parsedA) ? Number(parsedA.toFixed(2)) : safeN(inputA);
+    const b = Number.isFinite(parsedB) ? Number(parsedB.toFixed(2)) : safeN(inputB);
     if (a === null || b === null || a <= 0 || b <= 0) {
-      setInputWarning('양수 조건(a > 0, b > 0)을 만족하는 자연수를 입력해 주세요. (예: a=4, b=4 또는 a=1, b=9)');
+      setInputWarning('양수 조건(a > 0, b > 0)을 만족하는 양수를 입력해 주세요. (예: a=4, b=12 또는 a=1, b=9)');
       return;
     }
-    if (state.examples.some((x) => x.a === a && x.b === b)) {
-      setInputWarning(`이미 (a=${a}, b=${b}) 순서쌍이 단서 표에 있습니다.`);
+    syncSimPair(a, b);
+    if (state.examples.some((x) => Math.abs(x.a - a) < 1e-6 && Math.abs(x.b - b) < 1e-6)) {
+      setInputWarning(`이미 (a=${a}, b=${b}) 순서쌍이 단서 표에 기록되어 있습니다. 도형 시뮬레이션 값은 업데이트되었습니다.`);
       return;
     }
     setInputWarning(null);
@@ -78,119 +101,760 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
       ...prev,
       examples: [...prev.examples, nextItem],
     }));
-    if (aVal === undefined) {
-      setInputA('');
-      setInputB('');
-    }
   };
+
+  // SVG Geometry Coordinates Calculation for Circle/Semicircle
+  const circleSvgGeometry = (() => {
+    const cx = 190;
+    const cy = showFullCircle ? 128 : 178;
+    const radiusPx = showFullCircle ? 84 : 118;
+    const totalAB = geoSim.diameter;
+    const scale = (2 * radiusPx) / totalAB;
+    // Left endpoint A = (cx - R, cy), Right endpoint B = (cx + R, cy), Center O = (cx, cy)
+    const ax = cx - radiusPx;
+    const bx = cx + radiusPx;
+    // Split point H at distance a from A
+    const hx = ax + geoSim.a * scale;
+    // Altitude PH = sqrt(ab) * scale
+    const hPx = geoSim.geom * scale;
+    const px = hx;
+    const py = cy - hPx;
+    // Projection Q of H onto OP:
+    // Vector OP = (px - cx, py - cy), length = radiusPx
+    // In right triangle OPH, distance OQ along OP is OH^2 / R, and PQ along PO is PH^2 / R = harm * scale
+    const ux = (px - cx) / (radiusPx || 1);
+    const uy = (py - cy) / (radiusPx || 1);
+    const oqLen = (geoSim.centerOffset * scale * (geoSim.centerOffset * scale)) / (radiusPx || 1);
+    const qx = cx + ux * oqLen;
+    const qy = cy + uy * oqLen;
+
+    return {
+      cx,
+      cy,
+      radiusPx,
+      ax,
+      bx,
+      hx,
+      px,
+      py,
+      qx,
+      qy,
+      viewHeight: showFullCircle ? 248 : 225,
+    };
+  })();
 
   return (
     <div className="space-y-6">
-      {/* STEP 0: 1단계 산술·기하 단서 수집 */}
+      {/* STEP 0: 1단계 산술·기하 단서 수집 (원·반원 길이 & 사각형 면적 시뮬레이션) */}
       {step === 0 && (
         <div className="space-y-6">
           <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
             <div className="text-xs font-bold text-blue-600">
-              STAGE 01 · 단서 수집 · 산술평균과 기하평균의 관계
+              STAGE 01 · 도형 시뮬레이션 단서 수집 · 원·반원의 길이와 정사각형·직사각형의 넓이 비교
             </div>
             <h3 className="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">
-              절대부등식 수사 2: 두 양수의 산술평균과 기하평균은 어떤 관계일까?
+              절대부등식 수사 2: 원·반원과 사각형에서 산술평균과 기하평균을 눈으로 확인하라!
             </h3>
             <p className="mt-1.5 text-sm sm:text-base text-slate-700 leading-relaxed">
-              두 양수 <span className="mono font-bold">a &gt; 0, b &gt; 0</span>에 대하여{' '}
-              <span className="mono font-bold text-blue-700">(a + b)/2</span>를 <strong>산술평균</strong>,{' '}
-              <span className="mono font-bold text-indigo-700">√(ab)</span>를 <strong>기하평균</strong>이라고 합니다.
-              여러 양수 쌍을 대입하여 산술평균, 기하평균, 그리고 <span className="mono font-bold text-emerald-700">2ab/(a+b)</span>의 크기를 비교해 보세요.
+              두 양수 <span className="mono font-bold">a &gt; 0, b &gt; 0</span>을 지름의 두 선분 또는 직사각형의 두 변으로 두면,{' '}
+              <span className="mono font-bold text-blue-700">산술평균 (a+b)/2</span>는 <strong>원의 반지름(정사각형의 한 변)</strong>이 되고,{' '}
+              <span className="mono font-bold text-indigo-700">기하평균 √(ab)</span>는 <strong>수선의 높이(넓이가 같은 정사각형의 한 변)</strong>가 됩니다.
+              슬라이더나 추천 순서쌍을 조작하여 <strong>길이 비교(원·반원)</strong>와 <strong>면적 비교(사각형)</strong>를 실험하고 단서를 3개 이상 기록해 보세요.
             </p>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            {/* Left: Interactive Positive Pair Calculator */}
-            <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className="text-sm font-bold text-slate-900">
-                  양수 (a, b) 평균 비교 실험기 (3개 이상 수집)
-                </span>
-                <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
-                  현재 {state.examples.length}개 (권장 3개 이상)
-                </span>
+          {/* Interactive Geometric Simulator Card */}
+          <div className="rounded-2xl border border-blue-200/90 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/40 p-4 sm:p-6 shadow-xs space-y-5">
+            {/* Simulator Header & Mode Switcher */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-extrabold text-white">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    실시간 도형 시뮬레이터
+                  </span>
+                  <span className="text-sm sm:text-base font-extrabold text-slate-900">
+                    양수 (a={geoSim.a}, b={geoSim.b}) 길이·면적 기하학 비교
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-600">
+                  슬라이더를 움직이거나 프리셋을 클릭하면 반원·원의 현과 정사각형·직사각형의 면적이 실시간으로 변합니다.
+                </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label htmlFor="l6-a-input" className="block text-xs font-bold text-slate-600 mb-1">
-                    양수 a (&gt;0)
+              <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="도형 시뮬레이션 보기 방식">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={simViewMode === 'both'}
+                  onClick={() => setSimViewMode('both')}
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                    simViewMode === 'both'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  <span>길이+면적 함께 보기</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={simViewMode === 'length'}
+                  onClick={() => setSimViewMode('length')}
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                    simViewMode === 'length'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <CircleDot className="h-3.5 w-3.5" />
+                  <span>원·반원 길이 비교</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={simViewMode === 'area'}
+                  onClick={() => setSimViewMode('area')}
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                    simViewMode === 'area'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <Square className="h-3.5 w-3.5" />
+                  <span>사각형 면적 비교</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Sliders & Quick Presets Bar */}
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] items-center rounded-xl border border-slate-200 bg-white p-4">
+              {/* Slider A */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <label htmlFor="l6-slider-a" className="text-slate-700">
+                    선분·가로 길이 <span className="mono text-blue-700 font-extrabold">a = {geoSim.a}</span>
                   </label>
+                  <span className="text-[11px] text-slate-400 mono">0.5 ~ 16</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <input
+                    id="l6-slider-a"
+                    type="range"
+                    min="0.5"
+                    max="16"
+                    step="0.5"
+                    value={simA}
+                    onChange={(e) => syncSimPair(Number(e.target.value), simB)}
+                    className="w-full accent-blue-600 cursor-pointer"
+                  />
                   <input
                     id="l6-a-input"
                     type="text"
                     inputMode="numeric"
+                    aria-label="양수 a 직접 입력"
                     value={inputA}
-                    onChange={(e) => setInputA(e.target.value)}
-                    placeholder="a (예: 1)"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    onChange={(e) => {
+                      setInputA(e.target.value);
+                      const v = Number(e.target.value);
+                      if (Number.isFinite(v) && v > 0 && v <= 50) {
+                        setSimA(v);
+                      }
+                    }}
+                    className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-center text-xs font-bold mono focus:border-blue-500 focus:outline-none"
                   />
                 </div>
-                <div>
-                  <label htmlFor="l6-b-input" className="block text-xs font-bold text-slate-600 mb-1">
-                    양수 b (&gt;0)
+              </div>
+
+              {/* Slider B */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <label htmlFor="l6-slider-b" className="text-slate-700">
+                    선분·세로 길이 <span className="mono text-indigo-700 font-extrabold">b = {geoSim.b}</span>
                   </label>
+                  <span className="text-[11px] text-slate-400 mono">0.5 ~ 16</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <input
+                    id="l6-slider-b"
+                    type="range"
+                    min="0.5"
+                    max="16"
+                    step="0.5"
+                    value={simB}
+                    onChange={(e) => syncSimPair(simA, Number(e.target.value))}
+                    className="w-full accent-indigo-600 cursor-pointer"
+                  />
                   <input
                     id="l6-b-input"
                     type="text"
                     inputMode="numeric"
+                    aria-label="양수 b 직접 입력"
                     value={inputB}
-                    onChange={(e) => setInputB(e.target.value)}
+                    onChange={(e) => {
+                      setInputB(e.target.value);
+                      const v = Number(e.target.value);
+                      if (Number.isFinite(v) && v > 0 && v <= 50) {
+                        setSimB(v);
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         handleAddExample();
                       }
                     }}
-                    placeholder="b (예: 9)"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-center text-xs font-bold mono focus:border-indigo-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Record Button */}
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-2">
                 <button
                   type="button"
-                  onClick={() => handleAddExample()}
-                  className="min-h-[42px] rounded-xl bg-slate-900 px-4 py-2 text-xs sm:text-sm font-bold text-white hover:bg-slate-800 transition-colors"
+                  onClick={() => handleAddExample(simA, simB)}
+                  className="inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs sm:text-sm font-extrabold text-white shadow-xs hover:bg-blue-700 transition-colors whitespace-nowrap"
                 >
-                  단서 추가
+                  <PlusCircle className="h-4 w-4" />
+                  <span>현재 ({simA}, {simB}) 단서 표에 추가</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Preset Chips */}
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-bold text-slate-600 mr-1">빠른 실험 &amp; 단서 추가:</span>
                 {[
-                  [4, 4],
-                  [1, 9],
-                  [2, 8],
-                  [4, 16],
-                  [3, 3],
-                ].map(([ra, rb]) => (
-                  <button
-                    key={`${ra},${rb}`}
-                    type="button"
-                    onClick={() => handleAddExample(ra, rb)}
-                    className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 mono"
-                  >
-                    ({ra}, {rb})
-                  </button>
-                ))}
-                {state.examples.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onRequestConfirm('단서 표 초기화', '입력한 양수 (a, b) 사례를 모두 지울까요?', () => {
-                        onUpdate((prev) => ({ ...prev, examples: [] }));
-                      })
-                    }
-                    className="ml-auto inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    초기화
-                  </button>
-                )}
+                  { a: 4, b: 4, tag: 'a=b 등호 성립' },
+                  { a: 1, b: 9, tag: '산술 5 > 기하 3' },
+                  { a: 2, b: 8, tag: '산술 5 > 기하 4' },
+                  { a: 4, b: 16, tag: '산술 10 > 기하 8' },
+                  { a: 3, b: 12, tag: '산술 7.5 > 기하 6' },
+                  { a: 6, b: 6, tag: 'a=b 등호 성립' },
+                ].map((preset) => {
+                  const isCurrent = Math.abs(simA - preset.a) < 1e-6 && Math.abs(simB - preset.b) < 1e-6;
+                  return (
+                    <button
+                      key={`${preset.a}-${preset.b}`}
+                      type="button"
+                      onClick={() => handleAddExample(preset.a, preset.b)}
+                      className={`rounded-xl border px-3 py-1.5 font-bold mono transition-all ${
+                        isCurrent
+                          ? 'border-blue-600 bg-blue-600 text-white shadow-2xs'
+                          : 'border-blue-200 bg-blue-50/80 text-blue-800 hover:bg-blue-100'
+                      }`}
+                    >
+                      ({preset.a}, {preset.b}) <span className="font-sans text-[11px] opacity-85">· {preset.tag}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <label className="inline-flex items-center gap-1.5 cursor-pointer font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg px-2.5 py-1">
+                <input
+                  type="checkbox"
+                  checked={showFullCircle}
+                  onChange={(e) => setShowFullCircle(e.target.checked)}
+                  className="rounded accent-blue-600"
+                />
+                <span>전체 원(Circle) 보조선 표시</span>
+              </label>
+            </div>
+
+            {/* Visual Simulation Panels (Length & Area) */}
+            <div
+              className={`grid gap-5 ${
+                simViewMode === 'both' ? 'lg:grid-cols-2' : 'grid-cols-1'
+              }`}
+            >
+              {/* PANEL 1: Semicircle / Circle Length Comparison */}
+              {(simViewMode === 'both' || simViewMode === 'length') && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 flex flex-col justify-between">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-600">
+                        GEOMETRY 01 · 반원·원에서의 선분 길이 비교
+                      </span>
+                      <h4 className="text-sm sm:text-base font-extrabold text-slate-900">
+                        반지름 R = (a+b)/2 vs 수선 높이 h = √(ab) vs 조화선분 = 2ab/(a+b)
+                      </h4>
+                    </div>
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-extrabold ${
+                        geoSim.isEqual
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                          : 'bg-blue-50 text-blue-800 border border-blue-200'
+                      }`}
+                    >
+                      {geoSim.isEqual ? 'a = b (수선 P가 원의 정중앙 M과 일치!)' : '빗변(반지름) > 높이(기하평균)'}
+                    </span>
+                  </div>
+
+                  {/* Interactive Circle/Semicircle SVG */}
+                  <div className="rounded-xl border border-slate-100 bg-slate-950 p-3 text-white">
+                    <svg
+                      viewBox={`0 0 380 ${circleSvgGeometry.viewHeight}`}
+                      className="w-full h-auto max-h-[250px] overflow-visible"
+                      role="img"
+                      aria-label={`지름이 a+b=${geoSim.diameter}인 원에서 산술평균 반지름 ${geoSim.arith}와 기하평균 높이 ${geoSim.geom}를 비교하는 기하 시뮬레이션`}
+                    >
+                      {/* Background Grid Lines */}
+                      <line
+                        x1="20"
+                        y1={circleSvgGeometry.cy}
+                        x2="360"
+                        y2={circleSvgGeometry.cy}
+                        stroke="rgba(148,163,184,0.2)"
+                        strokeDasharray="3 3"
+                      />
+                      <line
+                        x1={circleSvgGeometry.cx}
+                        y1="18"
+                        x2={circleSvgGeometry.cx}
+                        y2={circleSvgGeometry.viewHeight - 18}
+                        stroke="rgba(148,163,184,0.2)"
+                        strokeDasharray="3 3"
+                      />
+
+                      {/* Lower Half Circle (when full circle is enabled) */}
+                      {showFullCircle && (
+                        <circle
+                          cx={circleSvgGeometry.cx}
+                          cy={circleSvgGeometry.cy}
+                          r={circleSvgGeometry.radiusPx}
+                          fill="rgba(59,130,246,0.05)"
+                          stroke="rgba(148,163,184,0.35)"
+                          strokeWidth="1.5"
+                          strokeDasharray="5 4"
+                        />
+                      )}
+
+                      {/* Upper Semicircle Arc */}
+                      <path
+                        d={`M ${circleSvgGeometry.ax} ${circleSvgGeometry.cy} A ${circleSvgGeometry.radiusPx} ${circleSvgGeometry.radiusPx} 0 0 1 ${circleSvgGeometry.bx} ${circleSvgGeometry.cy}`}
+                        fill="rgba(59,130,246,0.12)"
+                        stroke="#60a5fa"
+                        strokeWidth="2.5"
+                      />
+
+                      {/* Inscribed Right Triangle APB (dashed chords AP and BP showing similarity) */}
+                      <line
+                        x1={circleSvgGeometry.ax}
+                        y1={circleSvgGeometry.cy}
+                        x2={circleSvgGeometry.px}
+                        y2={circleSvgGeometry.py}
+                        stroke="rgba(148,163,184,0.45)"
+                        strokeWidth="1.2"
+                        strokeDasharray="3 3"
+                      />
+                      <line
+                        x1={circleSvgGeometry.bx}
+                        y1={circleSvgGeometry.cy}
+                        x2={circleSvgGeometry.px}
+                        y2={circleSvgGeometry.py}
+                        stroke="rgba(148,163,184,0.45)"
+                        strokeWidth="1.2"
+                        strokeDasharray="3 3"
+                      />
+
+                      {/* Highlight Right Triangle OPH */}
+                      <polygon
+                        points={`${circleSvgGeometry.cx},${circleSvgGeometry.cy} ${circleSvgGeometry.hx},${circleSvgGeometry.cy} ${circleSvgGeometry.px},${circleSvgGeometry.py}`}
+                        fill="rgba(99,102,241,0.22)"
+                        stroke="none"
+                      />
+
+                      {/* Segment AH = a (Sky Blue) */}
+                      <line
+                        x1={circleSvgGeometry.ax}
+                        y1={circleSvgGeometry.cy}
+                        x2={circleSvgGeometry.hx}
+                        y2={circleSvgGeometry.cy}
+                        stroke="#38bdf8"
+                        strokeWidth="4"
+                      />
+                      {/* Segment HB = b (Violet) */}
+                      <line
+                        x1={circleSvgGeometry.hx}
+                        y1={circleSvgGeometry.cy}
+                        x2={circleSvgGeometry.bx}
+                        y2={circleSvgGeometry.cy}
+                        stroke="#c084fc"
+                        strokeWidth="4"
+                      />
+
+                      {/* Center Vertical Radius OM = (a+b)/2 (dashed reference) */}
+                      <line
+                        x1={circleSvgGeometry.cx}
+                        y1={circleSvgGeometry.cy}
+                        x2={circleSvgGeometry.cx}
+                        y2={circleSvgGeometry.cy - circleSvgGeometry.radiusPx}
+                        stroke="rgba(96,165,250,0.55)"
+                        strokeWidth="1.8"
+                        strokeDasharray="4 3"
+                      />
+
+                      {/* Hypotenuse Radius OP = (a+b)/2 (Arithmetic Mean, Blue) */}
+                      <line
+                        x1={circleSvgGeometry.cx}
+                        y1={circleSvgGeometry.cy}
+                        x2={circleSvgGeometry.px}
+                        y2={circleSvgGeometry.py}
+                        stroke="#3b82f6"
+                        strokeWidth="3.5"
+                      />
+
+                      {/* Harmonic Mean Segment PQ along OP (Emerald) */}
+                      {!geoSim.isEqual && (
+                        <>
+                          <line
+                            x1={circleSvgGeometry.hx}
+                            y1={circleSvgGeometry.cy}
+                            x2={circleSvgGeometry.qx}
+                            y2={circleSvgGeometry.qy}
+                            stroke="rgba(16,185,129,0.65)"
+                            strokeWidth="1.5"
+                            strokeDasharray="2 2"
+                          />
+                          <line
+                            x1={circleSvgGeometry.qx}
+                            y1={circleSvgGeometry.qy}
+                            x2={circleSvgGeometry.px}
+                            y2={circleSvgGeometry.py}
+                            stroke="#10b981"
+                            strokeWidth="4"
+                          />
+                        </>
+                      )}
+
+                      {/* Altitude PH = sqrt(ab) (Geometric Mean, Amber/Indigo bright) */}
+                      <line
+                        x1={circleSvgGeometry.hx}
+                        y1={circleSvgGeometry.cy}
+                        x2={circleSvgGeometry.px}
+                        y2={circleSvgGeometry.py}
+                        stroke="#f59e0b"
+                        strokeWidth="3.5"
+                      />
+
+                      {/* Key Points */}
+                      <circle cx={circleSvgGeometry.ax} cy={circleSvgGeometry.cy} r="4" fill="#38bdf8" />
+                      <circle cx={circleSvgGeometry.bx} cy={circleSvgGeometry.cy} r="4" fill="#c084fc" />
+                      <circle cx={circleSvgGeometry.cx} cy={circleSvgGeometry.cy} r="4.5" fill="#60a5fa" />
+                      <circle cx={circleSvgGeometry.hx} cy={circleSvgGeometry.cy} r="4.5" fill="#f59e0b" />
+                      <circle cx={circleSvgGeometry.px} cy={circleSvgGeometry.py} r="5" fill="#fbbf24" />
+                      <circle
+                        cx={circleSvgGeometry.cx}
+                        cy={circleSvgGeometry.cy - circleSvgGeometry.radiusPx}
+                        r="3.5"
+                        fill="#60a5fa"
+                      />
+
+                      {/* Labels */}
+                      <text x={circleSvgGeometry.ax - 4} y={circleSvgGeometry.cy + 18} fill="#94a3b8" fontSize="11" fontWeight="bold" textAnchor="middle">
+                        A
+                      </text>
+                      <text x={circleSvgGeometry.bx + 4} y={circleSvgGeometry.cy + 18} fill="#94a3b8" fontSize="11" fontWeight="bold" textAnchor="middle">
+                        B
+                      </text>
+                      <text x={circleSvgGeometry.cx} y={circleSvgGeometry.cy + 18} fill="#60a5fa" fontSize="11" fontWeight="bold" textAnchor="middle">
+                        O(중심)
+                      </text>
+                      <text
+                        x={circleSvgGeometry.hx}
+                        y={Math.abs(circleSvgGeometry.hx - circleSvgGeometry.cx) < 22 ? circleSvgGeometry.cy + 31 : circleSvgGeometry.cy + 18}
+                        fill="#fbbf24"
+                        fontSize="11"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                      >
+                        H
+                      </text>
+                      <text x={circleSvgGeometry.px} y={circleSvgGeometry.py - 8} fill="#fde68a" fontSize="11" fontWeight="bold" textAnchor="middle">
+                        P (√ab={geoSim.geom})
+                      </text>
+                      <text
+                        x={circleSvgGeometry.cx}
+                        y={circleSvgGeometry.cy - circleSvgGeometry.radiusPx - 7}
+                        fill="#93c5fd"
+                        fontSize="10"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                      >
+                        반지름 R=(a+b)/2={geoSim.arith}
+                      </text>
+
+                      {/* Segment a and b labels */}
+                      <text
+                        x={(circleSvgGeometry.ax + circleSvgGeometry.hx) / 2}
+                        y={circleSvgGeometry.cy - 6}
+                        fill="#38bdf8"
+                        fontSize="11"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                      >
+                        a={geoSim.a}
+                      </text>
+                      <text
+                        x={(circleSvgGeometry.hx + circleSvgGeometry.bx) / 2}
+                        y={circleSvgGeometry.cy - 6}
+                        fill="#c084fc"
+                        fontSize="11"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                      >
+                        b={geoSim.b}
+                      </text>
+                    </svg>
+
+                    {/* Length Comparison Bar Meters */}
+                    <div className="mt-2 pt-2.5 border-t border-white/10 space-y-1.5 text-xs">
+                      <div className="grid grid-cols-[120px_1fr_64px] items-center gap-2">
+                        <span className="font-bold text-sky-300">산술 반지름 (a+b)/2</span>
+                        <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                          <div className="h-full rounded-full bg-blue-500 transition-all duration-150" style={{ width: '100%' }} />
+                        </div>
+                        <span className="mono font-extrabold text-right text-sky-200">{geoSim.arith}</span>
+                      </div>
+                      <div className="grid grid-cols-[120px_1fr_64px] items-center gap-2">
+                        <span className="font-bold text-amber-300">기하 수선 √(ab)</span>
+                        <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-amber-400 transition-all duration-150"
+                            style={{ width: `${Math.min(100, (geoSim.geom / (geoSim.arith || 1)) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="mono font-extrabold text-right text-amber-200">{geoSim.geom}</span>
+                      </div>
+                      <div className="grid grid-cols-[120px_1fr_64px] items-center gap-2">
+                        <span className="font-bold text-emerald-300">조화 선분 2ab/(a+b)</span>
+                        <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-emerald-400 transition-all duration-150"
+                            style={{ width: `${Math.min(100, (geoSim.harm / (geoSim.arith || 1)) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="mono font-extrabold text-right text-emerald-200">{geoSim.harm}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-blue-50/80 border border-blue-200/80 px-3 py-2 text-xs text-slate-700 leading-relaxed">
+                    <strong className="text-blue-900">원·반원 기하학적 원리:</strong> 직각삼각형 <span className="mono font-bold">△OPH</span>에서 빗변(반지름)의 길이는{' '}
+                    <span className="mono font-bold text-blue-700">OP = (a+b)/2 = {geoSim.arith}</span>이고, 수선의 높이는{' '}
+                    <span className="mono font-bold text-amber-700">PH = √(ab) = {geoSim.geom}</span>, 밑변은{' '}
+                    <span className="mono font-bold">|a−b|/2 = {geoSim.centerOffset}</span>입니다. 직각삼각형의 빗변은 항상 높이보다 길거나 같으므로{' '}
+                    <span className="mono font-extrabold text-slate-900">(a+b)/2 ≥ √(ab)</span>가 성립합니다!
+                  </div>
+                </div>
+              )}
+
+              {/* PANEL 2: Square & Rectangle Area Comparison */}
+              {(simViewMode === 'both' || simViewMode === 'area') && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 flex flex-col justify-between">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-indigo-600">
+                        GEOMETRY 02 · 정사각형·직사각형 면적(넓이) 비교
+                      </span>
+                      <h4 className="text-sm sm:text-base font-extrabold text-slate-900">
+                        정사각형 넓이 ((a+b)/2)² vs 직사각형 넓이 ab &amp; 4분할 바람개비
+                      </h4>
+                    </div>
+                    <span className="rounded-full bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 text-xs font-extrabold text-indigo-800 mono">
+                      넓이 차 = {geoSim.areaDiff}
+                    </span>
+                  </div>
+
+                  {/* Area Comparison SVG: Left = Square ((a+b)/2)^2 vs Rectangle a*b, Right = Pinwheel (a+b)^2 = 4ab + (a-b)^2 */}
+                  <div className="rounded-xl border border-slate-100 bg-slate-950 p-3 text-white">
+                    {(() => {
+                      const maxDim = Math.max(geoSim.a, geoSim.b, geoSim.arith, 1);
+                      const boxScale = 86 / maxDim;
+                      const sqSide = geoSim.arith * boxScale;
+                      const rectW = geoSim.a * boxScale;
+                      const rectH = geoSim.b * boxScale;
+
+                      // Pinwheel square of side (a+b) scaled to 108px
+                      const pinSize = 108;
+                      const pinScale = pinSize / (geoSim.diameter || 1);
+                      const pa = geoSim.a * pinScale;
+                      const pb = geoSim.b * pinScale;
+                      const holeSide = Math.abs(pa - pb);
+                      const holeStart = Math.min(pa, pb);
+
+                      return (
+                        <svg
+                          viewBox="0 0 380 185"
+                          className="w-full h-auto max-h-[215px]"
+                          role="img"
+                          aria-label={`정사각형 넓이 ${geoSim.arithSquareArea}와 직사각형 넓이 ${geoSim.rectArea}를 비교하는 도형 시뮬레이션`}
+                        >
+                          {/* Left Side: Overlay comparison of Square ((a+b)/2)^2 and Rectangle a*b */}
+                          <text x="95" y="16" fill="#93c5fd" fontSize="10.5" fontWeight="bold" textAnchor="middle">
+                            ① 둘레가 2(a+b)로 같은 정사각형 vs 직사각형
+                          </text>
+
+                          {/* Square of side (a+b)/2 */}
+                          <rect
+                            x={95 - sqSide / 2}
+                            y={92 - sqSide / 2}
+                            width={sqSide}
+                            height={sqSide}
+                            fill="rgba(59,130,246,0.22)"
+                            stroke="#60a5fa"
+                            strokeWidth="2"
+                            strokeDasharray="4 2"
+                          />
+                          {/* Rectangle of width a and height b */}
+                          <rect
+                            x={95 - rectW / 2}
+                            y={92 - rectH / 2}
+                            width={rectW}
+                            height={rectH}
+                            fill="rgba(245,158,11,0.32)"
+                            stroke="#fbbf24"
+                            strokeWidth="2"
+                          />
+
+                          <text x="95" y="156" fill="#bfdbfe" fontSize="10" fontWeight="bold" textAnchor="middle">
+                            파란 정사각형 넓이 = ((a+b)/2)² = {geoSim.arithSquareArea}
+                          </text>
+                          <text x="95" y="171" fill="#fde68a" fontSize="10" fontWeight="bold" textAnchor="middle">
+                            주황 직사각형 넓이 = a×b = {geoSim.rectArea}
+                          </text>
+
+                          {/* Divider */}
+                          <line x1="196" y1="12" x2="196" y2="174" stroke="rgba(148,163,184,0.2)" />
+
+                          {/* Right Side: (a+b)^2 = 4ab + (a-b)^2 Pinwheel Square */}
+                          <text x="290" y="16" fill="#c4b5fd" fontSize="10.5" fontWeight="bold" textAnchor="middle">
+                            ② (a+b)² = 4ab + (a−b)² 면적 분할
+                          </text>
+
+                          <g transform="translate(236, 28)">
+                            {/* Outer Square (a+b)^2 */}
+                            <rect
+                              x={0}
+                              y={0}
+                              width={pinSize}
+                              height={pinSize}
+                              fill="rgba(30,41,59,0.9)"
+                              stroke="#94a3b8"
+                              strokeWidth="1.5"
+                            />
+                            {/* 4 Rectangles of a x b */}
+                            {/* Top-Left: width pa, height pb */}
+                            <rect x={0} y={0} width={pa} height={pb} fill="rgba(99,102,241,0.42)" stroke="#818cf8" strokeWidth="1.2" />
+                            {/* Top-Right: width pb, height pa */}
+                            <rect x={pa} y={0} width={pb} height={pa} fill="rgba(59,130,246,0.42)" stroke="#60a5fa" strokeWidth="1.2" />
+                            {/* Bottom-Right: width pa, height pb */}
+                            <rect x={pb} y={pa} width={pa} height={pb} fill="rgba(99,102,241,0.42)" stroke="#818cf8" strokeWidth="1.2" />
+                            {/* Bottom-Left: width pb, height pa */}
+                            <rect x={0} y={pb} width={pb} height={pa} fill="rgba(59,130,246,0.42)" stroke="#60a5fa" strokeWidth="1.2" />
+
+                            {/* Center Hole Square (a-b)^2 */}
+                            {holeSide > 0.5 && (
+                              <rect
+                                x={holeStart}
+                                y={holeStart}
+                                width={holeSide}
+                                height={holeSide}
+                                fill="rgba(244,63,94,0.45)"
+                                stroke="#fb7185"
+                                strokeWidth="1.8"
+                              />
+                            )}
+                          </g>
+
+                          <text x="290" y="156" fill="#a5b4fc" fontSize="10" fontWeight="bold" textAnchor="middle">
+                            전체 (a+b)²={geoSim.bigSquareArea} / 4ab={geoSim.fourRectArea}
+                          </text>
+                          <text x="290" y="171" fill="#fda4af" fontSize="10" fontWeight="bold" textAnchor="middle">
+                            가운데 빈틈 (a−b)² = {geoSim.innerHoleArea} {geoSim.isEqual ? '(빈틈 0!)' : '> 0'}
+                          </text>
+                        </svg>
+                      );
+                    })()}
+
+                    {/* Area Comparison Bar Meters */}
+                    <div className="mt-2 pt-2.5 border-t border-white/10 space-y-1.5 text-xs">
+                      <div className="grid grid-cols-[135px_1fr_64px] items-center gap-2">
+                        <span className="font-bold text-sky-300">정사각형 ((a+b)/2)²</span>
+                        <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                          <div className="h-full rounded-full bg-blue-500 transition-all duration-150" style={{ width: '100%' }} />
+                        </div>
+                        <span className="mono font-extrabold text-right text-sky-200">{geoSim.arithSquareArea}</span>
+                      </div>
+                      <div className="grid grid-cols-[135px_1fr_64px] items-center gap-2">
+                        <span className="font-bold text-amber-300">직사각형 넓이 a×b</span>
+                        <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-amber-400 transition-all duration-150"
+                            style={{ width: `${Math.min(100, (geoSim.rectArea / (geoSim.arithSquareArea || 1)) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="mono font-extrabold text-right text-amber-200">{geoSim.rectArea}</span>
+                      </div>
+                      <div className="grid grid-cols-[135px_1fr_64px] items-center gap-2">
+                        <span className="font-bold text-rose-300">넓이 차 (a−b)²/4</span>
+                        <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-rose-400 transition-all duration-150"
+                            style={{ width: `${Math.min(100, (geoSim.areaDiff / (geoSim.arithSquareArea || 1)) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="mono font-extrabold text-right text-rose-200">{geoSim.areaDiff}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-indigo-50/80 border border-indigo-200/80 px-3 py-2 text-xs text-slate-700 leading-relaxed">
+                    <strong className="text-indigo-900">사각형 면적 원리:</strong> 한 변이 <span className="mono font-bold">(a+b)/2</span>인 정사각형의 넓이{' '}
+                    <span className="mono font-bold text-blue-700">{geoSim.arithSquareArea}</span>는 가로 <span className="mono">a</span>, 세로 <span className="mono">b</span>인 직사각형의 넓이{' '}
+                    <span className="mono font-bold text-amber-700">ab = {geoSim.rectArea}</span>보다 항상{' '}
+                    <span className="mono font-bold text-rose-700">(a−b)²/4 = {geoSim.areaDiff}</span>만큼 크거나 같습니다. 양변에 루트를 씌우면{' '}
+                    <span className="mono font-extrabold text-slate-900">(a+b)/2 ≥ √(ab)</span>가 됩니다!
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            {/* Left: Collected Clues Table */}
+            <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                  <span className="text-sm font-bold text-slate-900">
+                    수집한 양수 (a, b) 단서 기록표 (3개 이상 수집)
+                  </span>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    표의 행을 클릭하면 해당 (a, b) 값을 위 도형 시뮬레이터로 즉시 불러옵니다.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
+                    현재 {state.examples.length}개 (권장 3개 이상)
+                  </span>
+                  {state.examples.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onRequestConfirm('단서 표 초기화', '입력한 양수 (a, b) 사례를 모두 지울까요?', () => {
+                          onUpdate((prev) => ({ ...prev, examples: [] }));
+                        })
+                      }
+                      className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      초기화
+                    </button>
+                  )}
+                </div>
               </div>
 
               {inputWarning && (
@@ -204,39 +868,50 @@ export const Lesson6View: React.FC<Lesson6ViewProps> = ({
                   <thead>
                     <tr className="bg-slate-100 text-slate-700">
                       <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">(a, b)</th>
-                      <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">(a+b)/2</th>
-                      <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">√(ab)</th>
-                      <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">2ab/(a+b)</th>
-                      <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">비교 결과</th>
+                      <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">반지름 (a+b)/2</th>
+                      <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">높이 √(ab)</th>
+                      <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">조화 2ab/(a+b)</th>
+                      <th className="py-2 px-2.5 text-center font-bold border-b border-slate-200">길이·면적 비교</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {state.examples.length > 0 ? (
-                      state.examples.map((item) => (
-                        <tr key={`${item.a}-${item.b}`} className="text-center">
-                          <td className="py-2 px-2.5 mono font-bold">
-                            ({item.a}, {item.b})
-                          </td>
-                          <td className="py-2 px-2.5 mono font-semibold text-blue-700">{item.arith}</td>
-                          <td className="py-2 px-2.5 mono font-semibold text-indigo-700">{item.geom}</td>
-                          <td className="py-2 px-2.5 mono font-semibold text-emerald-700">{item.harm}</td>
-                          <td className="py-2 px-2.5">
-                            {item.isEqual ? (
-                              <span className="rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-bold text-amber-800">
-                                a=b 등호 성립 (=)
-                              </span>
-                            ) : (
-                              <span className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-800">
-                                산술 &gt; 기하 &gt; 조화
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))
+                      state.examples.map((item) => {
+                        const isSimSelected =
+                          Math.abs(item.a - simA) < 1e-6 && Math.abs(item.b - simB) < 1e-6;
+                        return (
+                          <tr
+                            key={`${item.a}-${item.b}`}
+                            onClick={() => syncSimPair(item.a, item.b)}
+                            className={`text-center cursor-pointer transition-colors ${
+                              isSimSelected ? 'bg-blue-50/70' : 'hover:bg-slate-50'
+                            }`}
+                            title="클릭하여 도형 시뮬레이터에서 (a, b) 길이·넓이 확인"
+                          >
+                            <td className="py-2 px-2.5 mono font-bold">
+                              ({item.a}, {item.b})
+                            </td>
+                            <td className="py-2 px-2.5 mono font-semibold text-blue-700">{item.arith}</td>
+                            <td className="py-2 px-2.5 mono font-semibold text-indigo-700">{item.geom}</td>
+                            <td className="py-2 px-2.5 mono font-semibold text-emerald-700">{item.harm}</td>
+                            <td className="py-2 px-2.5">
+                              {item.isEqual ? (
+                                <span className="rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-bold text-amber-800">
+                                  a=b 등호 성립 (=)
+                                </span>
+                              ) : (
+                                <span className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-800">
+                                  산술 &gt; 기하 &gt; 조화
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan={5} className="py-6 text-center text-slate-500">
-                          추천 순서쌍 버튼을 눌러 (4, 4), (1, 9), (2, 8) 등을 실험해 보세요.
+                          위 도형 시뮬레이터의 추천 순서쌍 버튼을 눌러 (4, 4), (1, 9), (2, 8) 등을 실험해 보세요.
                         </td>
                       </tr>
                     )}
