@@ -1699,6 +1699,35 @@ export function validateClaim1(
   };
 }
 
+function sanitizeChoicesArray(arr: unknown, defaultLen = 4): (number | null)[] {
+  if (!Array.isArray(arr)) return Array(defaultLen).fill(null);
+  const result: (number | null)[] = [];
+  for (let i = 0; i < defaultLen; i++) {
+    const v = arr[i];
+    result.push(typeof v === 'number' && Number.isInteger(v) ? v : null);
+  }
+  return result;
+}
+
+function sanitizeBooleansArray(arr: unknown, defaultLen = 4): boolean[] {
+  if (!Array.isArray(arr)) return Array(defaultLen).fill(false);
+  const result: boolean[] = [];
+  for (let i = 0; i < defaultLen; i++) {
+    result.push(Boolean(arr[i]));
+  }
+  return result;
+}
+
+function sanitizeNumbersArray(arr: unknown, defaultLen = 4): number[] {
+  if (!Array.isArray(arr)) return Array(defaultLen).fill(0);
+  const result: number[] = [];
+  for (let i = 0; i < defaultLen; i++) {
+    const v = arr[i];
+    result.push(typeof v === 'number' && Number.isFinite(v) ? v : 0);
+  }
+  return result;
+}
+
 export function cleanStudentState(raw: unknown): StudentRecord {
   if (!raw || typeof raw !== 'object') {
     throw new Error('이 통합 활동지의 결과 파일이 아닙니다.');
@@ -1749,57 +1778,57 @@ export function cleanStudentState(raw: unknown): StudentRecord {
       ...base.l3,
       ...rawL3,
       parityExamples: Array.isArray(rawL3.parityExamples) ? rawL3.parityExamples : base.l3.parityExamples,
-      prob1Choices: Array.isArray(rawL3.prob1Choices) && rawL3.prob1Choices.length === 4 ? rawL3.prob1Choices : base.l3.prob1Choices,
-      prob1Verified: Array.isArray(rawL3.prob1Verified) && rawL3.prob1Verified.length === 4 ? rawL3.prob1Verified : base.l3.prob1Verified,
-      prob1Hints: Array.isArray(rawL3.prob1Hints) && rawL3.prob1Hints.length === 4 ? rawL3.prob1Hints : base.l3.prob1Hints,
+      prob1Choices: sanitizeChoicesArray(rawL3.prob1Choices, 4),
+      prob1Verified: sanitizeBooleansArray(rawL3.prob1Verified, 4),
+      prob1Hints: sanitizeNumbersArray(rawL3.prob1Hints, 4),
       mod3Examples: Array.isArray(rawL3.mod3Examples) ? rawL3.mod3Examples : base.l3.mod3Examples,
-      prob2Choices: Array.isArray(rawL3.prob2Choices) && rawL3.prob2Choices.length === 4 ? rawL3.prob2Choices : base.l3.prob2Choices,
-      prob2Verified: Array.isArray(rawL3.prob2Verified) && rawL3.prob2Verified.length === 4 ? rawL3.prob2Verified : base.l3.prob2Verified,
-      prob2Hints: Array.isArray(rawL3.prob2Hints) && rawL3.prob2Hints.length === 4 ? rawL3.prob2Hints : base.l3.prob2Hints,
+      prob2Choices: sanitizeChoicesArray(rawL3.prob2Choices, 4),
+      prob2Verified: sanitizeBooleansArray(rawL3.prob2Verified, 4),
+      prob2Hints: sanitizeNumbersArray(rawL3.prob2Hints, 4),
     },
     l4: {
       ...base.l4,
       ...rawL4,
       fractionExamples: Array.isArray(rawL4.fractionExamples) ? rawL4.fractionExamples : base.l4.fractionExamples,
-      prob1Choices: Array.isArray(rawL4.prob1Choices) && rawL4.prob1Choices.length === 4 ? rawL4.prob1Choices : base.l4.prob1Choices,
-      prob1Verified: Array.isArray(rawL4.prob1Verified) && rawL4.prob1Verified.length === 4 ? rawL4.prob1Verified : base.l4.prob1Verified,
-      prob1Hints: Array.isArray(rawL4.prob1Hints) && rawL4.prob1Hints.length === 4 ? rawL4.prob1Hints : base.l4.prob1Hints,
-      prob2Choices: Array.isArray(rawL4.prob2Choices) && rawL4.prob2Choices.length === 4 ? rawL4.prob2Choices : base.l4.prob2Choices,
-      prob2Verified: Array.isArray(rawL4.prob2Verified) && rawL4.prob2Verified.length === 4 ? rawL4.prob2Verified : base.l4.prob2Verified,
-      prob2Hints: Array.isArray(rawL4.prob2Hints) && rawL4.prob2Hints.length === 4 ? rawL4.prob2Hints : base.l4.prob2Hints,
+      prob1Choices: sanitizeChoicesArray(rawL4.prob1Choices, 4),
+      prob1Verified: sanitizeBooleansArray(rawL4.prob1Verified, 4),
+      prob1Hints: sanitizeNumbersArray(rawL4.prob1Hints, 4),
+      prob2Choices: sanitizeChoicesArray(rawL4.prob2Choices, 4),
+      prob2Verified: sanitizeBooleansArray(rawL4.prob2Verified, 4),
+      prob2Hints: sanitizeNumbersArray(rawL4.prob2Hints, 4),
     },
     l5: {
       ...base.l5,
       ...rawL5,
       examples: Array.isArray(rawL5.examples) ? rawL5.examples : base.l5.examples,
-      prob1Choices: Array.isArray(rawL5.prob1Choices) && rawL5.prob1Choices.length === 4 ? rawL5.prob1Choices : base.l5.prob1Choices,
-      prob1Verified: Array.isArray(rawL5.prob1Verified) && rawL5.prob1Verified.length === 4 ? rawL5.prob1Verified : base.l5.prob1Verified,
-      prob1Hints: Array.isArray(rawL5.prob1Hints) && rawL5.prob1Hints.length === 4 ? rawL5.prob1Hints : base.l5.prob1Hints,
-      prob2Choices: Array.isArray(rawL5.prob2Choices) && rawL5.prob2Choices.length === 4 ? rawL5.prob2Choices : base.l5.prob2Choices,
-      prob2Verified: Array.isArray(rawL5.prob2Verified) && rawL5.prob2Verified.length === 4 ? rawL5.prob2Verified : base.l5.prob2Verified,
-      prob2Hints: Array.isArray(rawL5.prob2Hints) && rawL5.prob2Hints.length === 4 ? rawL5.prob2Hints : base.l5.prob2Hints,
+      prob1Choices: sanitizeChoicesArray(rawL5.prob1Choices, 4),
+      prob1Verified: sanitizeBooleansArray(rawL5.prob1Verified, 4),
+      prob1Hints: sanitizeNumbersArray(rawL5.prob1Hints, 4),
+      prob2Choices: sanitizeChoicesArray(rawL5.prob2Choices, 4),
+      prob2Verified: sanitizeBooleansArray(rawL5.prob2Verified, 4),
+      prob2Hints: sanitizeNumbersArray(rawL5.prob2Hints, 4),
     },
     l6: {
       ...base.l6,
       ...rawL6,
       examples: Array.isArray(rawL6.examples) ? rawL6.examples : base.l6.examples,
-      prob1Choices: Array.isArray(rawL6.prob1Choices) && rawL6.prob1Choices.length === 4 ? rawL6.prob1Choices : base.l6.prob1Choices,
-      prob1Verified: Array.isArray(rawL6.prob1Verified) && rawL6.prob1Verified.length === 4 ? rawL6.prob1Verified : base.l6.prob1Verified,
-      prob1Hints: Array.isArray(rawL6.prob1Hints) && rawL6.prob1Hints.length === 4 ? rawL6.prob1Hints : base.l6.prob1Hints,
-      prob2Choices: Array.isArray(rawL6.prob2Choices) && rawL6.prob2Choices.length === 4 ? rawL6.prob2Choices : base.l6.prob2Choices,
-      prob2Verified: Array.isArray(rawL6.prob2Verified) && rawL6.prob2Verified.length === 4 ? rawL6.prob2Verified : base.l6.prob2Verified,
-      prob2Hints: Array.isArray(rawL6.prob2Hints) && rawL6.prob2Hints.length === 4 ? rawL6.prob2Hints : base.l6.prob2Hints,
+      prob1Choices: sanitizeChoicesArray(rawL6.prob1Choices, 4),
+      prob1Verified: sanitizeBooleansArray(rawL6.prob1Verified, 4),
+      prob1Hints: sanitizeNumbersArray(rawL6.prob1Hints, 4),
+      prob2Choices: sanitizeChoicesArray(rawL6.prob2Choices, 4),
+      prob2Verified: sanitizeBooleansArray(rawL6.prob2Verified, 4),
+      prob2Hints: sanitizeNumbersArray(rawL6.prob2Hints, 4),
     },
     l7: {
       ...base.l7,
       ...rawL7,
       examples: Array.isArray(rawL7.examples) ? rawL7.examples : base.l7.examples,
-      prob1Choices: Array.isArray(rawL7.prob1Choices) && rawL7.prob1Choices.length === 4 ? rawL7.prob1Choices : base.l7.prob1Choices,
-      prob1Verified: Array.isArray(rawL7.prob1Verified) && rawL7.prob1Verified.length === 4 ? rawL7.prob1Verified : base.l7.prob1Verified,
-      prob1Hints: Array.isArray(rawL7.prob1Hints) && rawL7.prob1Hints.length === 4 ? rawL7.prob1Hints : base.l7.prob1Hints,
-      prob2Choices: Array.isArray(rawL7.prob2Choices) && rawL7.prob2Choices.length === 4 ? rawL7.prob2Choices : base.l7.prob2Choices,
-      prob2Verified: Array.isArray(rawL7.prob2Verified) && rawL7.prob2Verified.length === 4 ? rawL7.prob2Verified : base.l7.prob2Verified,
-      prob2Hints: Array.isArray(rawL7.prob2Hints) && rawL7.prob2Hints.length === 4 ? rawL7.prob2Hints : base.l7.prob2Hints,
+      prob1Choices: sanitizeChoicesArray(rawL7.prob1Choices, 4),
+      prob1Verified: sanitizeBooleansArray(rawL7.prob1Verified, 4),
+      prob1Hints: sanitizeNumbersArray(rawL7.prob1Hints, 4),
+      prob2Choices: sanitizeChoicesArray(rawL7.prob2Choices, 4),
+      prob2Verified: sanitizeBooleansArray(rawL7.prob2Verified, 4),
+      prob2Hints: sanitizeNumbersArray(rawL7.prob2Hints, 4),
     },
   };
 
@@ -1807,6 +1836,107 @@ export function cleanStudentState(raw: unknown): StudentRecord {
     ensureTeacherEval(cleanedResult);
   }
   return cleanedResult;
+}
+
+/**
+ * Intelligent bidirectional merger:
+ * Preserves student-authored inputs for lessons 1~7 when local has newer or populated data,
+ * while always accepting teacher evaluations and memos from the remote Firestore database.
+ */
+export function mergeStudentStates(remote: StudentRecord, local: StudentRecord): StudentRecord {
+  if (!remote || remote.kind !== 'proof2lesson-v1') return local;
+  if (!local || local.kind !== 'proof2lesson-v1') return remote;
+
+  const result: StudentRecord = { ...remote };
+
+  // Teacher feedback & memo are authoritative from remote
+  result.evaluation = remote.evaluation || local.evaluation;
+  result.teacherMemo = remote.teacherMemo || local.teacherMemo || '';
+
+  // Metadata
+  result.group = remote.group || local.group || '';
+  result.code = remote.code || local.code || '';
+
+  const localTime = local.updatedAt ? new Date(local.updatedAt).getTime() : 0;
+  const remoteTime = remote.updatedAt ? new Date(remote.updatedAt).getTime() : 0;
+  const localIsNewer = localTime >= remoteTime;
+
+  const pickNewerOrFilled = <T extends Record<string, any>>(
+    remLesson: T,
+    locLesson: T,
+    hasContent: (item: T) => boolean
+  ): T => {
+    const remHas = hasContent(remLesson);
+    const locHas = hasContent(locLesson);
+    if (locHas && !remHas) return locLesson;
+    if (remHas && !locHas) return remLesson;
+    return localIsNewer ? locLesson : remLesson;
+  };
+
+  result.l1 = pickNewerOrFilled(
+    remote.l1,
+    local.l1,
+    (l) => Boolean(l.claim || l.proofText || l.examples?.length || l.reflection)
+  );
+  result.l2 = pickNewerOrFilled(
+    remote.l2,
+    local.l2,
+    (l) => Boolean(l.decision || l.proofText || l.counter || l.examples?.length || l.reflection)
+  );
+  result.l3 = pickNewerOrFilled(
+    remote.l3,
+    local.l3,
+    (l) => Boolean(l.prob1ProofText || l.prob2ProofText || l.parityExamples?.length || l.reflection1)
+  );
+  result.l4 = pickNewerOrFilled(
+    remote.l4,
+    local.l4,
+    (l) => Boolean(l.prob1ProofText || l.prob2ProofText || l.fractionExamples?.length || l.reflection1)
+  );
+  result.l5 = pickNewerOrFilled(
+    remote.l5,
+    local.l5,
+    (l) =>
+      Boolean(
+        l.prob1ProofText ||
+          l.prob2ProofText ||
+          l.equalityReason ||
+          l.examples?.length ||
+          l.reflection1 ||
+          l.reflection2
+      )
+  );
+  result.l6 = pickNewerOrFilled(
+    remote.l6,
+    local.l6,
+    (l) =>
+      Boolean(
+        l.prob1ProofText ||
+          l.prob2ProofText ||
+          l.harmonicReason ||
+          l.examples?.length ||
+          l.reflection1 ||
+          l.reflection2
+      )
+  );
+  result.l7 = pickNewerOrFilled(
+    remote.l7,
+    local.l7,
+    (l) =>
+      Boolean(
+        l.prob1ProofText ||
+          l.prob2ProofText ||
+          l.absDiffReason ||
+          l.examples?.length ||
+          l.reflection1 ||
+          l.reflection2
+      )
+  );
+
+  result.updatedAt =
+    localIsNewer && local.updatedAt ? local.updatedAt : remote.updatedAt || new Date().toISOString();
+
+  return result;
 }
 
 export function ensureTeacherEval(

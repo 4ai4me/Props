@@ -23,6 +23,7 @@ import {
   evaluateLevel7Completion,
   getTeacherEvaluationProgress,
   hasTeacherEvaluation,
+  mergeStudentStates,
 } from './utils/mathLogic';
 import {
   ADMIN_TEACHER_EMAIL,
@@ -45,10 +46,13 @@ import {
   Printer,
   CheckCircle2,
   AlertTriangle,
+  AlertCircle,
   LogOut,
   ShieldCheck,
   UserCheck,
   Award,
+  RotateCw,
+  Zap,
 } from 'lucide-react';
 
 export default function App() {
@@ -64,7 +68,18 @@ export default function App() {
     return 'gate';
   });
   const [approvedProfile, setApprovedProfile] =
-    useState<FirestoreStudentRegistrationDoc | null>(null);
+    useState<FirestoreStudentRegistrationDoc | null>(() => {
+      try {
+        const raw = localStorage.getItem('math_detective_approved_profile_v1');
+        if (raw) return JSON.parse(raw);
+      } catch {
+        // ignore
+      }
+      return null;
+    });
+
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   const [student, setStudent] = useState<StudentRecord>(() => {
     try {
@@ -169,6 +184,7 @@ export default function App() {
     }
 
     if (sessionMode === 'student' && approvedProfile?.studentKey) {
+      setCloudSyncStatus('saving');
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       syncTimerRef.current = setTimeout(async () => {
         try {
@@ -176,8 +192,11 @@ export default function App() {
             worksheetJson: JSON.stringify(student),
             updatedAt: serverTimestamp(),
           });
-        } catch {
-          // local storage already saved
+          setCloudSyncStatus('saved');
+          setLastSavedAt(new Date());
+        } catch (err) {
+          console.error('Firestore autosave failed:', err);
+          setCloudSyncStatus('error');
         }
       }, 900);
     }
@@ -242,6 +261,27 @@ export default function App() {
     setConfirmDialog({ title, message, onConfirm });
   };
 
+  const handleManualForceSave = async () => {
+    if (!approvedProfile?.studentKey) {
+      showToast('승인된 학생 계정 정보가 없어 클라우드에 저장할 수 없습니다.', 'warn');
+      return;
+    }
+    setCloudSyncStatus('saving');
+    try {
+      await updateDoc(doc(db, 'student_registrations', approvedProfile.studentKey), {
+        worksheetJson: JSON.stringify(student),
+        updatedAt: serverTimestamp(),
+      });
+      setCloudSyncStatus('saved');
+      setLastSavedAt(new Date());
+      showToast('클라우드에 최신 활동지가 즉시 저장되었습니다.', 'good');
+    } catch (err) {
+      console.error('Manual force save failed:', err);
+      setCloudSyncStatus('error');
+      showToast('클라우드 저장 중 오류가 발생했습니다. 네트워크 연결을 확인하세요.', 'warn');
+    }
+  };
+
   const handleStudentApprovedLogin = useCallback(
     (regDoc: FirestoreStudentRegistrationDoc, worksheet: StudentRecord) => {
       const groupLabel = `${regDoc.school} ${regDoc.grade}학년 ${regDoc.classNum}반`.slice(0, 25);
@@ -249,13 +289,20 @@ export default function App() {
         regDoc.studentNum
       ).padStart(2, '0')}_${regDoc.name}`.slice(0, 25);
 
-      const hydrated: StudentRecord = {
-        ...worksheet,
-        group: groupLabel,
-        code: codeLabel,
-      };
       setApprovedProfile(regDoc);
-      setStudent(hydrated);
+      try {
+        localStorage.setItem('math_detective_approved_profile_v1', JSON.stringify(regDoc));
+        localStorage.setItem('math_detective_active_student_key_v1', regDoc.studentKey);
+      } catch {}
+
+      setStudent((prev) => {
+        const merged = mergeStudentStates(worksheet, prev);
+        merged.group = groupLabel;
+        merged.code = codeLabel;
+        return merged;
+      });
+      setCloudSyncStatus('saved');
+      setLastSavedAt(new Date());
       setSessionMode('student');
     },
     []
@@ -275,6 +322,7 @@ export default function App() {
     }
     try {
       localStorage.removeItem('math_detective_active_student_key_v1');
+      localStorage.removeItem('math_detective_approved_profile_v1');
     } catch {}
     setApprovedProfile(null);
     setSessionMode('gate');
@@ -379,6 +427,21 @@ export default function App() {
                       </>
                     )}
                   </span>
+                  {sessionMode === 'student' && (
+                    <button
+                      type="button"
+                      onClick={handleManualForceSave}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 text-xs font-bold transition-all shadow-xs active:scale-95"
+                      title="현재 작성한 활동지를 교사 서버(클라우드)에 즉시 저장합니다"
+                    >
+                      {cloudSyncStatus === 'saving' ? (
+                        <RotateCw className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Zap className="h-3.5 w-3.5 fill-amber-300 text-amber-300" />
+                      )}
+                      <span>{cloudSyncStatus === 'saving' ? '저장 중…' : '지금 저장'}</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleExitMode}
@@ -660,9 +723,62 @@ export default function App() {
                       );
                     })()}
 
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-100/90 border border-slate-200/80 px-3.5 py-2 rounded-xl">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>실시간 탐구 기록 보관 중</span>
+                    {/* Real-time Cloud Save Status Indicator & Manual Force Save */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <div
+                        className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border transition-colors ${
+                          cloudSyncStatus === 'saving'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : cloudSyncStatus === 'saved'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : cloudSyncStatus === 'error'
+                            ? 'bg-rose-50 text-rose-800 border-rose-200 animate-pulse'
+                            : 'bg-slate-50 text-slate-700 border-slate-200'
+                        }`}
+                        title={
+                          cloudSyncStatus === 'saved' && lastSavedAt
+                            ? `마지막 클라우드 저장: ${lastSavedAt.toLocaleTimeString('ko-KR')}`
+                            : undefined
+                        }
+                      >
+                        {cloudSyncStatus === 'saving' && (
+                          <>
+                            <RotateCw className="h-3.5 w-3.5 animate-spin text-blue-600" />
+                            <span>클라우드 실시간 동기화 중…</span>
+                          </>
+                        )}
+                        {cloudSyncStatus === 'saved' && (
+                          <>
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                            <span>
+                              클라우드 저장 완료 (
+                              {lastSavedAt ? lastSavedAt.toLocaleTimeString('ko-KR') : '방금'})
+                            </span>
+                          </>
+                        )}
+                        {cloudSyncStatus === 'error' && (
+                          <>
+                            <AlertCircle className="h-3.5 w-3.5 text-rose-600" />
+                            <span>클라우드 저장 재시도 필요</span>
+                          </>
+                        )}
+                        {cloudSyncStatus === 'idle' && (
+                          <>
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            <span>로컬 및 클라우드 동기화 대기</span>
+                          </>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleManualForceSave}
+                        className="inline-flex items-center gap-1 rounded-xl border border-blue-200 bg-blue-50/90 hover:bg-blue-100 text-blue-700 px-3 py-2 text-xs font-extrabold transition-colors shadow-2xs active:scale-95"
+                        title="작성한 탐구 내용을 지금 즉시 교사 서버(클라우드)로 전송하여 저장합니다"
+                      >
+                        <Zap className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                        <span>지금 저장</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1090,24 +1206,71 @@ export default function App() {
               <strong>5차시 절대부등식1 [문제 1·a²+b²≥ab]:</strong>{' '}
               <MathText text={printingStudent.l5?.prob1ProofText || '미작성'} />
             </div>
+            {printingStudent.l5?.equalityReason && (
+              <div className="border-b border-[#ccd5df] py-1.5 text-xs sm:text-sm whitespace-pre-wrap text-slate-700">
+                <strong>5차시 [등호 성립 조건 이유]:</strong> {printingStudent.l5.equalityReason}
+              </div>
+            )}
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
               <strong>5차시 절대부등식1 [문제 2·(a+b)²≥4ab 외]:</strong>{' '}
               <MathText text={printingStudent.l5?.prob2ProofText || '미작성'} />
             </div>
+            {printingStudent.l5?.reflection1 && (
+              <div className="border-b border-[#ccd5df] py-1.5 text-xs sm:text-sm whitespace-pre-wrap text-slate-700">
+                <strong>5차시 성찰 1:</strong> {printingStudent.l5.reflection1}
+              </div>
+            )}
+            {printingStudent.l5?.reflection2 && (
+              <div className="border-b border-[#ccd5df] py-1.5 text-xs sm:text-sm whitespace-pre-wrap text-slate-700">
+                <strong>5차시 성찰 2:</strong> {printingStudent.l5.reflection2}
+              </div>
+            )}
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
               <strong>6차시 절대부등식2 [문제 1·산술·기하평균]:</strong>{' '}
               <MathText text={printingStudent.l6?.prob1ProofText || '미작성'} />
             </div>
+            {printingStudent.l6?.harmonicReason && (
+              <div className="border-b border-[#ccd5df] py-1.5 text-xs sm:text-sm whitespace-pre-wrap text-slate-700">
+                <strong>6차시 [조화평균 유도 이유]:</strong> {printingStudent.l6.harmonicReason}
+              </div>
+            )}
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
               <strong>6차시 절대부등식2 [문제 2·역수·조화평균]:</strong>{' '}
               <MathText text={printingStudent.l6?.prob2ProofText || '미작성'} />
             </div>
+            {printingStudent.l6?.reflection1 && (
+              <div className="border-b border-[#ccd5df] py-1.5 text-xs sm:text-sm whitespace-pre-wrap text-slate-700">
+                <strong>6차시 성찰 1:</strong> {printingStudent.l6.reflection1}
+              </div>
+            )}
+            {printingStudent.l6?.reflection2 && (
+              <div className="border-b border-[#ccd5df] py-1.5 text-xs sm:text-sm whitespace-pre-wrap text-slate-700">
+                <strong>6차시 성찰 2:</strong> {printingStudent.l6.reflection2}
+              </div>
+            )}
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
-              <strong>7차시 절대부등식3 [문제 1·|a+b|≤|a|+|b|]:</strong> {printingStudent.l7?.prob1ProofText || '미작성'}
+              <strong><MathText text="7차시 절대부등식3 [문제 1·|a+b|≤|a|+|b|]:" /></strong>{' '}
+              <MathText text={printingStudent.l7?.prob1ProofText || '미작성'} />
             </div>
+            {printingStudent.l7?.absDiffReason && (
+              <div className="border-b border-[#ccd5df] py-1.5 text-xs sm:text-sm whitespace-pre-wrap text-slate-700">
+                <strong>7차시 [절댓값의 차 부호 판별 이유]:</strong> {printingStudent.l7.absDiffReason}
+              </div>
+            )}
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
-              <strong>7차시 절대부등식3 [문제 2·절댓값 차 부등식]:</strong> {printingStudent.l7?.prob2ProofText || '미작성'}
+              <strong><MathText text="7차시 절대부등식3 [문제 2·절댓값 차 부등식]:" /></strong>{' '}
+              <MathText text={printingStudent.l7?.prob2ProofText || '미작성'} />
             </div>
+            {printingStudent.l7?.reflection1 && (
+              <div className="border-b border-[#ccd5df] py-1.5 text-xs sm:text-sm whitespace-pre-wrap text-slate-700">
+                <strong>7차시 성찰 1:</strong> {printingStudent.l7.reflection1}
+              </div>
+            )}
+            {printingStudent.l7?.reflection2 && (
+              <div className="border-b border-[#ccd5df] py-1.5 text-xs sm:text-sm whitespace-pre-wrap text-slate-700">
+                <strong>7차시 성찰 2:</strong> {printingStudent.l7.reflection2}
+              </div>
+            )}
 
             <h3 className="text-lg font-bold pt-2">
               2. 교수자 역량 평가 ({EVAL_CRITERIA.length}개 영역, 각 0~3점)

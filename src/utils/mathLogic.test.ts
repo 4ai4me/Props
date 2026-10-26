@@ -32,6 +32,7 @@ import {
   validateClaim1,
   cleanStudentState,
   createInitialStudentState,
+  mergeStudentStates,
   csvSafe,
   evaluateLevel1Completion,
   evaluateLevel2Completion,
@@ -554,3 +555,75 @@ test('tokenizeMathRadicals parses parenthesized, numeric, variable, and bare squ
   const t5 = tokenizeMathRadicals('√');
   assert.deepEqual(t5, [{ type: 'radical', value: '', hasParens: false, raw: '√' }]);
 });
+
+test('cleanStudentState properly sanitizes and pads Lesson 5~7 choices, booleans, and hint arrays', () => {
+  const base = createInitialStudentState();
+  const rawData = {
+    ...base,
+    l5: {
+      ...base.l5,
+      prob1Choices: [0, 1], // partial array
+      prob1Verified: [true], // partial booleans
+      prob1Hints: [2],
+      equalityReason: '완전제곱식이 0 이상이기 때문',
+    },
+    l6: {
+      ...base.l6,
+      prob1Choices: [null, 2, 'invalid', 1],
+      harmonicReason: '역수의 산술기하평균에 의해 성립',
+    },
+    l7: {
+      ...base.l7,
+      absDiffReason: '양변 제곱 후 차를 계산',
+    },
+  };
+
+  const cleaned = cleanStudentState(rawData);
+  assert.equal(cleaned.l5.prob1Choices.length, 4);
+  assert.deepEqual(cleaned.l5.prob1Choices, [0, 1, null, null]);
+  assert.deepEqual(cleaned.l5.prob1Verified, [true, false, false, false]);
+  assert.deepEqual(cleaned.l5.prob1Hints, [2, 0, 0, 0]);
+  assert.equal(cleaned.l5.equalityReason, '완전제곱식이 0 이상이기 때문');
+
+  assert.equal(cleaned.l6.prob1Choices.length, 4);
+  assert.deepEqual(cleaned.l6.prob1Choices, [null, 2, null, 1]);
+  assert.equal(cleaned.l6.harmonicReason, '역수의 산술기하평균에 의해 성립');
+  assert.equal(cleaned.l7.absDiffReason, '양변 제곱 후 차를 계산');
+});
+
+test('mergeStudentStates preserves student work in lessons 5~7 while merging teacher evaluations from remote', () => {
+  const local = createInitialStudentState();
+  local.code = '10101';
+  local.group = '수학수사1반';
+  local.updatedAt = '2026-10-26T14:00:00.000Z';
+  local.l5.equalityReason = '로컬 작성: a=b일 때만 등호 성립';
+  local.l5.prob1ProofText = '(a - b/2)^2 + 3/4 b^2 >= 0';
+  local.l6.harmonicReason = '로컬 작성: 산술기하 평균 역수 부등식';
+  local.l7.absDiffReason = '로컬 작성: 삼각부등식 성립 원리';
+
+  const remote = createInitialStudentState();
+  remote.code = '10101';
+  remote.group = '수학수사1반';
+  remote.updatedAt = '2026-10-26T10:00:00.000Z'; // older remote
+  remote.evaluation = {
+    scores: [3, 3, 3, 3, 3, 3, 3],
+    feedback: '훌륭한 증명 과정입니다.',
+    nextStep: '심화 절대부등식 탐구',
+    evaluatedLessonCount: 7,
+  };
+  remote.teacherMemo = '교사 추가 메모';
+
+  const merged = mergeStudentStates(remote, local);
+
+  // Student-authored Lesson 5~7 inputs must be preserved from local
+  assert.equal(merged.l5.equalityReason, '로컬 작성: a=b일 때만 등호 성립');
+  assert.equal(merged.l5.prob1ProofText, '(a - b/2)^2 + 3/4 b^2 >= 0');
+  assert.equal(merged.l6.harmonicReason, '로컬 작성: 산술기하 평균 역수 부등식');
+  assert.equal(merged.l7.absDiffReason, '로컬 작성: 삼각부등식 성립 원리');
+
+  // Teacher feedback from remote must be preserved
+  assert.ok(merged.evaluation);
+  assert.equal(merged.evaluation?.feedback, '훌륭한 증명 과정입니다.');
+  assert.equal(merged.teacherMemo, '교사 추가 메모');
+});
+

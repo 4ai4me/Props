@@ -381,9 +381,24 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                       <div className="text-slate-600 whitespace-pre-wrap">
                         <strong>문제 1 (a²+b² ≥ ab):</strong> {student.l5?.prob1ProofText || '(미작성)'}
                       </div>
+                      {student.l5?.equalityReason && (
+                        <div className="text-slate-600 whitespace-pre-wrap">
+                          <strong>등호 조건 이유:</strong> {student.l5.equalityReason}
+                        </div>
+                      )}
                       <div className="text-slate-600 whitespace-pre-wrap">
                         <strong>문제 2 ((a+b)² ≥ 4ab 외):</strong> {student.l5?.prob2ProofText || '(미작성)'}
                       </div>
+                      {student.l5?.reflection1 && (
+                        <div className="text-slate-600 whitespace-pre-wrap">
+                          <strong>성찰 1:</strong> {student.l5.reflection1}
+                        </div>
+                      )}
+                      {student.l5?.reflection2 && (
+                        <div className="text-slate-600 whitespace-pre-wrap">
+                          <strong>성찰 2:</strong> {student.l5.reflection2}
+                        </div>
+                      )}
                     </div>
 
                     {/* 6차시 */}
@@ -392,9 +407,24 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                       <div className="text-slate-600 whitespace-pre-wrap">
                         <strong>문제 1 ((a+b)/2 ≥ √ab):</strong> {student.l6?.prob1ProofText || '(미작성)'}
                       </div>
+                      {student.l6?.harmonicReason && (
+                        <div className="text-slate-600 whitespace-pre-wrap">
+                          <strong>조화평균 유도 이유:</strong> {student.l6.harmonicReason}
+                        </div>
+                      )}
                       <div className="text-slate-600 whitespace-pre-wrap">
                         <strong>문제 2 (a+1/a ≥ 2 외):</strong> {student.l6?.prob2ProofText || '(미작성)'}
                       </div>
+                      {student.l6?.reflection1 && (
+                        <div className="text-slate-600 whitespace-pre-wrap">
+                          <strong>성찰 1:</strong> {student.l6.reflection1}
+                        </div>
+                      )}
+                      {student.l6?.reflection2 && (
+                        <div className="text-slate-600 whitespace-pre-wrap">
+                          <strong>성찰 2:</strong> {student.l6.reflection2}
+                        </div>
+                      )}
                     </div>
 
                     {/* 7차시 */}
@@ -403,9 +433,24 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                       <div className="text-slate-600 whitespace-pre-wrap">
                         <strong>문제 1 (|a+b| ≤ |a|+|b|):</strong> {student.l7?.prob1ProofText || '(미작성)'}
                       </div>
+                      {student.l7?.absDiffReason && (
+                        <div className="text-slate-600 whitespace-pre-wrap">
+                          <strong>절댓값의 차 부호 이유:</strong> {student.l7.absDiffReason}
+                        </div>
+                      )}
                       <div className="text-slate-600 whitespace-pre-wrap">
                         <strong>문제 2 (|a−b| ≤ |a|+|b| 외):</strong> {student.l7?.prob2ProofText || '(미작성)'}
                       </div>
+                      {student.l7?.reflection1 && (
+                        <div className="text-slate-600 whitespace-pre-wrap">
+                          <strong>성찰 1:</strong> {student.l7.reflection1}
+                        </div>
+                      )}
+                      {student.l7?.reflection2 && (
+                        <div className="text-slate-600 whitespace-pre-wrap">
+                          <strong>성찰 2:</strong> {student.l7.reflection2}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

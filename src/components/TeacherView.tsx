@@ -59,6 +59,7 @@ import {
   RotateCcw,
   SlidersHorizontal,
   Layers,
+  AlertCircle,
 } from 'lucide-react';
 import { MathText } from './MathText';
 
@@ -375,20 +376,29 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
       '4차시 귀류법 문제2 증명서술',
       '4차시 성찰1',
       '4차시 성찰2',
+      '5차시 수치사례수',
+      '5차시 개념선택',
       '5차시 절대부등식1 문제1 단계확인',
       '5차시 절대부등식1 문제1 증명서술',
+      '5차시 등호성립이유',
       '5차시 절대부등식1 문제2 단계확인',
       '5차시 절대부등식1 문제2 증명서술',
       '5차시 성찰1',
       '5차시 성찰2',
+      '6차시 수치·기하사례수',
+      '6차시 개념선택',
       '6차시 절대부등식2 문제1 단계확인',
       '6차시 절대부등식2 문제1 증명서술',
+      '6차시 조화평균이유',
       '6차시 절대부등식2 문제2 단계확인',
       '6차시 절대부등식2 문제2 증명서술',
       '6차시 성찰1',
       '6차시 성찰2',
+      '7차시 수치사례수',
+      '7차시 개념선택',
       '7차시 절대부등식3 문제1 단계확인',
       '7차시 절대부등식3 문제1 증명서술',
+      '7차시 절댓값차이유',
       '7차시 절대부등식3 문제2 단계확인',
       '7차시 절대부등식3 문제2 증명서술',
       '7차시 성찰1',
@@ -449,20 +459,29 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
         d?.prob2ProofText || '',
         d?.reflection1 || '',
         d?.reflection2 || '',
+        e?.examples?.length ?? 0,
+        e?.squareConceptChoice || '',
         e?.prob1Verified?.filter(Boolean).length ?? 0,
         e?.prob1ProofText || '',
+        e?.equalityReason || '',
         e?.prob2Verified?.filter(Boolean).length ?? 0,
         e?.prob2ProofText || '',
         e?.reflection1 || '',
         e?.reflection2 || '',
+        f?.examples?.length ?? 0,
+        f?.amgmConceptChoice || '',
         f?.prob1Verified?.filter(Boolean).length ?? 0,
         f?.prob1ProofText || '',
+        f?.harmonicReason || '',
         f?.prob2Verified?.filter(Boolean).length ?? 0,
         f?.prob2ProofText || '',
         f?.reflection1 || '',
         f?.reflection2 || '',
+        g?.examples?.length ?? 0,
+        g?.absSquareConceptChoice || '',
         g?.prob1Verified?.filter(Boolean).length ?? 0,
         g?.prob1ProofText || '',
+        g?.absDiffReason || '',
         g?.prob2Verified?.filter(Boolean).length ?? 0,
         g?.prob2ProofText || '',
         g?.reflection1 || '',
@@ -736,6 +755,26 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
         {isApprovalOpen && (
           <div className="mt-4 pt-4 border-t border-slate-100 space-y-4">
+            {pendingCount > 0 && (
+              <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 sm:p-4 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
+                  <div className="text-xs sm:text-sm text-amber-900 font-bold">
+                    현재 승인 대기 중인 학생이 <span className="underline font-extrabold text-amber-950">{pendingCount}명</span> 있습니다.
+                    교사가 가입을 승인해야 학생 활동지가 클라우드에 실시간 저장되고 아래 탐구 기록실에 표시됩니다.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleBulkApprovePending}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 text-xs font-extrabold transition-colors shadow-xs"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  대기 학생 {pendingCount}명 즉시 일괄 승인
+                </button>
+              </div>
+            )}
+
             <p className="text-sm text-slate-600 leading-relaxed">
               학생이 <strong>학교 / 학년 / 반 / 번호 / 생년월일 / 이름</strong>으로 가입을 신청하면 이곳에 실시간으로 표시됩니다.
               학교 공용 네트워크 환경을 고려하여 IP는 검사하지 않으며, <strong>기기 고유 MAC 주소 식별자</strong> 기준으로만 중복을 식별합니다.
@@ -1457,8 +1496,44 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           <td className="py-3 px-3.5 mono text-slate-700">
                             {x.l4 ? evaluateRubricL4(x.l4).filter(Boolean).length : 0}/5
                           </td>
-                          <td className="py-3 px-3.5 mono text-xs text-slate-700">
-                            5차 {x.l5 ? evaluateRubricL5(x.l5).filter(Boolean).length : 0}/5 · 6차 {x.l6 ? evaluateRubricL6(x.l6).filter(Boolean).length : 0}/5 · 7차 {x.l7 ? evaluateRubricL7(x.l7).filter(Boolean).length : 0}/5
+                          <td className="py-3 px-3.5 text-xs text-slate-700 min-w-[210px]">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span
+                                  className={`rounded px-1.5 py-0.5 font-bold text-[11px] border ${
+                                    x.l5 && (x.l5.prob1ProofText || x.l5.examples.length > 0)
+                                      ? 'bg-cyan-50 text-cyan-800 border-cyan-200'
+                                      : 'bg-slate-100 text-slate-500 border-slate-200'
+                                  }`}
+                                  title="5차시 절대부등식1: 사례 수, Step 4단계 확인, 증명 서술"
+                                >
+                                  5차 {x.l5?.examples?.length ?? 0}개·{x.l5?.prob1Verified?.filter(Boolean).length ?? 0}/4·{x.l5?.prob1ProofText ? '서술' : '미작성'}
+                                </span>
+                                <span
+                                  className={`rounded px-1.5 py-0.5 font-bold text-[11px] border ${
+                                    x.l6 && (x.l6.prob1ProofText || x.l6.examples.length > 0)
+                                      ? 'bg-teal-50 text-teal-800 border-teal-200'
+                                      : 'bg-slate-100 text-slate-500 border-slate-200'
+                                  }`}
+                                  title="6차시 산술·기하: 사례 수, Step 4단계 확인, 증명 서술"
+                                >
+                                  6차 {x.l6?.examples?.length ?? 0}개·{x.l6?.prob1Verified?.filter(Boolean).length ?? 0}/4·{x.l6?.prob1ProofText ? '서술' : '미작성'}
+                                </span>
+                                <span
+                                  className={`rounded px-1.5 py-0.5 font-bold text-[11px] border ${
+                                    x.l7 && (x.l7.prob1ProofText || x.l7.examples.length > 0)
+                                      ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                      : 'bg-slate-100 text-slate-500 border-slate-200'
+                                  }`}
+                                  title="7차시 절댓값 부등식: 사례 수, Step 4단계 확인, 증명 서술"
+                                >
+                                  7차 {x.l7?.examples?.length ?? 0}개·{x.l7?.prob1Verified?.filter(Boolean).length ?? 0}/4·{x.l7?.prob1ProofText ? '서술' : '미작성'}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-500 font-medium">
+                                루브릭 5차 {x.l5 ? evaluateRubricL5(x.l5).filter(Boolean).length : 0}/5 · 6차 {x.l6 ? evaluateRubricL6(x.l6).filter(Boolean).length : 0}/5 · 7차 {x.l7 ? evaluateRubricL7(x.l7).filter(Boolean).length : 0}/5
+                              </div>
+                            </div>
                           </td>
                           <td className="py-3 px-3.5 min-w-[200px]">
                             <div className="space-y-1.5">
@@ -1673,20 +1748,49 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
-                    <div className="text-xs font-bold text-cyan-700">5차시 · 절대부등식1 수사 (문제 1·2)</div>
+                    <div className="text-xs font-bold text-cyan-700 flex items-center justify-between">
+                      <span>5차시 · 절대부등식1 수사 (완전제곱식)</span>
+                      <span className="mono text-[11px] font-semibold text-cyan-800 bg-cyan-100/70 px-2 py-0.5 rounded">
+                        사례 {selectedStudent.l5?.examples?.length ?? 0}개
+                      </span>
+                    </div>
                     {[
                       [
-                        '문제 1 (a²+b² ≥ ab) 증명',
+                        '수치 계산 사례 탐색',
+                        selectedStudent.l5?.examples?.length
+                          ? `등록된 사례 ${selectedStudent.l5.examples.length}개: ${selectedStudent.l5.examples
+                              .slice(0, 3)
+                              .map((ex) => `(a=${ex.a}, b=${ex.b} → a²+b²=${ex.lhs}, ab=${ex.rhs})`)
+                              .join('; ')}`
+                          : '사례 미등록',
+                      ],
+                      [
+                        '실수 제곱 기본 성질 개념 선택',
+                        selectedStudent.l5?.squareConceptChoice === 'nonnegative'
+                          ? 'X² ≥ 0 (항상 0 이상) [정답]'
+                          : selectedStudent.l5?.squareConceptChoice
+                          ? selectedStudent.l5.squareConceptChoice
+                          : '미선택',
+                      ],
+                      [
+                        '문제 1 (a²+b² ≥ ab) 증명 서술',
                         `단계 확인: ${selectedStudent.l5?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l5?.prob1ProofText || '미작성'}`,
                       ],
                       [
-                        '문제 2 ((a+b)² ≥ 4ab, a²−4ab+5b² ≥ 0) 증명',
+                        `등호(=) 성립 조건 (${selectedStudent.l5?.equalityConditionChecked ? '확인 완료' : '미확인'})`,
+                        selectedStudent.l5?.equalityReason || '이유 미작성',
+                      ],
+                      [
+                        '문제 2 ((a+b)² ≥ 4ab 외) 증명 서술',
                         `단계 확인: ${selectedStudent.l5?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l5?.prob2ProofText || '미작성'}`,
                       ],
-                      ['5차시 성찰', selectedStudent.l5?.reflection1],
+                      ['5차시 성찰 1 (완전제곱식 증명)', selectedStudent.l5?.reflection1 || '미작성'],
+                      ['5차시 성찰 2 (등호 성립 조건 비교)', selectedStudent.l5?.reflection2 || '미작성'],
                     ].map(([label, val]) => (
                       <div key={label}>
-                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="text-xs font-bold text-slate-700">
+                          <MathText text={label || ''} />
+                        </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
                           <MathText text={val || '미작성'} />
                         </div>
@@ -1695,17 +1799,44 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3">
-                    <div className="text-xs font-bold text-teal-700">6차시 · 절대부등식2 수사 (문제 1·2)</div>
+                    <div className="text-xs font-bold text-teal-700 flex items-center justify-between">
+                      <span>6차시 · 절대부등식2 수사 (산술·기하평균)</span>
+                      <span className="mono text-[11px] font-semibold text-teal-800 bg-teal-100/70 px-2 py-0.5 rounded">
+                        사례 {selectedStudent.l6?.examples?.length ?? 0}개
+                      </span>
+                    </div>
                     {[
                       [
-                        '문제 1 ((a+b)/2 ≥ √(ab)) 증명',
+                        '수치·기하 시뮬레이션 탐색 사례',
+                        selectedStudent.l6?.examples?.length
+                          ? `등록된 사례 ${selectedStudent.l6.examples.length}개: ${selectedStudent.l6.examples
+                              .slice(0, 3)
+                              .map((ex) => `(a=${ex.a}, b=${ex.b} → 산술=${ex.arith}, 기하=${ex.geom})`)
+                              .join('; ')}`
+                          : '사례 미등록',
+                      ],
+                      [
+                        '산술·기하평균 전제 조건 선택',
+                        selectedStudent.l6?.amgmConceptChoice === 'positive'
+                          ? '양수 조건 a>0, b>0 [정답]'
+                          : selectedStudent.l6?.amgmConceptChoice
+                          ? selectedStudent.l6.amgmConceptChoice
+                          : '미선택',
+                      ],
+                      [
+                        '문제 1 ((a+b)/2 ≥ √(ab)) 증명 서술',
                         `단계 확인: ${selectedStudent.l6?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob1ProofText || '미작성'}`,
                       ],
                       [
-                        '문제 2 (a+1/a ≥ 2, √(ab) ≥ 2ab/(a+b)) 증명',
+                        `조화평균 관계 (${selectedStudent.l6?.harmonicChecked ? '확인 완료' : '미확인'})`,
+                        selectedStudent.l6?.harmonicReason || '이유 미작성',
+                      ],
+                      [
+                        '문제 2 (a+1/a ≥ 2 외) 증명 서술',
                         `단계 확인: ${selectedStudent.l6?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob2ProofText || '미작성'}`,
                       ],
-                      ['6차시 성찰', selectedStudent.l6?.reflection1],
+                      ['6차시 성찰 1 (양수 조건과 제곱근 변형)', selectedStudent.l6?.reflection1 || '미작성'],
+                      ['6차시 성찰 2 (산술·기하·조화평균 대소관계)', selectedStudent.l6?.reflection2 || '미작성'],
                     ].map(([label, val]) => (
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">
@@ -1719,23 +1850,52 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4 space-y-3 lg:col-span-2">
-                    <div className="text-xs font-bold text-rose-700">7차시 · 절대부등식3 수사 (문제 1·2)</div>
-                    <div className="grid gap-3 lg:grid-cols-3">
+                    <div className="text-xs font-bold text-rose-700 flex items-center justify-between">
+                      <span>7차시 · 절대부등식3 수사 (절댓값 부등식)</span>
+                      <span className="mono text-[11px] font-semibold text-rose-800 bg-rose-100/70 px-2 py-0.5 rounded">
+                        사례 {selectedStudent.l7?.examples?.length ?? 0}개
+                      </span>
+                    </div>
+                    <div className="grid gap-3 lg:grid-cols-2">
                       {[
                         [
-                          '문제 1 (|a+b| ≤ |a|+|b|) 증명',
+                          '절댓값 수치 계산 사례',
+                          selectedStudent.l7?.examples?.length
+                            ? `등록된 사례 ${selectedStudent.l7.examples.length}개: ${selectedStudent.l7.examples
+                                .slice(0, 3)
+                                .map((ex) => `(a=${ex.a}, b=${ex.b} → |a+b|=${ex.lhsSum}, |a|+|b|=${ex.rhsSum})`)
+                                .join('; ')}`
+                            : '사례 미등록',
+                        ],
+                        [
+                          '절댓값 증명 기본 전략 선택',
+                          selectedStudent.l7?.absSquareConceptChoice === 'square_diff'
+                            ? '양변의 제곱의 차 (|A|²-|B|²) [정답]'
+                            : selectedStudent.l7?.absSquareConceptChoice
+                            ? selectedStudent.l7.absSquareConceptChoice
+                            : '미선택',
+                        ],
+                        [
+                          '문제 1 (|a+b| ≤ |a|+|b|) 증명 서술',
                           `단계 확인: ${selectedStudent.l7?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l7?.prob1ProofText || '미작성'}`,
                         ],
                         [
-                          '문제 2 (|a−b| ≤ |a|+|b|, |a|−|b| ≤ |a−b|) 증명',
+                          `절댓값의 차 (|a|-|b|) 부호 판별 (${selectedStudent.l7?.absDiffChecked ? '확인 완료' : '미확인'})`,
+                          selectedStudent.l7?.absDiffReason || '이유 미작성',
+                        ],
+                        [
+                          '문제 2 (|a−b| ≤ |a|+|b| 외) 증명 서술',
                           `단계 확인: ${selectedStudent.l7?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l7?.prob2ProofText || '미작성'}`,
                         ],
-                        ['7차시 성찰', selectedStudent.l7?.reflection1],
+                        ['7차시 성찰 1 (절댓값 제곱의 차 원리)', selectedStudent.l7?.reflection1 || '미작성'],
+                        ['7차시 성찰 2 (부호 조건에 따른 등호 성립 차이)', selectedStudent.l7?.reflection2 || '미작성'],
                       ].map(([label, val]) => (
                         <div key={label}>
-                          <div className="text-xs font-bold text-slate-700">{label}</div>
+                          <div className="text-xs font-bold text-slate-700">
+                            <MathText text={label || ''} />
+                          </div>
                           <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                            {val || '미작성'}
+                            <MathText text={val || '미작성'} />
                           </div>
                         </div>
                       ))}
@@ -2094,24 +2254,52 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                    <div className="text-xs font-bold text-cyan-700 flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-cyan-600" />
-                      5차시 · 절대부등식1 (완전제곱식 문제 1·2)
+                    <div className="text-xs font-bold text-cyan-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-cyan-600" />
+                        5차시 · 절대부등식1 (완전제곱식)
+                      </span>
+                      <span className="mono text-[11px] font-semibold text-cyan-800 bg-cyan-100/70 px-2 py-0.5 rounded">
+                        사례 {selectedStudent.l5?.examples?.length ?? 0}개
+                      </span>
                     </div>
                     {[
                       [
-                        '문제 1 (a²+b² ≥ ab)',
+                        '수치 계산 사례 탐색',
+                        selectedStudent.l5?.examples?.length
+                          ? `등록된 사례 ${selectedStudent.l5.examples.length}개: ${selectedStudent.l5.examples
+                              .slice(0, 3)
+                              .map((ex) => `(a=${ex.a}, b=${ex.b} → a²+b²=${ex.lhs}, ab=${ex.rhs})`)
+                              .join('; ')}`
+                          : '사례 미등록',
+                      ],
+                      [
+                        '실수 제곱 기본 성질 개념 선택',
+                        selectedStudent.l5?.squareConceptChoice === 'nonnegative'
+                          ? 'X² ≥ 0 (항상 0 이상) [정답]'
+                          : selectedStudent.l5?.squareConceptChoice
+                          ? selectedStudent.l5.squareConceptChoice
+                          : '미선택',
+                      ],
+                      [
+                        '문제 1 (a²+b² ≥ ab) 증명',
                         `단계 확인: ${selectedStudent.l5?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l5?.prob1ProofText || '미작성'}`,
                       ],
                       [
-                        '문제 2 ((a+b)² ≥ 4ab, a²−4ab+5b² ≥ 0)',
+                        `등호(=) 성립 조건 (${selectedStudent.l5?.equalityConditionChecked ? '확인 완료' : '미확인'})`,
+                        selectedStudent.l5?.equalityReason || '이유 미작성',
+                      ],
+                      [
+                        '문제 2 ((a+b)² ≥ 4ab 외) 증명',
                         `단계 확인: ${selectedStudent.l5?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l5?.prob2ProofText || '미작성'}`,
                       ],
-                      ['5차시 성찰 1', selectedStudent.l5?.reflection1],
-                      ['5차시 성찰 2', selectedStudent.l5?.reflection2],
+                      ['5차시 성찰 1 (완전제곱식 증명)', selectedStudent.l5?.reflection1 || '미작성'],
+                      ['5차시 성찰 2 (등호 성립 조건 비교)', selectedStudent.l5?.reflection2 || '미작성'],
                     ].map(([label, val]) => (
                       <div key={label}>
-                        <div className="text-xs font-bold text-slate-700">{label}</div>
+                        <div className="text-xs font-bold text-slate-700">
+                          <MathText text={label || ''} />
+                        </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
                           <MathText text={val || '미작성'} />
                         </div>
@@ -2120,21 +2308,47 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                    <div className="text-xs font-bold text-teal-700 flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-teal-600" />
-                      6차시 · 절대부등식2 (산술·기하평균 문제 1·2)
+                    <div className="text-xs font-bold text-teal-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-teal-600" />
+                        6차시 · 절대부등식2 (산술·기하평균)
+                      </span>
+                      <span className="mono text-[11px] font-semibold text-teal-800 bg-teal-100/70 px-2 py-0.5 rounded">
+                        사례 {selectedStudent.l6?.examples?.length ?? 0}개
+                      </span>
                     </div>
                     {[
                       [
-                        '문제 1 ((a+b)/2 ≥ √(ab))',
+                        '수치·기하 시뮬레이션 탐색 사례',
+                        selectedStudent.l6?.examples?.length
+                          ? `등록된 사례 ${selectedStudent.l6.examples.length}개: ${selectedStudent.l6.examples
+                              .slice(0, 3)
+                              .map((ex) => `(a=${ex.a}, b=${ex.b} → 산술=${ex.arith}, 기하=${ex.geom})`)
+                              .join('; ')}`
+                          : '사례 미등록',
+                      ],
+                      [
+                        '산술·기하평균 전제 조건 선택',
+                        selectedStudent.l6?.amgmConceptChoice === 'positive'
+                          ? '양수 조건 a>0, b>0 [정답]'
+                          : selectedStudent.l6?.amgmConceptChoice
+                          ? selectedStudent.l6.amgmConceptChoice
+                          : '미선택',
+                      ],
+                      [
+                        '문제 1 ((a+b)/2 ≥ √(ab)) 증명',
                         `단계 확인: ${selectedStudent.l6?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob1ProofText || '미작성'}`,
                       ],
                       [
-                        '문제 2 (a+1/a ≥ 2, √(ab) ≥ 2ab/(a+b))',
+                        `조화평균 관계 (${selectedStudent.l6?.harmonicChecked ? '확인 완료' : '미확인'})`,
+                        selectedStudent.l6?.harmonicReason || '이유 미작성',
+                      ],
+                      [
+                        '문제 2 (a+1/a ≥ 2 외) 증명',
                         `단계 확인: ${selectedStudent.l6?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l6?.prob2ProofText || '미작성'}`,
                       ],
-                      ['6차시 성찰 1', selectedStudent.l6?.reflection1],
-                      ['6차시 성찰 2', selectedStudent.l6?.reflection2],
+                      ['6차시 성찰 1 (양수 조건과 제곱근 변형)', selectedStudent.l6?.reflection1 || '미작성'],
+                      ['6차시 성찰 2 (산술·기하·조화평균 대소관계)', selectedStudent.l6?.reflection2 || '미작성'],
                     ].map(([label, val]) => (
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">
@@ -2148,27 +2362,55 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3 lg:col-span-2">
-                    <div className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-rose-600" />
-                      7차시 · 절대부등식3 (절댓값 부등식 문제 1·2)
+                    <div className="text-xs font-bold text-rose-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-rose-600" />
+                        7차시 · 절대부등식3 (절댓값 부등식)
+                      </span>
+                      <span className="mono text-[11px] font-semibold text-rose-800 bg-rose-100/70 px-2 py-0.5 rounded">
+                        사례 {selectedStudent.l7?.examples?.length ?? 0}개
+                      </span>
                     </div>
                     <div className="grid gap-3 lg:grid-cols-2">
                       {[
                         [
-                          '문제 1 (|a+b| ≤ |a|+|b|)',
+                          '절댓값 수치 계산 사례',
+                          selectedStudent.l7?.examples?.length
+                            ? `등록된 사례 ${selectedStudent.l7.examples.length}개: ${selectedStudent.l7.examples
+                                .slice(0, 3)
+                                .map((ex) => `(a=${ex.a}, b=${ex.b} → |a+b|=${ex.lhsSum}, |a|+|b|=${ex.rhsSum})`)
+                                .join('; ')}`
+                            : '사례 미등록',
+                        ],
+                        [
+                          '절댓값 증명 기본 전략 선택',
+                          selectedStudent.l7?.absSquareConceptChoice === 'square_diff'
+                            ? '양변의 제곱의 차 (|A|²-|B|²) [정답]'
+                            : selectedStudent.l7?.absSquareConceptChoice
+                            ? selectedStudent.l7.absSquareConceptChoice
+                            : '미선택',
+                        ],
+                        [
+                          '문제 1 (|a+b| ≤ |a|+|b|) 증명',
                           `단계 확인: ${selectedStudent.l7?.prob1Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l7?.prob1ProofText || '미작성'}`,
                         ],
                         [
-                          '문제 2 (|a−b| ≤ |a|+|b|, |a|−|b| ≤ |a−b|)',
+                          `절댓값의 차 (|a|-|b|) 부호 판별 (${selectedStudent.l7?.absDiffChecked ? '확인 완료' : '미확인'})`,
+                          selectedStudent.l7?.absDiffReason || '이유 미작성',
+                        ],
+                        [
+                          '문제 2 (|a−b| ≤ |a|+|b| 외) 증명',
                           `단계 확인: ${selectedStudent.l7?.prob2Verified?.filter(Boolean).length ?? 0}/4\n${selectedStudent.l7?.prob2ProofText || '미작성'}`,
                         ],
-                        ['7차시 성찰 1', selectedStudent.l7?.reflection1],
-                        ['7차시 성찰 2', selectedStudent.l7?.reflection2],
+                        ['7차시 성찰 1 (절댓값 제곱의 차 원리)', selectedStudent.l7?.reflection1 || '미작성'],
+                        ['7차시 성찰 2 (부호 조건에 따른 등호 성립 차이)', selectedStudent.l7?.reflection2 || '미작성'],
                       ].map(([label, val]) => (
                         <div key={label}>
-                          <div className="text-xs font-bold text-slate-700">{label}</div>
+                          <div className="text-xs font-bold text-slate-700">
+                            <MathText text={label || ''} />
+                          </div>
                           <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                            {val || '미작성'}
+                            <MathText text={val || '미작성'} />
                           </div>
                         </div>
                       ))}
