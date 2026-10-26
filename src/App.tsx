@@ -42,6 +42,7 @@ import { AuthGateView, FirestoreStudentRegistrationDoc } from './components/Auth
 import { StudentEvaluationModal } from './components/StudentEvaluationModal';
 import { MathSymbolInputBar } from './components/MathSymbolInputBar';
 import { MathText } from './components/MathText';
+import { recordStudentAccessLog } from './utils/auditLogger';
 import {
   Printer,
   CheckCircle2,
@@ -275,6 +276,21 @@ export default function App() {
       setCloudSyncStatus('saved');
       setLastSavedAt(new Date());
       showToast('클라우드에 최신 활동지가 즉시 저장되었습니다.', 'good');
+
+      // Record access log for save event
+      recordStudentAccessLog({
+        studentKey: approvedProfile.studentKey,
+        school: approvedProfile.school,
+        grade: approvedProfile.grade,
+        classNum: approvedProfile.classNum,
+        studentNum: approvedProfile.studentNum,
+        name: approvedProfile.name,
+        eventType: 'save',
+        status: 'approved',
+        deviceHash: approvedProfile.deviceHash,
+        ipAddress: approvedProfile.ipAddress,
+        userAgent: approvedProfile.userAgent,
+      }).catch(() => {});
     } catch (err) {
       console.error('Manual force save failed:', err);
       setCloudSyncStatus('error');
@@ -304,6 +320,22 @@ export default function App() {
       setCloudSyncStatus('saved');
       setLastSavedAt(new Date());
       setSessionMode('student');
+
+      // Record access log for approved session entry
+      recordStudentAccessLog({
+        studentKey: regDoc.studentKey,
+        school: regDoc.school,
+        grade: regDoc.grade,
+        classNum: regDoc.classNum,
+        studentNum: regDoc.studentNum,
+        name: regDoc.name,
+        eventType: 'resume',
+        status: 'approved',
+        deviceHash: regDoc.deviceHash,
+        ipAddress: regDoc.ipAddress,
+        userAgent: regDoc.userAgent,
+        updateRegistrationUpdatedAt: true,
+      }).catch(() => {});
     },
     []
   );

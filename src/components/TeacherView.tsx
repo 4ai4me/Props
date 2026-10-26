@@ -60,7 +60,16 @@ import {
   SlidersHorizontal,
   Layers,
   AlertCircle,
+  Activity,
+  Sun,
+  Moon,
+  Radio,
+  FileSpreadsheet,
+  LogIn,
+  UserPlus,
+  Save,
 } from 'lucide-react';
+import { StudentAccessLog } from '../utils/auditLogger';
 import { MathText } from './MathText';
 
 interface TeacherViewProps {
@@ -114,6 +123,13 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   const [isModelessOpen, setIsModelessOpen] = useState<boolean>(false);
   const [isModelessMinimized, setIsModelessMinimized] = useState<boolean>(false);
   const [isModelessExpanded, setIsModelessExpanded] = useState<boolean>(false);
+
+  // Real-time Student Access Logs state
+  const [accessLogs, setAccessLogs] = useState<StudentAccessLog[]>([]);
+  const [isAccessLogsOpen, setIsAccessLogsOpen] = useState<boolean>(true);
+  const [accessTimeFilter, setAccessTimeFilter] = useState<'all' | 'today' | 'morning' | 'afternoon'>('all');
+  const [accessEventFilter, setAccessEventFilter] = useState<'all' | 'login' | 'register' | 'save' | 'resume'>('all');
+  const [accessSearch, setAccessSearch] = useState<string>('');
 
   const applySnapshotDocs = useCallback(
     (docs: FirestoreStudentRegistrationDoc[]) => {
@@ -207,6 +223,38 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     );
     return () => unsub();
   }, [applySnapshotDocs, adminEmail]);
+
+  // Real-time listener for student access logs
+  useEffect(() => {
+    const ref = collection(db, 'student_access_logs');
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
+        const list: StudentAccessLog[] = [];
+        snap.forEach((d) => {
+          list.push(d.data() as StudentAccessLog);
+        });
+        // Sort descending by timestamp
+        list.sort((a, b) => {
+          const parseTime = (val: unknown): number => {
+            if (!val) return 0;
+            if (typeof (val as { toMillis?: () => number }).toMillis === 'function') {
+              return (val as { toMillis: () => number }).toMillis();
+            }
+            if (val instanceof Date) return val.getTime();
+            const parsed = new Date(String(val)).getTime();
+            return isNaN(parsed) ? 0 : parsed;
+          };
+          return parseTime(b.createdAt) - parseTime(a.createdAt);
+        });
+        setAccessLogs(list);
+      },
+      (error) => {
+        console.error('Access logs listener error:', error);
+      }
+    );
+    return () => unsub();
+  }, []);
 
   const handleUpdateStudentStatus = async (
     reg: FirestoreStudentRegistrationDoc,
@@ -691,6 +739,155 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     })
     .join(', ');
 
+  // Access Logs Helpers & Filtering
+  const parseLogDate = (val: unknown): Date | null => {
+    if (!val) return null;
+    if (typeof (val as { toDate?: () => Date }).toDate === 'function') {
+      return (val as { toDate: () => Date }).toDate();
+    }
+    if (val instanceof Date) return val;
+    const d = new Date(String(val));
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const formatLogTimestamp = (val: unknown): string => {
+    const d = parseLogDate(val);
+    if (!d) return '-';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = d.getHours();
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    const secs = String(d.getSeconds()).padStart(2, '0');
+    const ampm = hours < 12 ? '오전' : '오후';
+    const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+    return `${y}-${m}-${day} ${ampm} ${displayHour}:${mins}:${secs}`;
+  };
+
+  const formatEventBadge = (ev: string) => {
+    switch (ev) {
+      case 'login':
+        return (
+          <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 border border-blue-200">
+            <LogIn className="h-3 w-3" /> 로그인
+          </span>
+        );
+      case 'register':
+        return (
+          <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-700 border border-purple-200">
+            <UserPlus className="h-3 w-3" /> 가입 신청
+          </span>
+        );
+      case 'save':
+        return (
+          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+            <Save className="h-3 w-3" /> 클라우드 저장
+          </span>
+        );
+      case 'resume':
+        return (
+          <span className="inline-flex items-center gap-1 rounded-md bg-cyan-50 px-2 py-0.5 text-xs font-bold text-cyan-700 border border-cyan-200">
+            <RefreshCw className="h-3 w-3" /> 세션 복귀
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
+            {ev}
+          </span>
+        );
+    }
+  };
+
+  const todayStr = new Date().toDateString();
+  const todayLogs = accessLogs.filter((log) => {
+    const d = parseLogDate(log.createdAt);
+    return d && d.toDateString() === todayStr;
+  });
+  const morningLogsCount = todayLogs.filter((log) => {
+    const d = parseLogDate(log.createdAt);
+    return d && d.getHours() < 12;
+  }).length;
+  const afternoonLogsCount = todayLogs.filter((log) => {
+    const d = parseLogDate(log.createdAt);
+    return d && d.getHours() >= 12;
+  }).length;
+  const uniqueDevicesCount = new Set(accessLogs.map((l) => l.deviceHash)).size;
+
+  const filteredAccessLogs = accessLogs.filter((log) => {
+    const d = parseLogDate(log.createdAt);
+    if (accessTimeFilter === 'today') {
+      if (!d || d.toDateString() !== todayStr) return false;
+    } else if (accessTimeFilter === 'morning') {
+      if (!d || d.toDateString() !== todayStr || d.getHours() >= 12) return false;
+    } else if (accessTimeFilter === 'afternoon') {
+      if (!d || d.toDateString() !== todayStr || d.getHours() < 12) return false;
+    }
+
+    if (accessEventFilter !== 'all' && log.eventType !== accessEventFilter) {
+      return false;
+    }
+
+    if (accessSearch.trim()) {
+      const q = accessSearch.trim().toLowerCase();
+      const match =
+        log.name.toLowerCase().includes(q) ||
+        log.school.toLowerCase().includes(q) ||
+        log.studentKey.toLowerCase().includes(q) ||
+        log.ipAddress.toLowerCase().includes(q) ||
+        formatDeviceHashAsMac(log.deviceHash).toLowerCase().includes(q);
+      if (!match) return false;
+    }
+
+    return true;
+  });
+
+  const handleExportAccessLogsCSV = () => {
+    if (filteredAccessLogs.length === 0) {
+      setNotice({ text: '내보낼 접속 로그가 없습니다.', type: 'warn' });
+      return;
+    }
+    const headers = [
+      '접속시각',
+      '이벤트구분',
+      '승인상태',
+      '학교',
+      '학년',
+      '반',
+      '번호',
+      '이름',
+      '학생식별키',
+      '기기MAC식별자',
+      'IP주소',
+      'UserAgent',
+    ];
+    const rows = filteredAccessLogs.map((log) => {
+      const timeStr = formatLogTimestamp(log.createdAt);
+      return [
+        csvSafe(timeStr),
+        csvSafe(log.eventType),
+        csvSafe(log.status),
+        csvSafe(log.school),
+        csvSafe(log.grade),
+        csvSafe(log.classNum),
+        csvSafe(log.studentNum),
+        csvSafe(log.name),
+        csvSafe(log.studentKey),
+        csvSafe(formatDeviceHashAsMac(log.deviceHash)),
+        csvSafe(log.ipAddress),
+        csvSafe(log.userAgent),
+      ].join(',');
+    });
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `수학탐정단_학생_접속로그_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* SECTION 1: Student Registration Approval Management (Admin Only) */}
@@ -944,6 +1141,300 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                         {approvalSearchName
                           ? `'${approvalSearchName}' 학생 이름을 포함하는 가입 신청 내역이 없습니다.`
                           : '현재 해당 상태의 학생 가입 신청 내역이 없습니다.'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* SECTION: Real-time Student Access Logs (Live Audit Trail) */}
+      <div className="rounded-2xl border border-indigo-200/90 bg-gradient-to-br from-indigo-50/60 via-white to-slate-50 p-5 sm:p-7 shadow-xs">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsAccessLogsOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-50 transition-colors shadow-2xs"
+              aria-expanded={isAccessLogsOpen}
+              aria-label="학생 실시간 접속 로그 메뉴 접기/펼치기"
+            >
+              {isAccessLogsOpen ? (
+                <>
+                  <ChevronUp className="h-4 w-4 text-indigo-600" />
+                  <span>접기</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 text-indigo-600" />
+                  <span>펼치기</span>
+                </>
+              )}
+            </button>
+            <div>
+              <div className="text-xs font-bold text-indigo-600 flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Firestore 실시간 수신 모니터링
+              </div>
+              <h2 className="mt-0.5 text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
+                학생 실시간 접속 로그
+                <span className="text-xs font-semibold text-indigo-700 bg-indigo-100/80 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                  누적 {accessLogs.length}건 · 오늘 {todayLogs.length}건
+                </span>
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleExportAccessLogsCSV}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-300 bg-white px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 transition-all shadow-2xs"
+              title="현재 필터링된 접속 로그를 CSV 파일로 저장합니다"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>접속 로그 CSV 다운로드</span>
+            </button>
+          </div>
+        </div>
+
+        {isAccessLogsOpen && (
+          <div className="mt-5 pt-4 border-t border-indigo-100 space-y-4">
+            <p className="text-sm text-slate-600 leading-relaxed">
+              학생들이 <strong>가입 신청, 로그인, 세션 복귀, 활동지 클라우드 저장</strong>을 수행할 때마다 실시간으로 기록되는 접속 감사 로그(Audit Trail)입니다.
+              오전 수업과 오후 수업의 시간대별 접속 인원 및 기기 정보를 한눈에 파악할 수 있습니다.
+            </p>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs">
+                <div className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5 text-indigo-500" />
+                  오늘 총 접속
+                </div>
+                <div className="mt-1 text-2xl font-black text-slate-900">
+                  {todayLogs.length} <span className="text-xs font-semibold text-slate-500">건</span>
+                </div>
+                <div className="mt-0.5 text-[11px] text-slate-500">
+                  누적 총 {accessLogs.length}건
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3.5 shadow-2xs">
+                <div className="text-xs font-bold text-amber-700 flex items-center gap-1.5">
+                  <Sun className="h-3.5 w-3.5 text-amber-500" />
+                  🌅 오전 접속 (12시 전)
+                </div>
+                <div className="mt-1 text-2xl font-black text-amber-900">
+                  {morningLogsCount} <span className="text-xs font-semibold text-amber-700">건</span>
+                </div>
+                <div className="mt-0.5 text-[11px] text-amber-700">
+                  00:00 ~ 11:59 발생 기록
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-3.5 shadow-2xs">
+                <div className="text-xs font-bold text-sky-700 flex items-center gap-1.5">
+                  <Moon className="h-3.5 w-3.5 text-sky-500" />
+                  🌇 오후 접속 (12시 후)
+                </div>
+                <div className="mt-1 text-2xl font-black text-sky-900">
+                  {afternoonLogsCount} <span className="text-xs font-semibold text-sky-700">건</span>
+                </div>
+                <div className="mt-0.5 text-[11px] text-sky-700">
+                  12:00 ~ 23:59 발생 기록
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-purple-200 bg-purple-50/60 p-3.5 shadow-2xs">
+                <div className="text-xs font-bold text-purple-700 flex items-center gap-1.5">
+                  <Fingerprint className="h-3.5 w-3.5 text-purple-500" />
+                  고유 접속 기기
+                </div>
+                <div className="mt-1 text-2xl font-black text-purple-900">
+                  {uniqueDevicesCount} <span className="text-xs font-semibold text-purple-700">대</span>
+                </div>
+                <div className="mt-0.5 text-[11px] text-purple-700">
+                  MAC 식별자 기준
+                </div>
+              </div>
+            </div>
+
+            {/* Controls: Time Filter, Event Filter, Search */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 flex-wrap pt-2">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-extrabold text-slate-500 mr-1">시간대:</span>
+                <button
+                  type="button"
+                  onClick={() => setAccessTimeFilter('all')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${
+                    accessTimeFilter === 'all'
+                      ? 'bg-indigo-600 text-white'
+                      : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  전체 ({accessLogs.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAccessTimeFilter('today')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${
+                    accessTimeFilter === 'today'
+                      ? 'bg-indigo-600 text-white'
+                      : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  오늘 ({todayLogs.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAccessTimeFilter('morning')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${
+                    accessTimeFilter === 'morning'
+                      ? 'bg-amber-600 text-white'
+                      : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                  }`}
+                >
+                  🌅 오전 ({morningLogsCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAccessTimeFilter('afternoon')}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${
+                    accessTimeFilter === 'afternoon'
+                      ? 'bg-sky-600 text-white'
+                      : 'border border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100'
+                  }`}
+                >
+                  🌇 오후 ({afternoonLogsCount})
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={accessEventFilter}
+                  onChange={(e) => setAccessEventFilter(e.target.value as any)}
+                  className="rounded-lg border border-slate-200 bg-white py-1.5 px-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  <option value="all">모든 이벤트 구분</option>
+                  <option value="login">로그인</option>
+                  <option value="register">가입 신청</option>
+                  <option value="save">클라우드 저장</option>
+                  <option value="resume">세션 복귀</option>
+                </select>
+
+                <div className="relative min-w-[200px] sm:w-64">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={accessSearch}
+                    onChange={(e) => setAccessSearch(e.target.value)}
+                    placeholder="학생명, 학적, MAC, IP 검색..."
+                    className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  />
+                  {accessSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setAccessSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Access Logs Table */}
+            <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-2xs max-h-[460px] overflow-y-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="sticky top-0 z-10 bg-slate-50 text-slate-700 font-extrabold border-b border-slate-200">
+                  <tr>
+                    <th className="py-2.5 px-3 whitespace-nowrap">접속 시각 (KST)</th>
+                    <th className="py-2.5 px-3 whitespace-nowrap">이벤트 구분</th>
+                    <th className="py-2.5 px-3 whitespace-nowrap">학생 정보 (학적 · 성명)</th>
+                    <th className="py-2.5 px-3 whitespace-nowrap">승인 상태</th>
+                    <th className="py-2.5 px-3 whitespace-nowrap">기기 식별자 (MAC 주소)</th>
+                    <th className="py-2.5 px-3 whitespace-nowrap">접속 환경 (IP · 브라우저)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredAccessLogs.length > 0 ? (
+                    filteredAccessLogs.map((log) => {
+                      const d = parseLogDate(log.createdAt);
+                      const isAfternoon = d ? d.getHours() >= 12 : false;
+                      return (
+                        <tr key={log.logId} className="hover:bg-indigo-50/30 transition-colors">
+                          <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px] text-slate-800">
+                            <span className="flex items-center gap-1.5">
+                              {isAfternoon ? (
+                                <span className="inline-block px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 font-bold text-[10px]">
+                                  오후
+                                </span>
+                              ) : (
+                                <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">
+                                  오전
+                                </span>
+                              )}
+                              <span>{formatLogTimestamp(log.createdAt)}</span>
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            {formatEventBadge(log.eventType)}
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            <div className="font-bold text-slate-900">
+                              {log.school} {log.grade}학년 {log.classNum}반 {log.studentNum}번
+                            </div>
+                            <div className="text-[11px] font-semibold text-indigo-700">
+                              {log.name}
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            {log.status === 'approved' ? (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+                                <CheckCircle2 className="h-3 w-3" /> 승인 완료
+                              </span>
+                            ) : log.status === 'pending' ? (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700 border border-amber-200">
+                                <Clock className="h-3 w-3" /> 승인 대기
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700 border border-rose-200">
+                                <XCircle className="h-3 w-3" /> 반려
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px] text-slate-600">
+                            <div className="flex items-center gap-1 font-bold text-slate-800">
+                              <Fingerprint className="h-3 w-3 text-slate-400" />
+                              {formatDeviceHashAsMac(log.deviceHash)}
+                            </div>
+                            <div className="text-[10px] text-slate-600 truncate max-w-[140px]" title={log.studentKey}>
+                              {log.studentKey}
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 text-[11px] text-slate-600">
+                            <div className="font-mono text-slate-700">{log.ipAddress}</div>
+                            <div className="text-[10px] text-slate-600 truncate max-w-[260px]" title={log.userAgent}>
+                              {log.userAgent}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-slate-500">
+                        {accessSearch || accessTimeFilter !== 'all' || accessEventFilter !== 'all'
+                          ? '선택한 필터 조건에 부합하는 접속 로그가 없습니다.'
+                          : '기록된 학생 실시간 접속 로그가 아직 없습니다.'}
                       </td>
                     </tr>
                   )}

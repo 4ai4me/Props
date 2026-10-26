@@ -575,3 +575,43 @@
   - [x] `mergeStudentStates` 로컬 작성 데이터 보호 단위 테스트 추가 및 전체 26개 테스트 통과
   - [x] `log.md` 작업 기록 완료
 
+---
+
+## [Task 21] 학생 실시간 접속 로그 (Live Access Audit Trail) 기능 구축 및 오전/오후 Firestore 기록 원인 완전 해결 (2026-10-26)
+
+### 1. 작업 시작 전 점검 (Pre-check)
+- **사용자 요청 사항**:
+  1. `student_registrations`의 `updatedAt`이 오전(오전 9시 46분 19초) 접속 인원만 남아 있고, 오후 접속 인원은 기록되지 않는 원인 규명.
+  2. **학생 실시간 접속 로그** 기능 추가 요청.
+- **작업 Tier**: Tier 2 (신규 Firestore 감사 컬렉션 `student_access_logs` 구축, 보안 규칙 배포, 교사용 실시간 접속 대시보드 및 통계·필터링·CSV 내보내기 구현, 학교 공용 기기 잠금 충돌 방지)
+- **오후 접속 기록 누락의 근본 원인 분석**:
+  1) **로그인 시 `updatedAt` 미갱신**: 기존 코드는 신규 가입(`handleRegisterSubmit`)과 승인된 학생의 활동지 저장 시에만 `updatedAt`을 갱신했으며, 기존 등록 학생이 오후에 재로그인(`handleStudentLoginSubmit`)할 때는 `getDoc`만 수행하고 `updatedAt`을 터치하지 않았음.
+  2) **학교 컴퓨터실/태블릿 카트 기기 잠금 충돌**: 오전 수업에 Tablet #1로 등록된 상태에서 오후 수업 학생이 동일한 Tablet #1에서 가입을 시도할 때, `device_locks` 및 `firestore.rules`의 기존 학생 고정 규칙으로 인해 가입이 거절되었음.
+- **구현 설계**:
+  - Firestore에 불변 감사 로그 컬렉션 `student_access_logs` 신설 및 `firestore.rules` 배포.
+  - 학생이 로그인, 가입, 세션 복귀, 활동지 저장 시 실시간으로 감사 로그 생성 및 `updatedAt` 갱신 동기화 (`src/utils/auditLogger.ts`).
+  - 교사용 기록실에 **[학생 실시간 접속 로그]** 전용 대시보드 카드 구축 (오늘 총 접속, 오전/오후 접속 건수, 기기 수, 실시간 수신 리스너, 필터링 및 CSV 내보내기).
+
+### 2. 구현 및 검증 결과 (Post-check)
+- **수행 내역**:
+  1. **감사 로거 유틸리티 (`src/utils/auditLogger.ts`) 구현**:
+     - `recordStudentAccessLog`: 학생키, 학적(학교/학년/반/번호), 성명, 이벤트구분(login, register, save, resume), 상태, MAC 식별자, IP, UserAgent, 서버 타임스탬프 기록 및 `updatedAt` 갱신.
+  2. **가입/로그인 파이프라인 및 학교 공용 기기 대응 (`AuthGateView.tsx`, `App.tsx`)**:
+     - 로그인 성공 시 즉시 `student_access_logs`에 로그인 이벤트 기록 및 `student_registrations/{studentKey}`의 `updatedAt` 최신화.
+     - 학교 컴퓨터실/태블릿 공유 환경에서 이전 학생 기기 잠금으로 오후 학생이 차단되지 않도록 기기 바인딩 갱신 지원.
+  3. **교사용 실시간 접속 로그 대시보드 (`src/components/TeacherView.tsx`)**:
+     - `onSnapshot` 기반 실시간 접속 로그 수신 (초록색 펄스 인디케이터).
+     - 4대 요약 지표 카드: 오늘 총 접속 건수, 🌅 오전 접속 (12시 전), 🌇 오후 접속 (12시 후), 고유 접속 기기 수.
+     - 시간대(전체/오늘/오전/오후) 및 이벤트별 필터, 검색 필터, [접속 로그 CSV 다운로드] 기능 완비.
+  4. **보안 규칙 배포 및 빌드 검증**:
+     - `firestore.rules`에 `student_access_logs` 생성/조회 권한 추가 및 `deploy_firebase` 완료.
+     - `npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts`: 26개 단위 테스트 100% 통과.
+     - `compile_applet`, `lint_applet`: 오류 0건, 프로덕션 빌드 동기화 완료.
+- **Definition of Done 확인**:
+  - [x] 오전/오후 접속 기록 누락 메커니즘 규명 및 로그인 시 `updatedAt` 갱신 처리
+  - [x] 학교 컴퓨터실/태블릿 공유 기기 잠금 문제 해소
+  - [x] Firestore `student_access_logs` 컬렉션 생성 및 실시간 감사 대시보드 구축
+  - [x] 시간대별(오전/오후) 통계 지표 및 접속 로그 CSV 다운로드 제공
+  - [x] 단위 테스트 26/26 전체 통과 및 배포 번들 동기화 완료
+
+

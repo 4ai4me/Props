@@ -39,6 +39,7 @@ import {
   RefreshCw,
   KeyRound,
 } from 'lucide-react';
+import { recordStudentAccessLog } from '../utils/auditLogger';
 
 export interface FirestoreStudentRegistrationDoc {
   studentKey: string;
@@ -175,21 +176,18 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       let deviceSnap;
       try {
         deviceSnap = await getDoc(deviceLockRef);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.GET, `device_locks/${latestNet.deviceHash}`);
+      } catch {
+        // non-blocking
       }
 
       if (deviceSnap && deviceSnap.exists()) {
         const lockData = deviceSnap.data() as { studentKey?: string };
         if (lockData.studentKey && lockData.studentKey !== sKey) {
-          setStatusMsg({
-            text: `중복 가입 방지: 현재 기기(MAC 주소 식별자 ${formatDeviceHashAsMac(
-              latestNet.deviceHash
-            )})에는 이미 다른 학생의 가입 신청 내역이 등록되어 있습니다. 교사에게 문의하세요.`,
-            type: 'warn',
-          });
-          setLoading(false);
-          return;
+          // In school classrooms, computer lab PCs and tablet carts are shared across morning and afternoon classes.
+          // Allow registration and rebind device lock so afternoon students are not locked out.
+          console.info(
+            `School shared device detected. Updating device link from ${lockData.studentKey} to ${sKey}`
+          );
         }
       }
 
@@ -271,6 +269,26 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
         localStorage.setItem(SAVED_STUDENT_KEY_STORAGE, sKey);
       } catch {}
       setActiveStudentKey(sKey);
+
+      // Record student access log for register event
+      try {
+        await recordStudentAccessLog({
+          studentKey: sKey,
+          school: form.school.trim(),
+          grade: form.grade.trim(),
+          classNum: form.classNum.trim(),
+          studentNum: form.studentNum.trim(),
+          name: form.name.trim(),
+          eventType: 'register',
+          status: 'pending',
+          deviceHash: latestNet.deviceHash,
+          ipAddress: latestNet.ipAddress,
+          userAgent: latestNet.userAgent,
+        });
+      } catch (logErr) {
+        console.warn('Register log skipped:', logErr);
+      }
+
       setStatusMsg({
         text: '가입 신청이 정상 접수되었습니다! 관리자(교사) 승인 후 즉시 활동지가 열립니다.',
         type: 'good',
@@ -364,6 +382,27 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
         localStorage.setItem(SAVED_STUDENT_KEY_STORAGE, matchedDoc.studentKey);
       } catch {}
       setActiveStudentKey(matchedDoc.studentKey);
+
+      // Record access log and update updatedAt so afternoon login is immediately recorded in Firestore
+      try {
+        const latestNet = await getClientNetworkIdentity();
+        await recordStudentAccessLog({
+          studentKey: matchedDoc.studentKey,
+          school: matchedDoc.school,
+          grade: matchedDoc.grade,
+          classNum: matchedDoc.classNum,
+          studentNum: matchedDoc.studentNum,
+          name: matchedDoc.name,
+          eventType: 'login',
+          status: matchedDoc.status,
+          deviceHash: latestNet.deviceHash,
+          ipAddress: latestNet.ipAddress,
+          userAgent: latestNet.userAgent,
+          updateRegistrationUpdatedAt: matchedDoc.status === 'approved',
+        });
+      } catch (logErr) {
+        console.warn('Login audit log recording skipped:', logErr);
+      }
 
       if (matchedDoc.status === 'pending') {
         setStatusMsg({

@@ -115,16 +115,14 @@ service cloud.firestore {
             incoming().studentNum == existing().studentNum &&
             incoming().birthDate == existing().birthDate &&
             incoming().name == existing().name &&
-            incoming().deviceHash == existing().deviceHash &&
-            incoming().ipAddress == existing().ipAddress &&
-            incoming().diff(existing()).affectedKeys().hasOnly(['worksheetJson', 'updatedAt'])
+            incoming().diff(existing()).affectedKeys().hasOnly(['worksheetJson', 'updatedAt', 'deviceHash', 'ipAddress', 'userAgent'])
           )
         );
 
       allow delete: if isValidId(studentKey) && isAdmin();
     }
 
-    // Device / MAC Lock Collection (Prevents duplicate sign-ups from the same device)
+    // Device / MAC Lock Collection (Permits shared computer lab/cart tablets while logging device identity)
     match /device_locks/{deviceHash} {
       allow get: if isValidId(deviceHash);
       allow list: if resource.data.deviceHash is string;
@@ -139,13 +137,35 @@ service cloud.firestore {
         isValidDeviceLock(incoming()) &&
         (
           isAdmin() ||
-          (
-            incoming().deviceHash == existing().deviceHash &&
-            incoming().studentKey == existing().studentKey
-          )
+          incoming().deviceHash == existing().deviceHash
         );
 
       allow delete: if isValidId(deviceHash) && isAdmin();
     }
+
+    function isValidAccessLog(data) {
+      return data.keys().hasAll([
+          'logId', 'studentKey', 'school', 'grade', 'classNum', 'studentNum',
+          'name', 'eventType', 'status', 'deviceHash', 'ipAddress', 'userAgent', 'createdAt'
+        ]) &&
+        data.logId is string && data.logId.size() >= 3 && data.logId.size() <= 120 &&
+        data.studentKey is string && data.studentKey.size() >= 3 && data.studentKey.size() <= 120 &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 50 &&
+        data.eventType is string && data.eventType in ['login', 'register', 'resume', 'save'] &&
+        data.status is string && data.status in ['pending', 'approved', 'rejected', 'teacher'] &&
+        data.createdAt is timestamp;
+    }
+
+    // Student Real-time Access Logs Collection (for audit trail and morning/afternoon monitoring)
+    match /student_access_logs/{logId} {
+      allow get: if isValidId(logId);
+      allow list: if isAdmin();
+      allow create: if isValidId(logId) &&
+        isValidAccessLog(incoming()) &&
+        incoming().logId == logId &&
+        incoming().createdAt == request.time;
+      allow update, delete: if isAdmin();
+    }
   }
 }
+
