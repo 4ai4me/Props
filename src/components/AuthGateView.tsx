@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
-  collection,
   doc,
   getDoc,
-  getDocs,
-  query,
-  where,
   writeBatch,
   serverTimestamp,
   onSnapshot,
@@ -19,7 +15,6 @@ import {
   buildSafeStudentKey,
   formatDeviceHashAsMac,
   isAuthorizedAdminEmail,
-  isSameBirthDate,
   normalizeBirthDate,
   validateStudentPassword,
   validateStudentRegistrationInput,
@@ -40,6 +35,7 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { recordStudentAccessLog } from '../utils/auditLogger';
+import { ensureStudentAuth, openOwnRegistration } from '../utils/studentAuth';
 
 export interface FirestoreStudentRegistrationDoc {
   studentKey: string;
@@ -56,6 +52,10 @@ export interface FirestoreStudentRegistrationDoc {
   worksheetJson: string;
   createdAt?: unknown;
   updatedAt?: unknown;
+  /** 이 문서의 주인인 Firebase 익명 계정 uid (보안 규칙에서 본인 확인에 사용) */
+  uid?: string;
+  claimName?: string;
+  claimBirthDate?: string;
 }
 
 interface AuthGateViewProps {
@@ -116,7 +116,13 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       return;
     }
     const ref = doc(db, 'student_registrations', activeStudentKey);
-    const unsub = onSnapshot(
+    let cancelled = false;
+    let unsub: (() => void) | null = null;
+    // 익명 로그인이 준비된 뒤에 구독해야 보안 규칙의 본인 확인을 통과합니다.
+    ensureStudentAuth()
+      .then(() => {
+        if (cancelled) return;
+        unsub = onSnapshot(
       ref,
       (snap) => {
         if (!snap.exists()) {
@@ -139,9 +145,29 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       },
       (error) => {
         console.error('Registration listener error:', error);
+        // 다른 기기에서 다시 로그인했거나 예전 방식으로 가입한 경우: 다시 로그인 필요
+        try {
+          localStorage.removeItem(SAVED_STUDENT_KEY_STORAGE);
+        } catch {}
+        setActiveStudentKey('');
+        setStatusMsg({
+          text: '보안 확인이 필요합니다. 학적 정보와 이름·생년월일을 입력해 다시 로그인해 주세요.',
+          type: 'warn',
+        });
       }
     );
-    return () => unsub();
+      })
+      .catch((err) => {
+        console.error('Anonymous sign-in failed:', err);
+        setStatusMsg({
+          text: '학생 로그인 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+          type: 'warn',
+        });
+      });
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
   }, [activeStudentKey, onStudentApprovedLogin]);
 
   // If teacher is already logged in with authorized email
@@ -191,42 +217,34 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
         }
       }
 
-      // 2. Check if this studentKey already exists
+      // 2. Check if this studentKey already exists (서버 규칙이 본인 여부를 확인)
+      const studentUser = await ensureStudentAuth();
       const regRef = doc(db, 'student_registrations', sKey);
-      let regSnap;
-      try {
-        regSnap = await getDoc(regRef);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.GET, `student_registrations/${sKey}`);
-      }
+      const opened = await openOwnRegistration(sKey, form.name, normalizedBirth);
 
-      if (regSnap && regSnap.exists()) {
-        const existing = regSnap.data() as FirestoreStudentRegistrationDoc;
-        if (
-          existing.name.trim() === form.name.trim() &&
-          isSameBirthDate(existing.birthDate, normalizedBirth)
-        ) {
-          try {
-            localStorage.setItem(SAVED_STUDENT_KEY_STORAGE, sKey);
-          } catch {}
-          setActiveStudentKey(sKey);
-          setStatusMsg({
-            text:
-              existing.status === 'approved'
-                ? '이미 승인된 계정입니다. 활동지 화면으로 이동합니다.'
-                : '이미 가입 신청이 접수되어 관리자 승인 대기 중입니다.',
-            type: existing.status === 'approved' ? 'good' : 'warn',
-          });
-          setLoading(false);
-          return;
-        } else {
-          setStatusMsg({
-            text: '이미 동일한 학교·학년·반·번호로 등록된 학생이 존재합니다. 학적 정보를 다시 확인하거나 교사에게 문의해 주세요.',
-            type: 'warn',
-          });
-          setLoading(false);
-          return;
-        }
+      if (opened.kind === 'ok') {
+        const existing = opened.doc;
+        try {
+          localStorage.setItem(SAVED_STUDENT_KEY_STORAGE, sKey);
+        } catch {}
+        setActiveStudentKey(sKey);
+        setStatusMsg({
+          text:
+            existing.status === 'approved'
+              ? '이미 승인된 계정입니다. 활동지 화면으로 이동합니다.'
+              : '이미 가입 신청이 접수되어 관리자 승인 대기 중입니다.',
+          type: existing.status === 'approved' ? 'good' : 'warn',
+        });
+        setLoading(false);
+        return;
+      }
+      if (opened.kind === 'mismatch') {
+        setStatusMsg({
+          text: '이미 동일한 학교·학년·반·번호로 등록된 학생이 존재합니다. 학적 정보를 다시 확인하거나 교사에게 문의해 주세요.',
+          type: 'warn',
+        });
+        setLoading(false);
+        return;
       }
 
       // 3. Create initial worksheet payload & atomic batch write (student_registrations + device_locks)
@@ -248,6 +266,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
         userAgent: latestNet.userAgent,
         status: 'pending',
         worksheetJson: JSON.stringify(initialWorksheet),
+        uid: studentUser.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -317,59 +336,20 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
     try {
       const sKey = buildSafeStudentKey(form);
       const normalizedBirth = normalizeBirthDate(form.birthDate);
-      const regRef = doc(db, 'student_registrations', sKey);
+      // 이름·생년월일 확인은 Firestore 보안 규칙(서버)이 수행합니다.
+      // (다른 학생의 문서는 목록 조회도, 열람도 할 수 없습니다)
+      const opened = await openOwnRegistration(sKey, form.name, normalizedBirth);
 
-      let snap;
-      try {
-        snap = await getDoc(regRef);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.GET, `student_registrations/${sKey}`);
-      }
-
-      let matchedDoc: FirestoreStudentRegistrationDoc | null =
-        snap && snap.exists() ? (snap.data() as FirestoreStudentRegistrationDoc) : null;
-
-      // Fallback search by (grade, classNum, studentNum, name, birthDate) in case school name was abbreviated during sign-up
-      if (!matchedDoc) {
-        try {
-          const q = query(
-            collection(db, 'student_registrations'),
-            where('status', 'in', ['pending', 'approved', 'rejected'])
-          );
-          const listSnap = await getDocs(q);
-          const targetG = String(parseInt(form.grade.trim(), 10));
-          const targetC = String(parseInt(form.classNum.trim(), 10));
-          const targetN = String(parseInt(form.studentNum.trim(), 10));
-          listSnap.forEach((d) => {
-            const item = d.data() as FirestoreStudentRegistrationDoc;
-            if (
-              String(parseInt(item.grade, 10)) === targetG &&
-              String(parseInt(item.classNum, 10)) === targetC &&
-              String(parseInt(item.studentNum, 10)) === targetN &&
-              item.name.trim() === form.name.trim() &&
-              isSameBirthDate(item.birthDate, normalizedBirth)
-            ) {
-              matchedDoc = item;
-            }
-          });
-        } catch {
-          // ignore fallback error
-        }
-      }
-
-      if (!matchedDoc) {
+      if (opened.kind === 'not_found') {
         setStatusMsg({
-          text: '일치하는 가입 신청 내역이 없습니다. 먼저 [학생 신규 가입 신청] 탭에서 가입을 신청해 주세요.',
+          text: '일치하는 가입 신청 내역이 없습니다. 학교 이름을 가입할 때와 똑같이 입력했는지 확인하거나, 먼저 [학생 신규 가입 신청] 탭에서 가입을 신청해 주세요.',
           type: 'warn',
         });
         setLoading(false);
         return;
       }
 
-      if (
-        matchedDoc.name.trim() !== form.name.trim() ||
-        !isSameBirthDate(matchedDoc.birthDate, normalizedBirth)
-      ) {
+      if (opened.kind === 'mismatch') {
         setStatusMsg({
           text: '이름 또는 생년월일이 등록된 정보와 일치하지 않습니다.',
           type: 'warn',
@@ -377,6 +357,8 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
         setLoading(false);
         return;
       }
+
+      const matchedDoc = opened.doc;
 
       try {
         localStorage.setItem(SAVED_STUDENT_KEY_STORAGE, matchedDoc.studentKey);

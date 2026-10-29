@@ -2969,3 +2969,26 @@ export function evaluateStudentLessonRenderGate(
   };
 }
 
+
+/**
+ * Props 활동지를 공유 문서(worksheetJson)에 저장할 때 사용합니다.
+ * 같은 학생 문서에는 Func 수업 활동지(funcWorksheet)도 함께 들어 있으므로,
+ * Props 내용만으로 덮어쓰지 않고 기존 문서의 다른 항목은 그대로 보존합니다.
+ */
+export function mergePropsIntoWorksheetJson(
+  existingWorksheetJson: string | undefined | null,
+  propsState: StudentRecord
+): string {
+  let preserved: Record<string, unknown> = {};
+  if (existingWorksheetJson && typeof existingWorksheetJson === 'string') {
+    try {
+      const parsed = JSON.parse(existingWorksheetJson);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        preserved = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // 손상된 기존 문서는 무시하고 Props 내용만 저장
+    }
+  }
+  return JSON.stringify({ ...preserved, ...propsState });
+}

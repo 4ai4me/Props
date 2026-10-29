@@ -24,6 +24,7 @@ import {
   EVAL_CRITERIA,
   EVAL_DESCRIPTIONS,
   cleanStudentState,
+  mergePropsIntoWorksheetJson,
   createSampleTeacherDataset,
   csvSafe,
   ensureTeacherEval,
@@ -710,7 +711,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     if (matchCloud) {
       try {
         await updateDoc(doc(db, 'student_registrations', matchCloud.studentKey), {
-          worksheetJson: JSON.stringify(updatedItem),
+          // Func 활동지 등 같은 문서의 다른 수업 내용은 보존
+          worksheetJson: mergePropsIntoWorksheetJson(matchCloud.worksheetJson, updatedItem),
           updatedAt: serverTimestamp(),
         });
       } catch {

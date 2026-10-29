@@ -26,6 +26,7 @@ import {
   EVAL_CRITERIA,
   buildLessonAccessFirestoreFields,
   cleanStudentState,
+  mergePropsIntoWorksheetJson,
   createInitialStudentState,
   ensureTeacherEval,
   evaluateLevel1Completion,
@@ -62,6 +63,7 @@ import { StudentEvaluationModal } from './components/StudentEvaluationModal';
 import { MathSymbolInputBar } from './components/MathSymbolInputBar';
 import { MathText } from './components/MathText';
 import { recordStudentAccessLog } from './utils/auditLogger';
+import { ensureStudentAuth } from './utils/studentAuth';
 import {
   Printer,
   CheckCircle2,
@@ -75,6 +77,10 @@ import {
   Zap,
   Lock,
 } from 'lucide-react';
+
+// 학생 활동지 자동 저장 대기 시간: 입력이 멈춘 뒤 이 시간이 지나면 한 번 저장
+// (기존 0.9초 → 10초. 탭 전환·닫기 시에는 즉시 저장되므로 내용이 사라지지 않음)
+const AUTOSAVE_DELAY_MS = 10000;
 
 export default function App() {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
@@ -214,11 +220,19 @@ export default function App() {
   } | null>(null);
 
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 자동 저장 대기 중인 작업 (탭 닫힘·전환 시 즉시 실행)
+  const pendingSaveRef = useRef<(() => Promise<void>) | null>(null);
+  // 서버에 저장된 최신 worksheetJson (Func 활동지 등 다른 수업 내용을 보존하기 위해 사용)
+  const latestRawWorksheetJsonRef = useRef<string>(approvedProfile?.worksheetJson || '');
 
   // Track Firebase Auth state
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setFirebaseUser(u);
+      // 로그인된 사용자가 없으면 학생용 익명 계정으로 자동 로그인
+      if (!u) {
+        ensureStudentAuth().catch((err) => console.error('Anonymous sign-in failed:', err));
+      }
       if (u && isAuthorizedAdminEmail(u.email, u.emailVerified)) {
         setSessionMode('teacher');
       }
@@ -235,12 +249,24 @@ export default function App() {
     }
 
     if (sessionMode === 'student' && approvedProfile?.studentKey) {
+      const studentKey = approvedProfile.studentKey;
+      const baseJson = latestRawWorksheetJsonRef.current || approvedProfile.worksheetJson;
+      const nextWorksheetJson = mergePropsIntoWorksheetJson(baseJson, student);
+
+      // 내용이 서버에 저장된 것과 같으면 쓰지 않음 (로그인 직후·평가 수신 시 불필요한 저장 방지)
+      if (nextWorksheetJson === baseJson) {
+        pendingSaveRef.current = null;
+        if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+        return;
+      }
+
       setCloudSyncStatus('saving');
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-      syncTimerRef.current = setTimeout(async () => {
+      pendingSaveRef.current = async () => {
+        pendingSaveRef.current = null;
         try {
-          await updateDoc(doc(db, 'student_registrations', approvedProfile.studentKey), {
-            worksheetJson: JSON.stringify(student),
+          latestRawWorksheetJsonRef.current = nextWorksheetJson;
+          await updateDoc(doc(db, 'student_registrations', studentKey), {
+            worksheetJson: nextWorksheetJson,
             updatedAt: serverTimestamp(),
           });
           setCloudSyncStatus('saved');
@@ -249,17 +275,39 @@ export default function App() {
           console.error('Firestore autosave failed:', err);
           setCloudSyncStatus('error');
         }
-      }, 900);
+      };
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = setTimeout(() => {
+        pendingSaveRef.current?.();
+      }, AUTOSAVE_DELAY_MS);
     }
   }, [student, sessionMode, approvedProfile]);
 
+  // 탭을 닫거나 다른 창으로 전환할 때는 기다리지 않고 바로 저장
+  useEffect(() => {
+    const flushNow = () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      pendingSaveRef.current?.();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushNow();
+    };
+    window.addEventListener('pagehide', flushNow);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flushNow);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
   // Real-time listener for teacher evaluations pushed to student registration
   useEffect(() => {
-    if (sessionMode !== 'student' || !approvedProfile?.studentKey) return;
+    if (sessionMode !== 'student' || !approvedProfile?.studentKey || !firebaseUser) return;
     const unsub = onSnapshot(doc(db, 'student_registrations', approvedProfile.studentKey), (docSnap) => {
       if (!docSnap.exists()) return;
       const data = docSnap.data() as FirestoreStudentRegistrationDoc;
       if (data.worksheetJson) {
+        latestRawWorksheetJsonRef.current = data.worksheetJson;
         try {
           const remote = cleanStudentState(JSON.parse(data.worksheetJson));
           setStudent((prev) => {
@@ -279,9 +327,20 @@ export default function App() {
           // ignore parsing error
         }
       }
+    }, (error) => {
+      // 다른 기기에서 다시 로그인했거나 예전 방식으로 가입한 경우: 처음 화면에서 다시 로그인
+      console.error('Student registration listener error:', error);
+      if ((error as { code?: string })?.code === 'permission-denied') {
+        try {
+          localStorage.removeItem('math_detective_active_student_key_v1');
+          localStorage.removeItem('math_detective_approved_profile_v1');
+        } catch {}
+        setApprovedProfile(null);
+        setSessionMode('gate');
+      }
     });
     return () => unsub();
-  }, [sessionMode, approvedProfile?.studentKey]);
+  }, [sessionMode, approvedProfile?.studentKey, firebaseUser]);
 
   // Sync teacher state to localStorage
   useEffect(() => {
@@ -551,10 +610,17 @@ export default function App() {
       showToast('승인된 학생 계정 정보가 없어 클라우드에 저장할 수 없습니다.', 'warn');
       return;
     }
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    pendingSaveRef.current = null;
     setCloudSyncStatus('saving');
     try {
+      const nextWorksheetJson = mergePropsIntoWorksheetJson(
+        latestRawWorksheetJsonRef.current || approvedProfile.worksheetJson,
+        student
+      );
+      latestRawWorksheetJsonRef.current = nextWorksheetJson;
       await updateDoc(doc(db, 'student_registrations', approvedProfile.studentKey), {
-        worksheetJson: JSON.stringify(student),
+        worksheetJson: nextWorksheetJson,
         updatedAt: serverTimestamp(),
       });
       setCloudSyncStatus('saved');
@@ -589,6 +655,7 @@ export default function App() {
         regDoc.studentNum
       ).padStart(2, '0')}_${regDoc.name}`.slice(0, 25);
 
+      latestRawWorksheetJsonRef.current = regDoc.worksheetJson || '';
       setApprovedProfile(regDoc);
       try {
         localStorage.setItem('math_detective_approved_profile_v1', JSON.stringify(regDoc));
@@ -629,12 +696,18 @@ export default function App() {
   }, []);
 
   const handleExitMode = async () => {
-    if (sessionMode === 'teacher') {
-      try {
-        await signOut(auth);
-      } catch {
-        // ignore
-      }
+    // 교사·학생 모두 로그아웃. 학생은 다음 접속 때 새 익명 계정이 만들어지므로
+    // 공용 기기에서 다음 사람이 이전 학생의 문서에 접근할 수 없습니다.
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    try {
+      await pendingSaveRef.current?.();
+    } catch {
+      // ignore
+    }
+    try {
+      await signOut(auth);
+    } catch {
+      // ignore
     }
     try {
       localStorage.removeItem('math_detective_active_student_key_v1');
