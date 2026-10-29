@@ -166,6 +166,31 @@ service cloud.firestore {
         incoming().createdAt == request.time;
       allow update, delete: if isAdmin();
     }
+
+    function isValidClassroomConfig(data) {
+      return data.keys().hasAll(['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'updatedAt']) &&
+        data.keys().hasOnly(['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'updatedAt']) &&
+        data.l1 is bool &&
+        data.l2 is bool &&
+        data.l3 is bool &&
+        data.l4 is bool &&
+        data.l5 is bool &&
+        data.l6 is bool &&
+        data.l7 is bool &&
+        data.updatedAt is timestamp;
+    }
+
+    // Classroom Global Settings (Lesson 1~7 active/inactive control)
+    match /classroom_settings/{configId} {
+      allow get: if isValidId(configId);
+      allow list: if false;
+      allow create, update: if isValidId(configId) &&
+        isValidClassroomConfig(incoming()) &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow delete: if isValidId(configId) && isAdmin();
+    }
   }
 }
+
 

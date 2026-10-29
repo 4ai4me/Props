@@ -1,18 +1,26 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import {
   CLASSROOM_BRAND_NAME,
   STORAGE_KEY_STUDENT,
   STORAGE_KEY_TEACHER,
+  STORAGE_KEY_LESSON_CONFIG,
   STAGE_TITLES,
   StudentRecord,
+  LessonActivationConfig,
+  LessonNumber,
   TOPICS,
   TopicId,
   EVAL_CRITERIA,
   cleanStudentState,
+  cleanLessonConfig,
   createInitialStudentState,
+  createDefaultLessonConfig,
+  isLessonEnabled,
+  getFirstEnabledLesson,
+  toFirestoreLessonConfigPayload,
   ensureTeacherEval,
   evaluateLevel1Completion,
   evaluateLevel2Completion,
@@ -54,6 +62,7 @@ import {
   Award,
   RotateCw,
   Zap,
+  Lock,
 } from 'lucide-react';
 
 export default function App() {
@@ -163,6 +172,16 @@ export default function App() {
     onConfirm: () => void;
   } | null>(null);
 
+  const [lessonConfig, setLessonConfig] = useState<LessonActivationConfig>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_LESSON_CONFIG);
+      if (raw) return cleanLessonConfig(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+    return createDefaultLessonConfig();
+  });
+
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Track Firebase Auth state
@@ -175,6 +194,42 @@ export default function App() {
     });
     return () => unsub();
   }, []);
+
+  // Persist lessonConfig to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_LESSON_CONFIG, JSON.stringify(lessonConfig));
+    } catch {
+      // ignore
+    }
+  }, [lessonConfig]);
+
+  // Real-time Firestore listener for classroom_settings/lesson_config
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, 'classroom_settings', 'lesson_config'),
+      (docSnap) => {
+        if (!docSnap.exists()) return;
+        const data = docSnap.data();
+        setLessonConfig(cleanLessonConfig(data));
+      },
+      (err) => {
+        console.error('Lesson config listener error:', err);
+      }
+    );
+    return () => unsub();
+  }, []);
+
+  // Ensure student cannot stay on a locked lesson tab when lessonConfig updates
+  useEffect(() => {
+    if (sessionMode !== 'student') return;
+    if (!isLessonEnabled(lessonConfig, activeLessonTab)) {
+      const firstOpen = getFirstEnabledLesson(lessonConfig);
+      if (firstOpen && firstOpen !== activeLessonTab) {
+        setActiveLessonTab(firstOpen);
+      }
+    }
+  }, [sessionMode, lessonConfig, activeLessonTab]);
 
   // Sync student state to localStorage and debounced Firestore update when approved
   useEffect(() => {
@@ -260,6 +315,48 @@ export default function App() {
 
   const requestConfirm = (title: string, message: string, onConfirm: () => void) => {
     setConfirmDialog({ title, message, onConfirm });
+  };
+
+  const handleUpdateLessonConfig = useCallback(
+    async (nextConfig: LessonActivationConfig, summaryMessage?: string) => {
+      const cleaned = cleanLessonConfig({
+        ...nextConfig,
+        updatedAt: new Date().toISOString(),
+      });
+      setLessonConfig(cleaned);
+      try {
+        localStorage.setItem(STORAGE_KEY_LESSON_CONFIG, JSON.stringify(cleaned));
+      } catch {
+        // ignore
+      }
+      if (firebaseUser && isAuthorizedAdminEmail(firebaseUser.email, firebaseUser.emailVerified)) {
+        try {
+          await setDoc(doc(db, 'classroom_settings', 'lesson_config'), {
+            ...toFirestoreLessonConfigPayload(cleaned),
+            updatedAt: serverTimestamp(),
+          });
+        } catch (err) {
+          console.error('Failed to sync lesson config to Firestore:', err);
+        }
+      }
+      if (summaryMessage) {
+        showToast(summaryMessage, 'good');
+      }
+    },
+    [firebaseUser]
+  );
+
+  const handleStudentAdvanceLesson = (nextLesson: LessonNumber) => {
+    if (!isLessonEnabled(lessonConfig, nextLesson)) {
+      showToast(
+        `🔒 ${nextLesson}차시는 현재 선생님이 비활성화(선행 학습 잠금)한 차시입니다. 선생님의 안내를 기다려 주세요.`,
+        'warn'
+      );
+      return;
+    }
+    setSteps((prev) => ({ ...prev, [nextLesson]: 0 }));
+    setActiveLessonTab(nextLesson);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleManualForceSave = async () => {
@@ -566,32 +663,60 @@ export default function App() {
                       [6, '06', '절대부등식2 (6차시)'],
                       [7, '07', '절대부등식3 (7차시)'],
                     ] as const
-                  ).map(([tabNum, badge, label]) => (
-                    <button
-                      key={tabNum}
-                      type="button"
-                      role="tab"
-                      aria-selected={activeLessonTab === tabNum}
-                      onClick={() => {
-                        setActiveLessonTab(tabNum);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className={`min-h-[42px] rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
-                        activeLessonTab === tabNum
-                          ? 'bg-white text-slate-900 shadow-sm'
-                          : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
-                      }`}
-                    >
-                      <span
-                        className={`mr-1.5 mono text-xs font-extrabold ${
-                          activeLessonTab === tabNum ? 'text-blue-600' : 'text-sky-300'
+                  ).map(([tabNum, badge, label]) => {
+                    const isEnabled = isLessonEnabled(lessonConfig, tabNum);
+                    return (
+                      <button
+                        key={tabNum}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeLessonTab === tabNum}
+                        aria-disabled={!isEnabled}
+                        onClick={() => {
+                          if (!isEnabled) {
+                            showToast(
+                              `🔒 ${tabNum}차시는 현재 선생님이 비활성화(선행 학습 잠금)한 차시입니다. 열린 차시를 먼저 탐구해 주세요.`,
+                              'warn'
+                            );
+                            return;
+                          }
+                          setActiveLessonTab(tabNum);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        title={
+                          isEnabled
+                            ? `${tabNum}차시 탐구 열기`
+                            : `${tabNum}차시는 현재 선행 학습 방지를 위해 잠겨 있습니다`
+                        }
+                        className={`min-h-[42px] inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-bold transition-all whitespace-nowrap shrink-0 ${
+                          !isEnabled
+                            ? 'bg-slate-900/60 text-slate-400 border border-white/10 opacity-75 cursor-not-allowed'
+                            : activeLessonTab === tabNum
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'bg-white/10 text-slate-200 border border-white/15 hover:bg-white/15'
                         }`}
                       >
-                        {badge}
-                      </span>
-                      {label}
-                    </button>
-                  ))}
+                        <span
+                          className={`mono text-xs font-extrabold ${
+                            !isEnabled
+                              ? 'text-slate-500'
+                              : activeLessonTab === tabNum
+                              ? 'text-blue-600'
+                              : 'text-sky-300'
+                          }`}
+                        >
+                          {badge}
+                        </span>
+                        <span>{label}</span>
+                        {!isEnabled && (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-rose-500/20 border border-rose-400/30 px-1.5 py-0.5 text-[10px] font-extrabold text-rose-200">
+                            <Lock className="h-2.5 w-2.5" />
+                            잠김
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Bottom Row: 나의 수사 진행 현황 (h3 class) with Evaluation & Print Buttons */}
@@ -601,7 +726,7 @@ export default function App() {
                       나의 수사 진행 현황
                     </h3>
                     <span className="mono text-xs font-bold text-sky-200 bg-sky-950/70 border border-sky-400/30 px-2 py-0.5 rounded-md">
-                      1차시 {done1.filter(Boolean).length}/5 · 2차시 {done2.filter(Boolean).length}/5 · 3차시 {done3.filter(Boolean).length}/5 · 4차시 {done4.filter(Boolean).length}/5 · 5차시 {done5.filter(Boolean).length}/5 · 6차시 {done6.filter(Boolean).length}/5 · 7차시 {done7.filter(Boolean).length}/5
+                      1차시 {done1.filter(Boolean).length}/{STAGE_TITLES[1].length} · 2차시 {done2.filter(Boolean).length}/5 · 3차시 {done3.filter(Boolean).length}/5 · 4차시 {done4.filter(Boolean).length}/5 · 5차시 {done5.filter(Boolean).length}/5 · 6차시 {done6.filter(Boolean).length}/5 · 7차시 {done7.filter(Boolean).length}/5
                     </span>
                   </div>
 
@@ -828,7 +953,7 @@ export default function App() {
                       {activeLessonTab === 7 && '07차시 · 절대부등식3 (절댓값 기호를 포함한 부등식의 증명)'}
                     </span>
                     <span className="font-semibold mono text-slate-600">
-                      권장 시간 50분 · 단계 완료 {activeDone.filter(Boolean).length} / 5
+                      권장 시간 50분 · 단계 완료 {activeDone.filter(Boolean).length} / {STAGE_TITLES[activeLessonTab].length}
                     </span>
                   </div>
 
@@ -858,16 +983,25 @@ export default function App() {
                   <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
                     <div
                       className="h-full rounded-full bg-blue-600 transition-all duration-200"
-                      style={{ width: `${activeDone.filter(Boolean).length * 20}%` }}
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.round((activeDone.filter(Boolean).length / Math.max(1, STAGE_TITLES[activeLessonTab].length)) * 100)
+                        )}%`,
+                      }}
                     />
                   </div>
                 </div>
               </div>
 
-              {/* 5-Stage Step Navigation */}
+              {/* Stage Step Navigation Grid */}
               <nav
                 aria-label="수사 단계 이동"
-                className="no-print grid grid-cols-5 gap-2 sm:gap-3"
+                className={`no-print grid gap-2 sm:gap-3 ${
+                  STAGE_TITLES[activeLessonTab].length === 6
+                    ? 'grid-cols-3 sm:grid-cols-6'
+                    : 'grid-cols-5'
+                }`}
               >
                 {STAGE_TITLES[activeLessonTab].map((title, idx) => {
                   const isCurrent = activeStep === idx;
@@ -916,168 +1050,174 @@ export default function App() {
                     학생: {approvedProfile ? `${approvedProfile.school} ${approvedProfile.grade}학년 ${approvedProfile.classNum}반 ${approvedProfile.studentNum}번 ${approvedProfile.name}` : `${student.group} ${student.code}`} · 출력일: {new Date().toLocaleDateString('ko-KR')}
                   </div>
                 </div>
-                {activeLessonTab === 1 && (
-                  <Lesson1View
-                    state={student.l1}
-                    step={steps[1]}
-                    onStepChange={(next) => {
-                      setSteps((prev) => ({ ...prev, 1: next }));
-                      window.scrollTo({ top: 180, behavior: 'smooth' });
-                    }}
-                    onUpdate={(updater) =>
-                      setStudent((prev) => ({
-                        ...prev,
-                        updatedAt: new Date().toISOString(),
-                        l1: updater(prev.l1),
-                      }))
-                    }
-                    onGoToLesson2={() => {
-                      setSteps((prev) => ({ ...prev, 2: 0 }));
-                      setActiveLessonTab(2);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onRequestConfirm={requestConfirm}
-                  />
-                )}
+                {!isLessonEnabled(lessonConfig, activeLessonTab) ? (
+                  <div className="py-10 px-4 text-center space-y-4">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600">
+                      <Lock className="h-7 w-7" />
+                    </div>
+                    <h3 className="text-xl font-extrabold text-slate-900">
+                      {activeLessonTab}차시는 현재 비활성화(선행 학습 잠금) 상태입니다
+                    </h3>
+                    <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                      선생님이 현재 수업 진도에 맞춰 차시 열림 상태를 관리하고 있습니다. 활성화된 차시를 먼저 탐구하거나 선생님의 안내를 기다려 주세요.
+                    </p>
+                    {getFirstEnabledLesson(lessonConfig) && (
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const firstOpen = getFirstEnabledLesson(lessonConfig);
+                            if (firstOpen) setActiveLessonTab(firstOpen);
+                          }}
+                          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+                        >
+                          {getFirstEnabledLesson(lessonConfig)}차시(열린 차시)로 이동하기
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {activeLessonTab === 1 && (
+                      <Lesson1View
+                        state={student.l1}
+                        step={steps[1]}
+                        onStepChange={(next) => {
+                          setSteps((prev) => ({ ...prev, 1: next }));
+                          window.scrollTo({ top: 180, behavior: 'smooth' });
+                        }}
+                        onUpdate={(updater) =>
+                          setStudent((prev) => ({
+                            ...prev,
+                            updatedAt: new Date().toISOString(),
+                            l1: updater(prev.l1),
+                          }))
+                        }
+                        onGoToLesson2={() => handleStudentAdvanceLesson(2)}
+                        onRequestConfirm={requestConfirm}
+                      />
+                    )}
 
-                {activeLessonTab === 2 && (
-                  <Lesson2View
-                    state={student.l2}
-                    step={steps[2]}
-                    onStepChange={(next) => {
-                      setSteps((prev) => ({ ...prev, 2: next }));
-                      window.scrollTo({ top: 180, behavior: 'smooth' });
-                    }}
-                    onUpdate={(updater) =>
-                      setStudent((prev) => ({
-                        ...prev,
-                        updatedAt: new Date().toISOString(),
-                        l2: updater(prev.l2),
-                      }))
-                    }
-                    onChangeTopic={handleChangeTopic2}
-                    onGoToLesson3={() => {
-                      setSteps((prev) => ({ ...prev, 3: 0 }));
-                      setActiveLessonTab(3);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onRequestConfirm={requestConfirm}
-                  />
-                )}
+                    {activeLessonTab === 2 && (
+                      <Lesson2View
+                        state={student.l2}
+                        step={steps[2]}
+                        onStepChange={(next) => {
+                          setSteps((prev) => ({ ...prev, 2: next }));
+                          window.scrollTo({ top: 180, behavior: 'smooth' });
+                        }}
+                        onUpdate={(updater) =>
+                          setStudent((prev) => ({
+                            ...prev,
+                            updatedAt: new Date().toISOString(),
+                            l2: updater(prev.l2),
+                          }))
+                        }
+                        onChangeTopic={handleChangeTopic2}
+                        onGoToLesson3={() => handleStudentAdvanceLesson(3)}
+                        onRequestConfirm={requestConfirm}
+                      />
+                    )}
 
-                {activeLessonTab === 3 && (
-                  <Lesson3View
-                    state={student.l3}
-                    step={steps[3]}
-                    onStepChange={(next) => {
-                      setSteps((prev) => ({ ...prev, 3: next }));
-                      window.scrollTo({ top: 180, behavior: 'smooth' });
-                    }}
-                    onUpdate={(updater) =>
-                      setStudent((prev) => ({
-                        ...prev,
-                        updatedAt: new Date().toISOString(),
-                        l3: updater(prev.l3),
-                      }))
-                    }
-                    onGoToLesson4={() => {
-                      setSteps((prev) => ({ ...prev, 4: 0 }));
-                      setActiveLessonTab(4);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onRequestConfirm={requestConfirm}
-                  />
-                )}
+                    {activeLessonTab === 3 && (
+                      <Lesson3View
+                        state={student.l3}
+                        step={steps[3]}
+                        onStepChange={(next) => {
+                          setSteps((prev) => ({ ...prev, 3: next }));
+                          window.scrollTo({ top: 180, behavior: 'smooth' });
+                        }}
+                        onUpdate={(updater) =>
+                          setStudent((prev) => ({
+                            ...prev,
+                            updatedAt: new Date().toISOString(),
+                            l3: updater(prev.l3),
+                          }))
+                        }
+                        onGoToLesson4={() => handleStudentAdvanceLesson(4)}
+                        onRequestConfirm={requestConfirm}
+                      />
+                    )}
 
-                {activeLessonTab === 4 && (
-                  <Lesson4View
-                    state={student.l4}
-                    step={steps[4]}
-                    onStepChange={(next) => {
-                      setSteps((prev) => ({ ...prev, 4: next }));
-                      window.scrollTo({ top: 180, behavior: 'smooth' });
-                    }}
-                    onUpdate={(updater) =>
-                      setStudent((prev) => ({
-                        ...prev,
-                        updatedAt: new Date().toISOString(),
-                        l4: updater(prev.l4),
-                      }))
-                    }
-                    onGoToLesson5={() => {
-                      setSteps((prev) => ({ ...prev, 5: 0 }));
-                      setActiveLessonTab(5);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onRequestConfirm={requestConfirm}
-                  />
-                )}
+                    {activeLessonTab === 4 && (
+                      <Lesson4View
+                        state={student.l4}
+                        step={steps[4]}
+                        onStepChange={(next) => {
+                          setSteps((prev) => ({ ...prev, 4: next }));
+                          window.scrollTo({ top: 180, behavior: 'smooth' });
+                        }}
+                        onUpdate={(updater) =>
+                          setStudent((prev) => ({
+                            ...prev,
+                            updatedAt: new Date().toISOString(),
+                            l4: updater(prev.l4),
+                          }))
+                        }
+                        onGoToLesson5={() => handleStudentAdvanceLesson(5)}
+                        onRequestConfirm={requestConfirm}
+                      />
+                    )}
 
-                {activeLessonTab === 5 && (
-                  <Lesson5View
-                    state={student.l5}
-                    step={steps[5]}
-                    onStepChange={(next) => {
-                      setSteps((prev) => ({ ...prev, 5: next }));
-                      window.scrollTo({ top: 180, behavior: 'smooth' });
-                    }}
-                    onUpdate={(updater) =>
-                      setStudent((prev) => ({
-                        ...prev,
-                        updatedAt: new Date().toISOString(),
-                        l5: updater(prev.l5),
-                      }))
-                    }
-                    onGoToLesson6={() => {
-                      setSteps((prev) => ({ ...prev, 6: 0 }));
-                      setActiveLessonTab(6);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onRequestConfirm={requestConfirm}
-                  />
-                )}
+                    {activeLessonTab === 5 && (
+                      <Lesson5View
+                        state={student.l5}
+                        step={steps[5]}
+                        onStepChange={(next) => {
+                          setSteps((prev) => ({ ...prev, 5: next }));
+                          window.scrollTo({ top: 180, behavior: 'smooth' });
+                        }}
+                        onUpdate={(updater) =>
+                          setStudent((prev) => ({
+                            ...prev,
+                            updatedAt: new Date().toISOString(),
+                            l5: updater(prev.l5),
+                          }))
+                        }
+                        onGoToLesson6={() => handleStudentAdvanceLesson(6)}
+                        onRequestConfirm={requestConfirm}
+                      />
+                    )}
 
-                {activeLessonTab === 6 && (
-                  <Lesson6View
-                    state={student.l6}
-                    step={steps[6]}
-                    onStepChange={(next) => {
-                      setSteps((prev) => ({ ...prev, 6: next }));
-                      window.scrollTo({ top: 180, behavior: 'smooth' });
-                    }}
-                    onUpdate={(updater) =>
-                      setStudent((prev) => ({
-                        ...prev,
-                        updatedAt: new Date().toISOString(),
-                        l6: updater(prev.l6),
-                      }))
-                    }
-                    onGoToLesson7={() => {
-                      setSteps((prev) => ({ ...prev, 7: 0 }));
-                      setActiveLessonTab(7);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onRequestConfirm={requestConfirm}
-                  />
-                )}
+                    {activeLessonTab === 6 && (
+                      <Lesson6View
+                        state={student.l6}
+                        step={steps[6]}
+                        onStepChange={(next) => {
+                          setSteps((prev) => ({ ...prev, 6: next }));
+                          window.scrollTo({ top: 180, behavior: 'smooth' });
+                        }}
+                        onUpdate={(updater) =>
+                          setStudent((prev) => ({
+                            ...prev,
+                            updatedAt: new Date().toISOString(),
+                            l6: updater(prev.l6),
+                          }))
+                        }
+                        onGoToLesson7={() => handleStudentAdvanceLesson(7)}
+                        onRequestConfirm={requestConfirm}
+                      />
+                    )}
 
-                {activeLessonTab === 7 && (
-                  <Lesson7View
-                    state={student.l7}
-                    step={steps[7]}
-                    onStepChange={(next) => {
-                      setSteps((prev) => ({ ...prev, 7: next }));
-                      window.scrollTo({ top: 180, behavior: 'smooth' });
-                    }}
-                    onUpdate={(updater) =>
-                      setStudent((prev) => ({
-                        ...prev,
-                        updatedAt: new Date().toISOString(),
-                        l7: updater(prev.l7),
-                      }))
-                    }
-                    onRequestConfirm={requestConfirm}
-                  />
+                    {activeLessonTab === 7 && (
+                      <Lesson7View
+                        state={student.l7}
+                        step={steps[7]}
+                        onStepChange={(next) => {
+                          setSteps((prev) => ({ ...prev, 7: next }));
+                          window.scrollTo({ top: 180, behavior: 'smooth' });
+                        }}
+                        onUpdate={(updater) =>
+                          setStudent((prev) => ({
+                            ...prev,
+                            updatedAt: new Date().toISOString(),
+                            l7: updater(prev.l7),
+                          }))
+                        }
+                        onRequestConfirm={requestConfirm}
+                      />
+                    )}
+                  </>
                 )}
               </section>
             </section>
@@ -1093,11 +1233,13 @@ export default function App() {
                 onUpdateRecords={setTeacherRecords}
                 onPrintStudentReport={handlePrintStudentReport}
                 onRequestConfirm={requestConfirm}
+                lessonConfig={lessonConfig}
+                onUpdateLessonConfig={handleUpdateLessonConfig}
               />
             </section>
           )}
 
-          {sessionMode !== 'gate' && (
+          {sessionMode === 'student' && (
             <MathSymbolInputBar activeLesson={activeLessonTab} />
           )}
         </main>
@@ -1164,6 +1306,13 @@ export default function App() {
           student={student}
           onPrintReport={handlePrintStudentReport}
           onGoToLesson={(lesson) => {
+            if (!isLessonEnabled(lessonConfig, lesson)) {
+              showToast(
+                `🔒 ${lesson}차시는 현재 선생님이 비활성화(선행 학습 잠금)한 차시입니다.`,
+                'warn'
+              );
+              return;
+            }
             setActiveLessonTab(lesson);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
@@ -1204,6 +1353,13 @@ export default function App() {
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
               <strong>1차시 증명 서술:</strong> {printingStudent.l1.proofText || '미작성'}
             </div>
+            {(printingStudent.l1.aiA || printingStudent.l1.vendAnswer) && (
+              <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
+                <strong>1차시 06 도전 실생활 함수:</strong>{' '}
+                {printingStudent.l1.aiA && `[도전 1 AI] 기계A: ${printingStudent.l1.aiA === 'yes' ? '함수' : '함수아님'}, B: ${printingStudent.l1.aiB === 'yes' ? '함수' : '함수아님'}, C: ${printingStudent.l1.aiC === 'yes' ? '함수' : '함수아님'} (설명: ${printingStudent.l1.aiExplain || '미작성'}) `}
+                {printingStudent.l1.vendAnswer && `[도전 2 자판기] 함수여부: ${printingStudent.l1.vendAnswer === 'yes' ? '함수' : '함수아님'} (수리음료: [${(printingStudent.l1.vFix || []).filter(Boolean).join(', ')}], 이유: ${printingStudent.l1.vendExplain || '미작성'})`}
+              </div>
+            )}
             <div className="border-b border-[#ccd5df] py-2 text-sm whitespace-pre-wrap">
               <strong>2차시 선택 명제:</strong>{' '}
               {printingStudent.l2.topic === 'd'

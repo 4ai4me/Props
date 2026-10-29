@@ -13,6 +13,11 @@ import {
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import {
   StudentRecord,
+  LessonActivationConfig,
+  LessonNumber,
+  LESSON_META,
+  createLessonPresetConfig,
+  isLessonEnabled,
   TOPICS,
   TopicId,
   EVAL_CRITERIA,
@@ -68,6 +73,8 @@ import {
   LogIn,
   UserPlus,
   Save,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { StudentAccessLog } from '../utils/auditLogger';
 import { MathText } from './MathText';
@@ -80,6 +87,8 @@ interface TeacherViewProps {
   onUpdateRecords: React.Dispatch<React.SetStateAction<StudentRecord[]>>;
   onPrintStudentReport: (student: StudentRecord) => void;
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
+  lessonConfig: LessonActivationConfig;
+  onUpdateLessonConfig: (nextConfig: LessonActivationConfig, summaryMessage?: string) => void;
 }
 
 export const TeacherView: React.FC<TeacherViewProps> = ({
@@ -90,6 +99,8 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   onUpdateRecords,
   onPrintStudentReport,
   onRequestConfirm,
+  lessonConfig,
+  onUpdateLessonConfig,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const detailRef = useRef<HTMLDivElement | null>(null);
@@ -102,6 +113,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   });
 
   // Section collapse/expand states
+  const [isLessonLockOpen, setIsLessonLockOpen] = useState(true);
   const [isApprovalOpen, setIsApprovalOpen] = useState(true);
   const [isControlsOpen, setIsControlsOpen] = useState(true);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(true);
@@ -888,8 +900,209 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const enabledLessonsList = LESSON_META.filter((m) => isLessonEnabled(lessonConfig, m.lesson));
+
+  const handleToggleSingleLesson = (lessonNum: LessonNumber) => {
+    const nextState = !lessonConfig[lessonNum];
+    const nextConfig: LessonActivationConfig = {
+      ...lessonConfig,
+      [lessonNum]: nextState,
+      updatedAt: new Date().toISOString(),
+    };
+    onUpdateLessonConfig(
+      nextConfig,
+      nextState
+        ? `${lessonNum}차시 학습을 [활성(열림)]으로 전환했습니다.`
+        : `${lessonNum}차시 학습을 [비활성(선행 잠금)]으로 전환했습니다.`
+    );
+  };
+
   return (
     <div className="space-y-6">
+      {/* SECTION 0: Per-Lesson Activation / Lock Control (Prevent Ahead-of-Schedule Progression) */}
+      <div className="rounded-2xl border border-indigo-200/90 bg-white p-5 sm:p-7 shadow-xs">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsLessonLockOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+              aria-expanded={isLessonLockOpen}
+              aria-label="차시별 활성/비활성 제어 메뉴 접기/펼치기"
+            >
+              {isLessonLockOpen ? (
+                <>
+                  <ChevronUp className="h-4 w-4 text-slate-600" />
+                  <span>접기</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 text-slate-600" />
+                  <span>펼치기</span>
+                </>
+              )}
+            </button>
+            <div>
+              <div className="text-xs font-bold text-indigo-600 flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5" />
+                <span>수업 진도 제어 · 선행 학습 방지 (실시간 학생 화면 반영)</span>
+              </div>
+              <h2 className="mt-0.5 text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
+                차시별 활성 / 비활성 (ON / OFF) 관리
+                <span className="text-xs font-bold text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                  현재 열림: {enabledLessonsList.length} / 7차시 (
+                  {enabledLessonsList.length === 0
+                    ? '전체 잠김'
+                    : enabledLessonsList.length === 7
+                    ? '전체 열림'
+                    : enabledLessonsList.map((m) => `${m.lesson}차시`).join(', ')}
+                  )
+                </span>
+              </h2>
+            </div>
+          </div>
+
+          {/* Quick Preset Buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() =>
+                onUpdateLessonConfig(
+                  createLessonPresetConfig('only1'),
+                  '1차시만 활성화하고 2~7차시는 선행 학습 방지를 위해 잠갔습니다.'
+                )
+              }
+              className="inline-flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-extrabold text-indigo-800 hover:bg-indigo-100 transition-colors"
+            >
+              <Lock className="h-3.5 w-3.5 text-indigo-600" />
+              1차시만 ON (선행 방지)
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                onUpdateLessonConfig(
+                  createLessonPresetConfig('upTo2'),
+                  '1~2차시만 활성화하고 3~7차시는 잠갔습니다.'
+                )
+              }
+              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              1~2차시 ON
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                onUpdateLessonConfig(
+                  createLessonPresetConfig('upTo4'),
+                  '1~4차시(명제 증명 단원)를 활성화하고 5~7차시는 잠갔습니다.'
+                )
+              }
+              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              1~4차시 ON
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                onUpdateLessonConfig(
+                  createLessonPresetConfig('all'),
+                  '전체 1~7차시를 모두 활성화(열림)했습니다.'
+                )
+              }
+              className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-800 hover:bg-emerald-100 transition-colors"
+            >
+              <Unlock className="h-3.5 w-3.5 text-emerald-600" />
+              전체 차시 모두 ON
+            </button>
+          </div>
+        </div>
+
+        {isLessonLockOpen && (
+          <div className="mt-4 pt-4 border-t border-slate-100 space-y-4">
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              각 차시 버튼을 클릭하여 <strong>활성(ON)</strong> 또는 <strong>비활성(OFF, 선행 잠금)</strong> 상태를 전환할 수 있습니다.
+              비활성화된 차시는 학생 화면 상단 탭에 <strong>‘잠김’</strong>으로 표시되며, 학생이 임의로 클릭하거나 다음 차시로 넘어가는 것이 즉시 차단됩니다.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {LESSON_META.map((meta) => {
+                const enabled = isLessonEnabled(lessonConfig, meta.lesson);
+                return (
+                  <div
+                    key={meta.lesson}
+                    className={`rounded-xl border p-3.5 flex flex-col justify-between gap-3 transition-all ${
+                      enabled
+                        ? 'border-emerald-200 bg-emerald-50/40'
+                        : 'border-slate-200 bg-slate-100/80 opacity-85'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span
+                          className={`mono text-xs font-extrabold px-2 py-0.5 rounded-md whitespace-nowrap ${
+                            enabled
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-300 text-slate-700'
+                          }`}
+                        >
+                          {meta.badge}차시
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 text-xs font-extrabold whitespace-nowrap ${
+                            enabled ? 'text-emerald-700' : 'text-rose-700'
+                          }`}
+                        >
+                          {enabled ? (
+                            <>
+                              <Unlock className="h-3.5 w-3.5 shrink-0" />
+                              <span>활성 (열림)</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="h-3.5 w-3.5 shrink-0" />
+                              <span>비활성 (잠김)</span>
+                            </>
+                          )}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-sm font-extrabold text-slate-900 leading-snug">
+                        <MathText text={meta.shortTitle} />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={enabled}
+                      aria-label={`${meta.lesson}차시 활성 상태 전환`}
+                      onClick={() => handleToggleSingleLesson(meta.lesson)}
+                      className={`w-full min-h-[38px] rounded-lg px-3 py-1.5 text-xs font-extrabold flex items-center justify-between gap-2 whitespace-nowrap transition-colors ${
+                        enabled
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
+                          : 'bg-slate-800 hover:bg-slate-900 text-slate-200'
+                      }`}
+                    >
+                      <span>{enabled ? '학습 허용 ON' : '선행 잠금 OFF'}</span>
+                      <span
+                        className={`inline-block h-4 w-7 shrink-0 rounded-full p-0.5 transition-colors ${
+                          enabled ? 'bg-emerald-800' : 'bg-slate-600'
+                        }`}
+                      >
+                        <span
+                          className={`block h-3 w-3 rounded-full bg-white transition-transform ${
+                            enabled ? 'translate-x-3' : 'translate-x-0'
+                          }`}
+                        />
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* SECTION 1: Student Registration Approval Management (Admin Only) */}
       <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-7 shadow-xs">
         <div className="flex items-center justify-between gap-3 flex-wrap">

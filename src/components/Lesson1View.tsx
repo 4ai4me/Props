@@ -8,8 +8,9 @@ import {
   validateClaim1,
   evaluateLevel1Completion,
 } from '../utils/mathLogic';
-import { CheckCircle2, AlertCircle, HelpCircle, Trash2, Shuffle, ArrowRight, Plus } from 'lucide-react';
+import { CheckCircle2, AlertCircle, HelpCircle, Trash2, Shuffle, ArrowRight, Plus, Sparkles } from 'lucide-react';
 import { CharCountBadge, getCharCountBorderClass } from './CharCountBadge';
+import { Lesson1ChallengeView } from './Lesson1ChallengeView';
 
 interface Lesson1ViewProps {
   state: Lesson1State;
@@ -889,11 +890,19 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
             <p className="mt-1 text-sm text-slate-600">
               내가 발견한 규칙을 2차시에서 새롭게 변형하거나 일반화해 봅니다. 2차시로 이동해도 이번 기록은 안전하게 유지됩니다.
             </p>
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => onStepChange(5)}
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 shadow-sm"
+              >
+                <Sparkles className="h-4 w-4" />
+                06 도전!! 실생활 함수 풀기 (도전 1 & 2)
+              </button>
               <button
                 type="button"
                 onClick={onGoToLesson2}
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
               >
                 2차시 다음 사건 열기
                 <ArrowRight className="h-4 w-4" />
@@ -901,6 +910,15 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Step 5: 06 도전!! 실생활 함수 */}
+      {step === 5 && (
+        <Lesson1ChallengeView
+          state={state}
+          onUpdate={onUpdate}
+          onGoToLesson2={onGoToLesson2}
+        />
       )}
 
       {/* Bottom Step Navigation */}
@@ -922,14 +940,24 @@ export const Lesson1View: React.FC<Lesson1ViewProps> = ({
           >
             {completion[step] ? '✓ 현재 단계 작성 조건 충족' : '현재 단계 탐구 진행 중'}
           </span>
-          <button
-            type="button"
-            disabled={step === 4}
-            onClick={() => onStepChange(Math.min(4, step + 1))}
-            className="min-h-[44px] rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-40 whitespace-nowrap"
-          >
-            다음 단계 →
-          </button>
+          {step < 5 ? (
+            <button
+              type="button"
+              onClick={() => onStepChange(step + 1)}
+              className="min-h-[44px] rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-40 whitespace-nowrap"
+            >
+              다음 단계 →
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onGoToLesson2}
+              className="min-h-[44px] inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 whitespace-nowrap shadow-sm"
+            >
+              <span>2차시로 이동</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>

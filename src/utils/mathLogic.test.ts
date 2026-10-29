@@ -50,6 +50,12 @@ import {
   EVAL_CRITERIA,
   EVAL_SCORE_LABELS,
   CLASSROOM_BRAND_NAME,
+  createDefaultLessonConfig,
+  cleanLessonConfig,
+  isLessonEnabled,
+  getFirstEnabledLesson,
+  createLessonPresetConfig,
+  toFirestoreLessonConfigPayload,
 } from './mathLogic.ts';
 
 test('mod handles positive and negative integers properly', () => {
@@ -259,9 +265,16 @@ test('csvSafe prevents formula injection and escapes quotes', () => {
 
 test('evaluateLevel1..7Completion track progress accurately', () => {
   const s = createInitialStudentState();
-  assert.deepEqual(evaluateLevel1Completion(s.l1), [false, false, false, false, false]);
+  assert.deepEqual(evaluateLevel1Completion(s.l1), [false, false, false, false, false, false]);
   s.l1.examples = [calc1(-3), calc1(1), calc1(3), calc1(5)];
   assert.equal(evaluateLevel1Completion(s.l1)[0], true);
+
+  // Challenge 1 completion check
+  s.l1.aiA = 'yes';
+  s.l1.aiB = 'no';
+  s.l1.aiC = 'no';
+  s.l1.aiExplain = '기계 A는 함수이지만 B는 다가함수이고 C는 누락되어 함수가 아님';
+  assert.equal(evaluateLevel1Completion(s.l1)[5], true);
 
   s.l2.topic = 'a';
   assert.equal(evaluateLevel2Completion(s.l2)[0], true);
@@ -626,4 +639,48 @@ test('mergeStudentStates preserves student work in lessons 5~7 while merging tea
   assert.equal(merged.evaluation?.feedback, '훌륭한 증명 과정입니다.');
   assert.equal(merged.teacherMemo, '교사 추가 메모');
 });
+
+test('lesson activation config helpers support per-lesson on/off locks, presets, and Firestore payload conversion', () => {
+  const def = createDefaultLessonConfig();
+  assert.equal(isLessonEnabled(def, 1), true);
+  assert.equal(isLessonEnabled(def, 7), true);
+  assert.equal(getFirstEnabledLesson(def), 1);
+
+  const only1 = createLessonPresetConfig('only1');
+  assert.equal(isLessonEnabled(only1, 1), true);
+  assert.equal(isLessonEnabled(only1, 2), false);
+  assert.equal(isLessonEnabled(only1, 3), false);
+  assert.equal(isLessonEnabled(only1, 7), false);
+  assert.equal(getFirstEnabledLesson(only1), 1);
+
+  const firestorePayload = toFirestoreLessonConfigPayload(only1);
+  assert.deepEqual(firestorePayload, {
+    l1: true,
+    l2: false,
+    l3: false,
+    l4: false,
+    l5: false,
+    l6: false,
+    l7: false,
+  });
+
+  // Hydrate back from Firestore payload format (l1..l7)
+  const hydratedFromFirestore = cleanLessonConfig({
+    ...firestorePayload,
+    updatedAt: '2026-10-29T00:00:00.000Z',
+  });
+  assert.equal(hydratedFromFirestore[1], true);
+  assert.equal(hydratedFromFirestore[2], false);
+  assert.equal(hydratedFromFirestore[7], false);
+  assert.equal(hydratedFromFirestore.updatedAt, '2026-10-29T00:00:00.000Z');
+
+  // If Lesson 1 and 2 are off and Lesson 3 is on, getFirstEnabledLesson returns 3
+  const custom = cleanLessonConfig({ 1: false, 2: false, 3: true, 4: false, 5: false, 6: false, 7: false });
+  assert.equal(getFirstEnabledLesson(custom), 3);
+
+  // If all lessons are locked, getFirstEnabledLesson returns null
+  const allLocked = cleanLessonConfig({ 1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false });
+  assert.equal(getFirstEnabledLesson(allLocked), null);
+});
+
 

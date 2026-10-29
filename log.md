@@ -607,11 +607,84 @@
      - `firestore.rules`에 `student_access_logs` 생성/조회 권한 추가 및 `deploy_firebase` 완료.
      - `npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts`: 26개 단위 테스트 100% 통과.
      - `compile_applet`, `lint_applet`: 오류 0건, 프로덕션 빌드 동기화 완료.
+---
+
+## [Task 22] 1차시에 "06 도전!! 실생활 함수" (도전 1: AI 얼굴 인식, 도전 2: 고장 난 자판기) 탑재 (2026-10-27)
+
+### 1. 작업 시작 전 점검 (Pre-check)
+- **요청 사항**:
+  - 1차시의 마지막 단계로 "06 도전!! 실생활 함수" 문제 적용:
+    - **도전 1**: `AI 얼굴 인식은 함수일까?` (창의 탐구 ①, 기계 A·B·C 판별, B·C 오류 수리, 다대일 대응 탐구 성찰)
+    - **도전 2**: `고장 난 자판기를 수리하라!` (창의 탐구 ⑤, 1~4번 버튼 고장 조사 및 함수 여부 판정, 버튼별 드롭다운 수리, 음료 세트 출력 심화 탐구)
+- **작업 Tier**: Tier 2 (상태 스키마 확장, 신규 컴포넌트 추가, 네비게이션 동적화, 인쇄 보고서 연동, 단위 테스트 보강)
+- **변경 전 공통 질문 검토**:
+  - *기존 데이터(사용자 데이터)에 영향이 있는가?* `cleanStudentState` 및 `mergeStudentStates`에서 `challengeSubTab`, `aiA`, `aiB`, `aiC`, `aiExplain`, `aiFixB`, `aiFixC`, `aiReflection`, `vendAnswer`, `vendExplain`, `vFix`, `setAns`, `setExplain`을 기본값으로 안전하게 병합·보존하여 기존 1~7차시 저장 데이터에 일체 손실이나 회귀가 없음.
+  - *1차시 단계 확장 영향*: 기존 5단계에서 6단계(`06 도전!! 실생활 함수`)로 확장됨에 따라 `STAGE_TITLES[1]` 6단계 대응, 상단 프로그레스 바 분모 동적화(`(done / total) * 100%`), 네비게이션 그리드 6열 반응형 레이아웃(`grid-cols-3 sm:grid-cols-6`)을 완비.
+
+### 2. 구현 및 검증 결과 (Post-check)
+- **수행 내역**:
+  1. **데이터 모델 및 평가 로직 확장 (`src/utils/mathLogic.ts`)**:
+     - `Lesson1State`에 도전 1 및 도전 2 필드 추가.
+     - `STAGE_TITLES[1]`에 `'06 도전!! 실생활 함수'` 추가 (총 6단계).
+     - `evaluateLevel1Completion`: 6번째 원소로 도전 1 또는 도전 2 완료 판정 추가 (`c1Done || c2Done`).
+     - `cleanStudentState`, `mergeStudentStates`: 도전 필드 자동 정제 및 동기화 처리.
+  2. **대화형 도전 컴포넌트 구축 (`src/components/Lesson1ChallengeView.tsx`)**:
+     - **도전 1 (AI 얼굴 인식)**:
+       - 기계 A(정상/다대일 대응), 기계 B(출력 중복), 기계 C(출력 누락) 시각화 카드 및 판정 폼.
+       - 미션 1 정답 확인 및 즉각적인 피드백 메시지.
+       - 미션 2: 기계 B(사진 ② 출력 하나로 변경), 기계 C(사진 ③ 출력 채우기) 인터랙티브 수리 및 탐구 질문.
+     - **도전 2 (고장 난 자판기)**:
+       - 1~4번 버튼 고장 현황 시각화 및 함수 여부 판정/근거 서술.
+       - 1~4번 버튼 음료 인터랙티브 드롭다운 수리 및 실시간 상태 피드백, 다시 설계(초기화) 지원.
+       - 미션 3: 음료 세트(집합)를 출력으로 정의할 때의 함수 가능성 심화 탐구.
+     - 완료 후 2차시 이동 버튼 연계.
+  3. **1차시 뷰 및 앱 네비게이션 연동 (`Lesson1View.tsx`, `App.tsx`)**:
+     - 1차시 Step 4에서 `06 도전!! 실생활 함수 풀기` 원클릭 진입 지원.
+     - Step 5에서 `Lesson1ChallengeView` 렌더링 및 하단 네비게이션 6단계 대응.
+     - 상단 헤더 및 프로그레스 바를 6단계 기준으로 동적 계산하도록 전환.
+     - 인쇄/PDF 보고서(Print Report)에 도전 1 및 도전 2 응답 내용 요약 출력.
+  4. **단위 테스트 및 빌드 검증**:
+     - `mathLogic.test.ts`: `evaluateLevel1Completion` 6단계 검증 및 도전 1 완료 시나리오 테스트 추가.
+     - `npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts`: 26개 테스트 100% 통과.
+     - `tsc --noEmit` (lint), `compile_applet`, `npm run build` (`ghpages-app.js`, `ghpages-app.css` 동기화) 완벽 통과.
 - **Definition of Done 확인**:
-  - [x] 오전/오후 접속 기록 누락 메커니즘 규명 및 로그인 시 `updatedAt` 갱신 처리
-  - [x] 학교 컴퓨터실/태블릿 공유 기기 잠금 문제 해소
-  - [x] Firestore `student_access_logs` 컬렉션 생성 및 실시간 감사 대시보드 구축
-  - [x] 시간대별(오전/오후) 통계 지표 및 접속 로그 CSV 다운로드 제공
-  - [x] 단위 테스트 26/26 전체 통과 및 배포 번들 동기화 완료
+  - [x] 첨부된 HTML 2종(창의 탐구 ① AI 얼굴 인식, 창의 탐구 ⑤ 고장 난 자판기)의 문항/선택지/수리 인터랙션/피드백 100% 반영
+  - [x] 1차시 6번째 단계("06 도전!! 실생활 함수")로 탑재 및 네비게이션 연결
+  - [x] 상단 헤더, 프로그레스 바, 인쇄 보고서 및 하단 단계 이동 버튼 6단계 지원
+  - [x] Firestore 및 로컬 스토리지 데이터 무결성 보존
+  - [x] 단위 테스트 26/26 및 프로덕션 빌드 통과
+
+---
+
+## [Task 23] 차시별 활성/비활성(ON/OFF) 관리자 제어 및 선행 학습 방지 기능 구현 (2026-10-29)
+
+### 1. 작업 시작 전 점검 (Pre-check)
+- **요청 사항**:
+  - 각 차시(1~7차시)별로 활성/비활성 여부를 관리자가 ON/OFF 할 수 있는 기능 추가 (학습자가 1차시만 해야 하는데 2차시, 3차시 등을 임의로 선행하는 것을 방지하기 위함).
+- **작업 Tier**: Tier 2~3 (데이터 모델 추가, Firestore `classroom_settings/lesson_config` 스키마 및 보안 규칙 배포, 교사 제어 UI, 학생 탭/다음 차시/URL 진입 차단 및 실시간 동기화, 단위 테스트 추가)
+- **변경 전 공통 질문 검토**:
+  - *기존 데이터에 영향이 있는가?* 기존 학생 답안 및 평가 데이터는 일체 변경하지 않으며, 기본값은 전체 차시 활성(`1~7차시 true`)으로 설정되어 하위 호환성을 100% 보장함.
+
+### 2. 구현 및 검증 결과 (Post-check)
+- **수행 내역**:
+  1. **차시 활성 상태 모델 및 순수 함수 (`src/utils/mathLogic.ts`)**:
+     - `LessonActivationConfig`, `LESSON_META`, `createDefaultLessonConfig`, `cleanLessonConfig`, `isLessonEnabled`, `getFirstEnabledLesson`, `createLessonPresetConfig`, `toFirestoreLessonConfigPayload` 구현.
+  2. **Firestore 실시간 동기화 및 보안 규칙 (`firebase-blueprint.json`, `firestore.rules`)**:
+     - `/classroom_settings/lesson_config` 경로에 `l1`~`l7` 불리언 상태와 서버 타임스탬프를 저장하고, 교사(관리자)만 쓰기 가능하도록 `firestore.rules` 배포 완료.
+  3. **교사용 차시 제어 패널 (`src/components/TeacherView.tsx`)**:
+     - 교사용 기록실 최상단에 **[차시별 활성 / 비활성 (ON / OFF) 관리]** 섹션 배치.
+     - 원클릭 프리셋 버튼(`1차시만 ON (선행 방지)`, `1~2차시 ON`, `1~4차시 ON`, `전체 차시 모두 ON`) 및 1~7차시 개별 ON/OFF 스위치 제공.
+  4. **학생 화면 선행 학습 차단 (`src/App.tsx`)**:
+     - 비활성화된 차시는 상단 탭에 `🔒 잠김` 배지와 비활성 스타일로 표시되며, 클릭 시 경고 토스트와 함께 이동 차단.
+     - 각 차시 마지막 단계의 `다음 차시 열기` 버튼, 평가 모달의 차시 이동 버튼, URL 파라미터(`?lesson=2`)를 통한 직접 진입까지 모두 검증하여 잠긴 차시 진입 시 열린 첫 차시로 자동 복귀.
+  5. **단위 테스트 및 브라우저 검증 완료**:
+     - `npx --yes tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts` (27/27 통과), `compile_applet`, `lint_applet`, `npm run build` 및 Playwright 브라우저 검증 완료.
+- **Definition of Done 확인**:
+  - [x] 교사 모드 1~7차시 개별 ON/OFF 및 프리셋 작동 확인
+  - [x] 학생 모드 잠김 탭 표시, 클릭 차단, 다음 차시 선행 차단, URL 우회 자동 리다이렉트 확인
+  - [x] Firestore 실시간 동기화 및 보안 규칙 배포 완료
+  - [x] 단위 테스트 27/27 통과 및 `README.md` 업데이트 완료
+
+
 
 

@@ -36,6 +36,20 @@ export interface Lesson1State {
   proofText: string;
   reflection: string;
   bridge: string;
+  // 06 도전!! 실생활 함수 (도전 1: AI 얼굴 인식, 도전 2: 고장 난 자판기)
+  challengeSubTab?: 'challenge1' | 'challenge2';
+  aiA?: '' | 'yes' | 'no';
+  aiB?: '' | 'yes' | 'no';
+  aiC?: '' | 'yes' | 'no';
+  aiExplain?: string;
+  aiFixB?: string;
+  aiFixC?: string;
+  aiReflection?: string;
+  vendAnswer?: '' | 'yes' | 'no';
+  vendExplain?: string;
+  vFix?: string[];
+  setAns?: '' | 'yes' | 'no';
+  setExplain?: string;
 }
 
 export interface Lesson2State {
@@ -974,7 +988,7 @@ export const PROOF7_PROB2_STEPS: ProofStepQuestion[] = [
 ];
 
 export const STAGE_TITLES = {
-  1: ['단서 수집', '가설 수립', '반례 수색', '증명 보고서', '다음 사건 예고'],
+  1: ['단서 수집', '가설 수립', '반례 수색', '증명 보고서', '사건 종결', '06 도전!! 실생활 함수'],
   2: ['새 사건 선택', '현장 조사', '반례 수색', '판정서 작성', '수사 결과 공유'],
   3: ['대우 단서 탐색', '문제 1 증명', '3의 배수 탐색', '문제 2 증명', '사건 종결·성찰'],
   4: ['귀류법 단서 탐색', '문제 1 증명 (√2)', '무리수 성질 탐색', '문제 2 증명 (1+√2)', '사건 종결·성찰'],
@@ -1218,6 +1232,19 @@ export function createInitialStudentState(): StudentRecord {
       proofText: '',
       reflection: '',
       bridge: '',
+      challengeSubTab: 'challenge1',
+      aiA: '',
+      aiB: '',
+      aiC: '',
+      aiExplain: '',
+      aiFixB: '',
+      aiFixC: '',
+      aiReflection: '',
+      vendAnswer: '',
+      vendExplain: '',
+      vFix: ['', '', '', ''],
+      setAns: '',
+      setExplain: '',
     },
     l2: {
       topic: '',
@@ -1514,12 +1541,15 @@ export function calc7Abs(a: number, b: number): L7AbsExample {
 }
 
 export function evaluateLevel1Completion(p: Lesson1State): boolean[] {
+  const c1Done = Boolean(p.aiA && p.aiB && p.aiC && (p.aiExplain?.trim().length ?? 0) >= 8);
+  const c2Done = Boolean(p.vendAnswer && (p.vendExplain?.trim().length ?? 0) >= 8 && (p.vFix?.every(Boolean) ?? false));
   return [
     p.examples.length >= 4 && p.examples.some((v) => v.n < 0),
     p.claimChecked,
     p.checks.filter((v) => v.valid).length >= 3 && p.limits.trim().length >= 12,
     p.proofVerified.every(Boolean) && p.proofText.trim().length >= 35,
     p.reflection.trim().length >= 20 && p.bridge.trim().length >= 10,
+    c1Done || c2Done,
   ];
 }
 
@@ -1768,6 +1798,9 @@ export function cleanStudentState(raw: unknown): StudentRecord {
     l1: {
       ...base.l1,
       ...(l1 as Partial<Lesson1State>),
+      vFix: Array.isArray((l1 as any).vFix)
+        ? [0, 1, 2, 3].map((i) => (typeof (l1 as any).vFix[i] === 'string' ? (l1 as any).vFix[i] : ''))
+        : base.l1.vFix,
     },
     l2: {
       ...base.l2,
@@ -1876,7 +1909,7 @@ export function mergeStudentStates(remote: StudentRecord, local: StudentRecord):
   result.l1 = pickNewerOrFilled(
     remote.l1,
     local.l1,
-    (l) => Boolean(l.claim || l.proofText || l.examples?.length || l.reflection)
+    (l) => Boolean(l.claim || l.proofText || l.examples?.length || l.reflection || l.aiA || l.vendAnswer)
   );
   result.l2 = pickNewerOrFilled(
     remote.l2,
@@ -2716,5 +2749,112 @@ export function tokenizeMathRadicals(text: string): MathTextToken[] {
   return tokens;
 }
 
+export type LessonNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
+export interface LessonActivationConfig {
+  1: boolean;
+  2: boolean;
+  3: boolean;
+  4: boolean;
+  5: boolean;
+  6: boolean;
+  7: boolean;
+  updatedAt?: string;
+}
 
+export const STORAGE_KEY_LESSON_CONFIG = 'math_detective_lesson_config_v1';
+
+export const LESSON_META: ReadonlyArray<{
+  lesson: LessonNumber;
+  badge: string;
+  shortTitle: string;
+  fullTitle: string;
+}> = [
+  { lesson: 1, badge: '01', shortTitle: '패턴의 비밀 (1차시)', fullTitle: '1차시 · 패턴의 비밀 (직접 증명 & 실생활 함수)' },
+  { lesson: 2, badge: '02', shortTitle: '진실의 증명 (2차시)', fullTitle: '2차시 · 진실의 증명 (반례와 정당화)' },
+  { lesson: 3, badge: '03', shortTitle: '대우법 추리 (3차시)', fullTitle: '3차시 · 대우법 추리 (~q → ~p)' },
+  { lesson: 4, badge: '04', shortTitle: '귀류법 추리 (4차시)', fullTitle: '4차시 · 귀류법 추리 (√2, 1+√2)' },
+  { lesson: 5, badge: '05', shortTitle: '절대부등식1 (5차시)', fullTitle: '5차시 · 절대부등식1 (완전제곱식)' },
+  { lesson: 6, badge: '06', shortTitle: '절대부등식2 (6차시)', fullTitle: '6차시 · 절대부등식2 (산술·기하평균)' },
+  { lesson: 7, badge: '07', shortTitle: '절대부등식3 (7차시)', fullTitle: '7차시 · 절대부등식3 (절댓값 부등식)' },
+];
+
+export function createDefaultLessonConfig(): LessonActivationConfig {
+  return {
+    1: true,
+    2: true,
+    3: true,
+    4: true,
+    5: true,
+    6: true,
+    7: true,
+  };
+}
+
+export function cleanLessonConfig(raw: unknown): LessonActivationConfig {
+  const base = createDefaultLessonConfig();
+  if (!raw || typeof raw !== 'object') return base;
+  const obj = raw as Record<string, unknown>;
+  const result: LessonActivationConfig = {
+    1: typeof obj['1'] === 'boolean' ? obj['1'] : typeof obj.l1 === 'boolean' ? obj.l1 : true,
+    2: typeof obj['2'] === 'boolean' ? obj['2'] : typeof obj.l2 === 'boolean' ? obj.l2 : true,
+    3: typeof obj['3'] === 'boolean' ? obj['3'] : typeof obj.l3 === 'boolean' ? obj.l3 : true,
+    4: typeof obj['4'] === 'boolean' ? obj['4'] : typeof obj.l4 === 'boolean' ? obj.l4 : true,
+    5: typeof obj['5'] === 'boolean' ? obj['5'] : typeof obj.l5 === 'boolean' ? obj.l5 : true,
+    6: typeof obj['6'] === 'boolean' ? obj['6'] : typeof obj.l6 === 'boolean' ? obj.l6 : true,
+    7: typeof obj['7'] === 'boolean' ? obj['7'] : typeof obj.l7 === 'boolean' ? obj.l7 : true,
+  };
+  if (typeof obj.updatedAt === 'string') {
+    result.updatedAt = obj.updatedAt;
+  }
+  return result;
+}
+
+export function isLessonEnabled(config: LessonActivationConfig, lesson: LessonNumber): boolean {
+  return Boolean(config[lesson]);
+}
+
+export function getFirstEnabledLesson(config: LessonActivationConfig): LessonNumber | null {
+  const lessons: LessonNumber[] = [1, 2, 3, 4, 5, 6, 7];
+  for (const l of lessons) {
+    if (config[l]) return l;
+  }
+  return null;
+}
+
+export function createLessonPresetConfig(
+  preset: 'only1' | 'upTo2' | 'upTo4' | 'all'
+): LessonActivationConfig {
+  const now = new Date().toISOString();
+  switch (preset) {
+    case 'only1':
+      return { 1: true, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, updatedAt: now };
+    case 'upTo2':
+      return { 1: true, 2: true, 3: false, 4: false, 5: false, 6: false, 7: false, updatedAt: now };
+    case 'upTo4':
+      return { 1: true, 2: true, 3: true, 4: true, 5: false, 6: false, 7: false, updatedAt: now };
+    case 'all':
+    default:
+      return { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true, updatedAt: now };
+  }
+}
+
+export function toFirestoreLessonConfigPayload(config: LessonActivationConfig): {
+  l1: boolean;
+  l2: boolean;
+  l3: boolean;
+  l4: boolean;
+  l5: boolean;
+  l6: boolean;
+  l7: boolean;
+} {
+  return {
+    l1: Boolean(config[1]),
+    l2: Boolean(config[2]),
+    l3: Boolean(config[3]),
+    l4: Boolean(config[4]),
+    l5: Boolean(config[5]),
+    l6: Boolean(config[6]),
+    l7: Boolean(config[7]),
+  };
+}

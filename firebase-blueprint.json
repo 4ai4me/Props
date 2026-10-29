@@ -132,6 +132,22 @@
         }
       },
       "required": ["deviceHash", "studentKey", "ipAddress", "createdAt"]
+    },
+    "ClassroomConfig": {
+      "title": "ClassroomConfig",
+      "description": "Global classroom settings managed by the teacher, controlling per-lesson activation (1~7) to prevent ahead-of-schedule progression.",
+      "type": "object",
+      "properties": {
+        "l1": { "type": "boolean" },
+        "l2": { "type": "boolean" },
+        "l3": { "type": "boolean" },
+        "l4": { "type": "boolean" },
+        "l5": { "type": "boolean" },
+        "l6": { "type": "boolean" },
+        "l7": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "updatedAt"]
     }
   },
   "firestore": {
@@ -142,6 +158,10 @@
     "/device_locks/{deviceHash}": {
       "schema": { "$ref": "#/entities/DeviceLock" },
       "description": "Enforces one-device-one-registration duplicate prevention."
+    },
+    "/classroom_settings/{configId}": {
+      "schema": { "$ref": "#/entities/ClassroomConfig" },
+      "description": "Stores teacher-controlled lesson activation states."
     }
   }
 }
