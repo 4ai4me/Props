@@ -219,6 +219,8 @@ export interface Lesson7ViewProps {
 ### 4.4 `TeacherView`
 교사용 수사 기록실, 차시별 활성/비활성(선행 학습 방지 및 클라우드 서버 강제 동기화) 제어 패널, 실시간 수합 대시보드, 학생 가입 승인, 평가 진행율 표시 및 사건 기록 비교 컴포넌트입니다. (`https://github.com/4ai4me/Func`와 동일한 `/app_settings/lesson_access` 서버 동기화 및 다중 우회 차단 규격 적용)
 
+- **전체 답안 보기 (2026-10-30)**: 상세 비교 창(인라인·비모달 모두) 아래에 차시별로 학생이 입력한 **모든 문항**을 문항 이름과 함께 표시합니다. 차시마다 `작성 n/m` 현황을 보여 주며, 비어 있는 문항과 기존 요약 칸의 `미작성`은 **빨간 굵은 글씨**로 강조됩니다. 문항 이름은 `src/utils/answerLabels.ts`에서 관리하고, 이름표가 없는 새 필드라도 값이 있으면 `기타 기록`에 표시됩니다. 학생 화면에 문항을 추가하면 `answerLabels.ts`에 이름표를 추가하세요 (`answerLabels.test.ts`가 누락을 검사합니다).
+
 ```typescript
 export interface TeacherViewProps {
   adminEmail: string;
@@ -344,7 +346,7 @@ npm run dev
 npm run lint
 
 # 4. 순수 수학 및 인증 로직 단위 테스트 실행
-npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts
+npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts src/utils/lessonMerge.test.ts src/utils/answerLabels.test.ts src/components/FullAnswerPanel.test.tsx
 
 # 5. 프로덕션 빌드 및 GitHub Pages 루트 번들(ghpages-app.js/css) 자동 동기화
 npm run build

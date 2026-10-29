@@ -90,6 +90,8 @@ import {
 } from 'lucide-react';
 import { StudentAccessLog } from '../utils/auditLogger';
 import { MathText } from './MathText';
+import { AnswerText, UnwrittenMark } from './AnswerText';
+import { FullAnswerPanel } from './FullAnswerPanel';
 
 interface TeacherViewProps {
   adminEmail: string;
@@ -2417,7 +2419,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                             <strong className="text-slate-900">
                               {({ true: '참', false: '거짓', unknown: '미해결' } as Record<string, string>)[
                                 x.l2.decision
-                              ] || '미작성'}
+                              ] || <UnwrittenMark />}
                             </strong>
                           </td>
                           <td className="py-3 px-3.5 mono text-slate-700">
@@ -2437,7 +2439,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                                   }`}
                                   title="5차시 절대부등식1: 사례 수, Step 4단계 확인, 증명 서술"
                                 >
-                                  5차 {x.l5?.examples?.length ?? 0}개·{x.l5?.prob1Verified?.filter(Boolean).length ?? 0}/4·{x.l5?.prob1ProofText ? '서술' : '미작성'}
+                                  5차 {x.l5?.examples?.length ?? 0}개·{x.l5?.prob1Verified?.filter(Boolean).length ?? 0}/4·{x.l5?.prob1ProofText ? '서술' : <UnwrittenMark />}
                                 </span>
                                 <span
                                   className={`rounded px-1.5 py-0.5 font-bold text-[11px] border ${
@@ -2447,7 +2449,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                                   }`}
                                   title="6차시 산술·기하: 사례 수, Step 4단계 확인, 증명 서술"
                                 >
-                                  6차 {x.l6?.examples?.length ?? 0}개·{x.l6?.prob1Verified?.filter(Boolean).length ?? 0}/4·{x.l6?.prob1ProofText ? '서술' : '미작성'}
+                                  6차 {x.l6?.examples?.length ?? 0}개·{x.l6?.prob1Verified?.filter(Boolean).length ?? 0}/4·{x.l6?.prob1ProofText ? '서술' : <UnwrittenMark />}
                                 </span>
                                 <span
                                   className={`rounded px-1.5 py-0.5 font-bold text-[11px] border ${
@@ -2457,7 +2459,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                                   }`}
                                   title="7차시 절댓값 부등식: 사례 수, Step 4단계 확인, 증명 서술"
                                 >
-                                  7차 {x.l7?.examples?.length ?? 0}개·{x.l7?.prob1Verified?.filter(Boolean).length ?? 0}/4·{x.l7?.prob1ProofText ? '서술' : '미작성'}
+                                  7차 {x.l7?.examples?.length ?? 0}개·{x.l7?.prob1Verified?.filter(Boolean).length ?? 0}/4·{x.l7?.prob1ProofText ? '서술' : <UnwrittenMark />}
                                 </span>
                               </div>
                               <div className="text-[10px] text-slate-500 font-medium">
@@ -2501,7 +2503,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                               </div>
                               <div className="text-[11px] text-slate-500 flex items-center justify-between">
                                 <span>
-                                  평정 {evalProg.scoredRubricCount}/{evalProg.totalRubricCount} · 피드백 {evalProg.hasFeedback ? '완료' : '미작성'}
+                                  평정 {evalProg.scoredRubricCount}/{evalProg.totalRubricCount} · 피드백 {evalProg.hasFeedback ? '완료' : <UnwrittenMark />}
                                 </span>
                                 {avgScore !== null && (
                                   <strong className="mono text-slate-700">평균 {avgScore.toFixed(2)}점</strong>
@@ -2590,7 +2592,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">{label}</div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <AnswerText value={val} />
                         </div>
                       </div>
                     ))}
@@ -2625,7 +2627,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">{label}</div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <AnswerText value={val} />
                         </div>
                       </div>
                     ))}
@@ -2647,7 +2649,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">{label}</div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <AnswerText value={val} />
                         </div>
                       </div>
                     ))}
@@ -2671,7 +2673,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           <MathText text={label || ''} />
                         </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          <MathText text={val || '미작성'} />
+                          <AnswerText value={val} math />
                         </div>
                       </div>
                     ))}
@@ -2722,7 +2724,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           <MathText text={label || ''} />
                         </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          <MathText text={val || '미작성'} />
+                          <AnswerText value={val} math />
                         </div>
                       </div>
                     ))}
@@ -2773,7 +2775,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           <MathText text={label || ''} />
                         </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          <MathText text={val || '미작성'} />
+                          <AnswerText value={val} math />
                         </div>
                       </div>
                     ))}
@@ -2825,13 +2827,16 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                             <MathText text={label || ''} />
                           </div>
                           <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                            <MathText text={val || '미작성'} />
+                            <AnswerText value={val} math />
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
+
+                {/* 전체 답안 보기: 학생이 입력한 모든 문항 */}
+                <FullAnswerPanel record={selectedStudent} />
 
                 {/* Inline Teacher Evaluation & Feedback Section */}
                 {(() => {
@@ -3085,7 +3090,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">{label}</div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <AnswerText value={val} />
                         </div>
                       </div>
                     ))}
@@ -3123,7 +3128,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">{label}</div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <AnswerText value={val} />
                         </div>
                       </div>
                     ))}
@@ -3149,7 +3154,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                       <div key={label}>
                         <div className="text-xs font-bold text-slate-700">{label}</div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          {val || '미작성'}
+                          <AnswerText value={val} />
                         </div>
                       </div>
                     ))}
@@ -3177,7 +3182,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           <MathText text={label || ''} />
                         </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          <MathText text={val || '미작성'} />
+                          <AnswerText value={val} math />
                         </div>
                       </div>
                     ))}
@@ -3231,7 +3236,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           <MathText text={label || ''} />
                         </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          <MathText text={val || '미작성'} />
+                          <AnswerText value={val} math />
                         </div>
                       </div>
                     ))}
@@ -3285,7 +3290,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                           <MathText text={label || ''} />
                         </div>
                         <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                          <MathText text={val || '미작성'} />
+                          <AnswerText value={val} math />
                         </div>
                       </div>
                     ))}
@@ -3340,13 +3345,16 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                             <MathText text={label || ''} />
                           </div>
                           <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2.5 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">
-                            <MathText text={val || '미작성'} />
+                            <AnswerText value={val} math />
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
+
+                {/* 전체 답안 보기: 학생이 입력한 모든 문항 */}
+                <FullAnswerPanel record={selectedStudent} />
 
                 {/* Teacher Memo and Rubric Section */}
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-6 space-y-5">
