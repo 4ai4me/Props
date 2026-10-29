@@ -26,7 +26,6 @@ import {
   EVAL_CRITERIA,
   buildLessonAccessFirestoreFields,
   cleanStudentState,
-  mergePropsIntoWorksheetJson,
   createInitialStudentState,
   ensureTeacherEval,
   evaluateLevel1Completion,
@@ -65,6 +64,15 @@ import { MathText } from './components/MathText';
 import { recordStudentAccessLog } from './utils/auditLogger';
 import { ensureStudentAuth } from './utils/studentAuth';
 import {
+  LessonJsonMap,
+  assembleRecord,
+  findChangedLessons,
+  listenTeacherEvaluation,
+  loadStudentLessons,
+  saveLessons,
+  splitLessons,
+} from './utils/lessonStore';
+import {
   Printer,
   CheckCircle2,
   AlertTriangle,
@@ -77,6 +85,29 @@ import {
   Zap,
   Lock,
 } from 'lucide-react';
+
+/**
+ * 예전 방식(가입 문서의 worksheetJson 한 덩어리)으로 저장된 Props 활동지를 읽습니다.
+ * 형식이 맞지 않으면 학생 정보만 채운 빈 활동지를 돌려줍니다 (기존 문서는 수정하지 않음).
+ */
+function parseLegacyPropsWorksheet(
+  worksheetJson: string | undefined,
+  groupLabel: string,
+  codeLabel: string
+): StudentRecord {
+  try {
+    const parsed = cleanStudentState(JSON.parse(worksheetJson || ''));
+    parsed.group = groupLabel;
+    parsed.code = codeLabel;
+    return parsed;
+  } catch (err) {
+    console.warn('Legacy Props worksheet unreadable; starting from an empty worksheet:', err);
+    const fresh = createInitialStudentState();
+    fresh.group = groupLabel;
+    fresh.code = codeLabel;
+    return fresh;
+  }
+}
 
 // 학생 활동지 자동 저장 대기 시간: 입력이 멈춘 뒤 이 시간이 지나면 한 번 저장
 // (기존 0.9초 → 10초. 탭 전환·닫기 시에는 즉시 저장되므로 내용이 사라지지 않음)
@@ -219,11 +250,20 @@ export default function App() {
     onConfirm: () => void;
   } | null>(null);
 
+  const showToast = useCallback((text: string, type: 'good' | 'warn' = 'good') => {
+    setToast({ text, type });
+    setTimeout(() => {
+      setToast((prev) => (prev?.text === text ? null : prev));
+    }, 4500);
+  }, []);
+
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 자동 저장 대기 중인 작업 (탭 닫힘·전환 시 즉시 실행)
   const pendingSaveRef = useRef<(() => Promise<void>) | null>(null);
-  // 서버에 저장된 최신 worksheetJson (Func 활동지 등 다른 수업 내용을 보존하기 위해 사용)
-  const latestRawWorksheetJsonRef = useRef<string>(approvedProfile?.worksheetJson || '');
+  // 서버에 저장되어 있는 차시별 내용(JSON). null이면 아직 서버에서 불러오지 못한 상태이므로
+  // 자동 저장을 하지 않습니다 (불러오기 전의 오래된 내용으로 서버의 최신 내용을 덮어쓰지 않기 위해).
+  const serverLessonJsonRef = useRef<LessonJsonMap | null>(null);
+  const [lessonLoadNonce, setLessonLoadNonce] = useState(0);
 
   // Track Firebase Auth state
   useEffect(() => {
@@ -250,29 +290,31 @@ export default function App() {
 
     if (sessionMode === 'student' && approvedProfile?.studentKey) {
       const studentKey = approvedProfile.studentKey;
-      const baseJson = latestRawWorksheetJsonRef.current || approvedProfile.worksheetJson;
-      const nextWorksheetJson = mergePropsIntoWorksheetJson(baseJson, student);
+      const serverJson = serverLessonJsonRef.current;
+      // 서버 내용을 아직 불러오지 못했으면 저장하지 않음 (기기에는 위에서 저장됨)
+      if (!serverJson) return;
 
-      // 내용이 서버에 저장된 것과 같으면 쓰지 않음 (로그인 직후·평가 수신 시 불필요한 저장 방지)
-      if (nextWorksheetJson === baseJson) {
+      // 서버와 내용이 달라진 차시만 저장 (바뀐 것이 없으면 쓰지 않음)
+      const changed = findChangedLessons(student, serverJson);
+      if (changed.length === 0) {
         pendingSaveRef.current = null;
         if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
         return;
       }
 
       setCloudSyncStatus('saving');
+      const recordToSave = student;
       pendingSaveRef.current = async () => {
         pendingSaveRef.current = null;
         try {
-          latestRawWorksheetJsonRef.current = nextWorksheetJson;
-          await updateDoc(doc(db, 'student_registrations', studentKey), {
-            worksheetJson: nextWorksheetJson,
-            updatedAt: serverTimestamp(),
-          });
+          const saved = await saveLessons(studentKey, recordToSave, changed);
+          if (serverLessonJsonRef.current) {
+            serverLessonJsonRef.current = { ...serverLessonJsonRef.current, ...saved };
+          }
           setCloudSyncStatus('saved');
           setLastSavedAt(new Date());
         } catch (err) {
-          console.error('Firestore autosave failed:', err);
+          console.error(`Firestore autosave failed (${changed.join(', ')}):`, err);
           setCloudSyncStatus('error');
         }
       };
@@ -300,47 +342,104 @@ export default function App() {
     };
   }, []);
 
-  // Real-time listener for teacher evaluations pushed to student registration
+  // 학생 로그인 후: 서버의 차시 문서를 불러와 예전 worksheetJson 내용과 합칩니다.
+  // 불러오기가 끝나야 자동 저장이 시작됩니다.
   useEffect(() => {
     if (sessionMode !== 'student' || !approvedProfile?.studentKey || !firebaseUser) return;
-    const unsub = onSnapshot(doc(db, 'student_registrations', approvedProfile.studentKey), (docSnap) => {
-      if (!docSnap.exists()) return;
-      const data = docSnap.data() as FirestoreStudentRegistrationDoc;
-      if (data.worksheetJson) {
-        latestRawWorksheetJsonRef.current = data.worksheetJson;
+    const profile = approvedProfile;
+    let cancelled = false;
+    serverLessonJsonRef.current = null;
+
+    const groupLabel = `${profile.school} ${profile.grade}학년 ${profile.classNum}반`.slice(0, 25);
+    const codeLabel = `${profile.grade}${String(profile.classNum).padStart(2, '0')}${String(
+      profile.studentNum
+    ).padStart(2, '0')}_${profile.name}`.slice(0, 25);
+
+    loadStudentLessons(profile.studentKey)
+      .then((snap) => {
+        if (cancelled) return;
+        const legacy = parseLegacyPropsWorksheet(profile.worksheetJson, groupLabel, codeLabel);
+        const assembled = assembleRecord(legacy, snap);
+        // 서버가 실제로 가진 내용 = 차시 문서(있으면) 또는 예전 worksheetJson
+        serverLessonJsonRef.current = splitLessons(assembled);
+        setStudent((prev) => {
+          const merged = mergeStudentStates(assembled, prev);
+          merged.group = groupLabel;
+          merged.code = codeLabel;
+          return merged;
+        });
+        setCloudSyncStatus('saved');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('Failed to load lesson documents:', err);
+        setCloudSyncStatus('error');
+        showToast(
+          (err as { code?: string })?.code === 'permission-denied'
+            ? '서버의 활동지를 불러올 권한이 없습니다. 다시 로그인하거나 선생님께 알려주세요. (입력 내용은 이 기기에 보관됩니다)'
+            : '서버의 활동지를 불러오지 못했습니다. 네트워크를 확인한 뒤 [지금 저장]을 눌러 다시 시도해 주세요. (입력 내용은 이 기기에 보관됩니다)',
+          'warn'
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionMode, approvedProfile, firebaseUser, lessonLoadNonce, showToast]);
+
+  // 교사 평가·메모 실시간 수신 (교사 전용 문서, 학생은 읽기만)
+  useEffect(() => {
+    if (sessionMode !== 'student' || !approvedProfile?.studentKey || !firebaseUser) return;
+    const unsub = listenTeacherEvaluation(
+      approvedProfile.studentKey,
+      (teacher) => {
+        if (!teacher) return; // 아직 새 평가 문서가 없으면 예전 평가를 그대로 사용
+        let remote: { evaluation?: StudentRecord['evaluation']; teacherMemo?: string };
         try {
-          const remote = cleanStudentState(JSON.parse(data.worksheetJson));
-          setStudent((prev) => {
-            const hasEvalChanged =
-              JSON.stringify(remote.evaluation) !== JSON.stringify(prev.evaluation) ||
-              remote.teacherMemo !== prev.teacherMemo;
-            if (hasEvalChanged) {
-              return {
-                ...prev,
-                teacherMemo: remote.teacherMemo ?? prev.teacherMemo,
-                evaluation: remote.evaluation ?? prev.evaluation,
-              };
-            }
-            return prev;
-          });
-        } catch {
-          // ignore parsing error
+          remote = JSON.parse(teacher.data);
+        } catch (err) {
+          console.warn('Teacher evaluation document is malformed:', err);
+          return;
         }
+        setStudent((prev) => {
+          const nextEval = remote.evaluation ?? prev.evaluation;
+          const nextMemo = typeof remote.teacherMemo === 'string' ? remote.teacherMemo : prev.teacherMemo;
+          if (
+            JSON.stringify(nextEval) === JSON.stringify(prev.evaluation) &&
+            nextMemo === prev.teacherMemo
+          ) {
+            return prev;
+          }
+          return { ...prev, evaluation: nextEval, teacherMemo: nextMemo };
+        });
+      },
+      (err) => {
+        console.error('Teacher evaluation listener error:', err);
       }
+    );
+    return () => unsub();
+  }, [sessionMode, approvedProfile?.studentKey, firebaseUser]);
+
+  // 가입 문서 감시: 다른 기기에서 같은 학생으로 다시 로그인해 이 기기의 연결이 끊긴 경우 처음 화면으로
+  useEffect(() => {
+    if (sessionMode !== 'student' || !approvedProfile?.studentKey || !firebaseUser) return;
+    const unsub = onSnapshot(doc(db, 'student_registrations', approvedProfile.studentKey), () => {
+      // 내용은 사용하지 않음 (활동지는 차시 문서에서 불러옴)
     }, (error) => {
-      // 다른 기기에서 다시 로그인했거나 예전 방식으로 가입한 경우: 처음 화면에서 다시 로그인
       console.error('Student registration listener error:', error);
       if ((error as { code?: string })?.code === 'permission-denied') {
         try {
           localStorage.removeItem('math_detective_active_student_key_v1');
           localStorage.removeItem('math_detective_approved_profile_v1');
-        } catch {}
+        } catch (storageErr) {
+          console.warn('Failed to clear saved student session:', storageErr);
+        }
         setApprovedProfile(null);
         setSessionMode('gate');
+        showToast('다른 기기에서 같은 학생으로 로그인되어 이 기기의 연결이 해제되었습니다. 다시 로그인해 주세요.', 'warn');
       }
     });
     return () => unsub();
-  }, [sessionMode, approvedProfile?.studentKey, firebaseUser]);
+  }, [sessionMode, approvedProfile?.studentKey, firebaseUser, showToast]);
 
   // Sync teacher state to localStorage
   useEffect(() => {
@@ -358,13 +457,6 @@ export default function App() {
     };
     window.addEventListener('afterprint', handleAfterPrint);
     return () => window.removeEventListener('afterprint', handleAfterPrint);
-  }, []);
-
-  const showToast = useCallback((text: string, type: 'good' | 'warn' = 'good') => {
-    setToast({ text, type });
-    setTimeout(() => {
-      setToast((prev) => (prev?.text === text ? null : prev));
-    }, 4500);
   }, []);
 
   const requestConfirm = (title: string, message: string, onConfirm: () => void) => {
@@ -610,19 +702,25 @@ export default function App() {
       showToast('승인된 학생 계정 정보가 없어 클라우드에 저장할 수 없습니다.', 'warn');
       return;
     }
+    const serverJson = serverLessonJsonRef.current;
+    if (!serverJson) {
+      // 서버 내용을 아직 불러오지 못한 상태: 덮어쓰지 않고 다시 불러오기를 시도
+      setLessonLoadNonce((n) => n + 1);
+      showToast('서버의 활동지를 다시 불러오는 중입니다. 잠시 후 [지금 저장]을 다시 눌러 주세요.', 'warn');
+      return;
+    }
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     pendingSaveRef.current = null;
+    const changed = findChangedLessons(student, serverJson);
+    if (changed.length === 0) {
+      setCloudSyncStatus('saved');
+      showToast('모든 내용이 이미 클라우드에 저장되어 있습니다.', 'good');
+      return;
+    }
     setCloudSyncStatus('saving');
     try {
-      const nextWorksheetJson = mergePropsIntoWorksheetJson(
-        latestRawWorksheetJsonRef.current || approvedProfile.worksheetJson,
-        student
-      );
-      latestRawWorksheetJsonRef.current = nextWorksheetJson;
-      await updateDoc(doc(db, 'student_registrations', approvedProfile.studentKey), {
-        worksheetJson: nextWorksheetJson,
-        updatedAt: serverTimestamp(),
-      });
+      const saved = await saveLessons(approvedProfile.studentKey, student, changed);
+      serverLessonJsonRef.current = { ...serverJson, ...saved };
       setCloudSyncStatus('saved');
       setLastSavedAt(new Date());
       showToast('클라우드에 최신 활동지가 즉시 저장되었습니다.', 'good');
@@ -640,7 +738,7 @@ export default function App() {
         deviceHash: approvedProfile.deviceHash,
         ipAddress: approvedProfile.ipAddress,
         userAgent: approvedProfile.userAgent,
-      }).catch(() => {});
+      }).catch((logErr) => console.warn('Save audit log skipped:', logErr));
     } catch (err) {
       console.error('Manual force save failed:', err);
       setCloudSyncStatus('error');
@@ -655,7 +753,8 @@ export default function App() {
         regDoc.studentNum
       ).padStart(2, '0')}_${regDoc.name}`.slice(0, 25);
 
-      latestRawWorksheetJsonRef.current = regDoc.worksheetJson || '';
+      // 차시 문서 불러오기는 로그인 후 effect에서 수행 (끝나기 전까지 자동 저장하지 않음)
+      serverLessonJsonRef.current = null;
       setApprovedProfile(regDoc);
       try {
         localStorage.setItem('math_detective_approved_profile_v1', JSON.stringify(regDoc));
@@ -668,8 +767,8 @@ export default function App() {
         merged.code = codeLabel;
         return merged;
       });
-      setCloudSyncStatus('saved');
-      setLastSavedAt(new Date());
+      // 아직 서버와 동기화가 끝나지 않았으므로 '저장됨'으로 표시하지 않음
+      setCloudSyncStatus('idle');
       setSessionMode('student');
 
       // Record access log for approved session entry

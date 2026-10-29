@@ -129,11 +129,13 @@ service cloud.firestore {
         (
           // 1) 교사: 승인·반려·평가
           isAdmin() ||
-          // 2) 승인된 학생 본인: 자기 활동지만 저장
+          // 2) 승인된 학생 본인: 접속 정보만 갱신
+          //    (활동지는 차시 문서에 저장. 예전 worksheetJson은 보존용이며 학생이 고칠 수 없음 —
+          //     그 안의 예전 교사 평가를 학생이 바꾸지 못하도록)
           (
             isRegistrationOwner(existing()) &&
             existing().status == 'approved' &&
-            incoming().diff(existing()).affectedKeys().hasOnly(['worksheetJson', 'updatedAt', 'deviceHash', 'ipAddress', 'userAgent'])
+            incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt', 'deviceHash', 'ipAddress', 'userAgent'])
           ) ||
           // 3) 다른 기기·브라우저에서 재접속: 이름·생년월일이 맞으면 이 익명 계정으로 연결
           (
@@ -146,6 +148,75 @@ service cloud.firestore {
         );
 
       allow delete: if isValidId(studentKey) && isAdmin();
+    }
+
+    // ------------------------------------------------------------------
+    // 차시별 분리 저장 문서
+    //   student_registrations/{studentKey}/func_lessons/l1..l7, teacher
+    //   student_registrations/{studentKey}/props_lessons/l1..l7, teacher
+    // l1..l7: 승인된 학생 본인(또는 교사)만 쓰기 / teacher: 교사만 쓰기
+    // 읽기: 교사 또는 학생 본인
+    // ------------------------------------------------------------------
+    function registrationData(studentKey) {
+      return get(/databases/$(database)/documents/student_registrations/$(studentKey)).data;
+    }
+
+    function isStudentOwnerOf(studentKey) {
+      return isSignedIn() && registrationData(studentKey).get('uid', '') == request.auth.uid;
+    }
+
+    function isLessonCollection(course) {
+      return course == 'func_lessons' || course == 'props_lessons';
+    }
+
+    function isValidLessonDoc(data, studentKey, docId) {
+      return data.keys().hasAll(['studentKey', 'lesson', 'schemaVersion', 'data', 'clientUpdatedAt', 'updatedAt']) &&
+        data.keys().hasOnly(['studentKey', 'lesson', 'schemaVersion', 'data', 'clientUpdatedAt', 'updatedAt']) &&
+        data.studentKey == studentKey &&
+        data.lesson is int && ('l' + string(data.lesson)) == docId &&
+        data.schemaVersion is int && data.schemaVersion >= 1 && data.schemaVersion <= 100 &&
+        data.data is string && data.data.size() >= 2 && data.data.size() <= 200000 &&
+        data.clientUpdatedAt is string && data.clientUpdatedAt.size() <= 40 &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidTeacherDoc(data, studentKey) {
+      return data.keys().hasAll(['studentKey', 'schemaVersion', 'data', 'updatedAt']) &&
+        data.keys().hasOnly(['studentKey', 'schemaVersion', 'data', 'updatedAt']) &&
+        data.studentKey == studentKey &&
+        data.schemaVersion is int && data.schemaVersion >= 1 && data.schemaVersion <= 100 &&
+        data.data is string && data.data.size() >= 2 && data.data.size() <= 100000 &&
+        data.updatedAt == request.time;
+    }
+
+    match /student_registrations/{studentKey}/{course}/{docId} {
+      allow get, list: if isValidId(studentKey) && isLessonCollection(course) &&
+        (isAdmin() || isStudentOwnerOf(studentKey));
+
+      // 차시 내용: 승인된 학생 본인 또는 교사
+      allow create, update: if isValidId(studentKey) && isLessonCollection(course) &&
+        docId.matches('^l[1-7]$') &&
+        isValidLessonDoc(incoming(), studentKey, docId) &&
+        (
+          isAdmin() ||
+          (isStudentOwnerOf(studentKey) && registrationData(studentKey).status == 'approved')
+        );
+
+      // 교사 평가·메모: 교사만
+      allow create, update: if isValidId(studentKey) && isLessonCollection(course) &&
+        docId == 'teacher' &&
+        isValidTeacherDoc(incoming(), studentKey) &&
+        isAdmin();
+
+      allow delete: if isLessonCollection(course) && isAdmin();
+    }
+
+    // 교사 화면: 모든 학생의 차시 문서를 한 번에 조회 (collection group)
+    match /{path=**}/func_lessons/{docId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/props_lessons/{docId} {
+      allow read: if isAdmin();
     }
 
     // Device / MAC Lock Collection (Permits shared computer lab/cart tablets while logging device identity)
