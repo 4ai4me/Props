@@ -63,6 +63,7 @@ import { MathSymbolInputBar } from './components/MathSymbolInputBar';
 import { MathText } from './components/MathText';
 import { recordStudentAccessLog } from './utils/auditLogger';
 import { ensureStudentAuth } from './utils/studentAuth';
+import { needsPasswordSetup, useStudentAuthPolicy } from './utils/studentPassword';
 import {
   LessonJsonMap,
   assembleRecord,
@@ -257,6 +258,8 @@ export default function App() {
     }, 4500);
   }, []);
 
+  // 학생 비밀번호 사용 설정 (기본: 사용 안 함)
+  const studentAuthPolicy = useStudentAuthPolicy();
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 자동 저장 대기 중인 작업 (탭 닫힘·전환 시 즉시 실행)
   const pendingSaveRef = useRef<(() => Promise<void>) | null>(null);
@@ -422,8 +425,16 @@ export default function App() {
   // 가입 문서 감시: 다른 기기에서 같은 학생으로 다시 로그인해 이 기기의 연결이 끊긴 경우 처음 화면으로
   useEffect(() => {
     if (sessionMode !== 'student' || !approvedProfile?.studentKey || !firebaseUser) return;
-    const unsub = onSnapshot(doc(db, 'student_registrations', approvedProfile.studentKey), () => {
-      // 내용은 사용하지 않음 (활동지는 차시 문서에서 불러옴)
+    const unsub = onSnapshot(doc(db, 'student_registrations', approvedProfile.studentKey), (snap) => {
+      // 활동지는 차시 문서에서 불러오므로, 여기서는 비밀번호 설정 필요 여부만 확인
+      if (!studentAuthPolicy.loaded || !snap.exists()) return;
+      if (needsPasswordSetup(studentAuthPolicy.passwordRequired, snap.data())) {
+        // 비밀번호 사용이 켜졌는데 아직 비밀번호가 없는 학생: 첫 화면에서 비밀번호부터 설정
+        // (학생 키는 남겨 두어 첫 화면이 바로 비밀번호 설정 폼을 보여 줌. 입력 내용은 기기에 보관됨)
+        void pendingSaveRef.current?.();
+        setSessionMode('gate');
+        showToast('이제부터 비밀번호가 필요합니다. 비밀번호를 설정한 뒤 계속해 주세요.', 'warn');
+      }
     }, (error) => {
       console.error('Student registration listener error:', error);
       if ((error as { code?: string })?.code === 'permission-denied') {
@@ -439,7 +450,14 @@ export default function App() {
       }
     });
     return () => unsub();
-  }, [sessionMode, approvedProfile?.studentKey, firebaseUser, showToast]);
+  }, [
+    sessionMode,
+    approvedProfile?.studentKey,
+    firebaseUser,
+    showToast,
+    studentAuthPolicy.loaded,
+    studentAuthPolicy.passwordRequired,
+  ]);
 
   // Sync teacher state to localStorage
   useEffect(() => {

@@ -50,6 +50,19 @@ service cloud.firestore {
         );
     }
 
+    // ------------------------------------------------------------------
+    // 학생 비밀번호 (원문은 저장하지 않고 SHA-256 해시만 저장)
+    //   app_settings/student_auth.passwordRequired 가 true일 때만 가입 시 필수
+    // ------------------------------------------------------------------
+    function isPasswordHash(v) {
+      return v is string && v.matches('^[0-9a-f]{64}$');
+    }
+
+    function studentPasswordRequired() {
+      return exists(/databases/$(database)/documents/app_settings/student_auth) &&
+        get(/databases/$(database)/documents/app_settings/student_auth).data.passwordRequired == true;
+    }
+
     function isValidStudentRegistration(data) {
       return data.keys().hasAll([
           'studentKey', 'school', 'grade', 'classNum', 'studentNum',
@@ -60,9 +73,12 @@ service cloud.firestore {
           'studentKey', 'school', 'grade', 'classNum', 'studentNum',
           'birthDate', 'name', 'deviceHash', 'ipAddress', 'userAgent',
           'status', 'worksheetJson', 'createdAt', 'updatedAt',
-          'uid', 'claimName', 'claimBirthDate'
+          'uid', 'claimName', 'claimBirthDate', 'passwordHash', 'claimPasswordHash'
         ]) &&
         data.get('uid', '') is string && data.get('uid', '').size() <= 128 &&
+        (data.get('passwordHash', '') == '' || isPasswordHash(data.get('passwordHash', ''))) &&
+        data.get('claimPasswordHash', '') is string &&
+        (data.get('claimPasswordHash', '') == '' || data.get('claimPasswordHash', '').matches('^[0-9a-f]{64}:[A-Za-z0-9]{8,64}$')) &&
         data.get('claimName', '') is string && data.get('claimName', '').size() <= 25 &&
         data.get('claimBirthDate', '') is string && data.get('claimBirthDate', '').matches('^[0-9]{0,8}$') &&
         data.studentKey is string && data.studentKey.size() >= 3 && data.studentKey.size() <= 120 && data.studentKey.matches('^[a-zA-Z0-9_\\-]+$') &&
@@ -117,6 +133,8 @@ service cloud.firestore {
         incoming().studentKey == studentKey &&
         incoming().status == 'pending' &&
         incoming().uid == request.auth.uid &&
+        incoming().get('claimPasswordHash', '') == '' &&
+        (!studentPasswordRequired() || isPasswordHash(incoming().get('passwordHash', ''))) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time &&
         existsAfter(/databases/$(database)/documents/device_locks/$(incoming().deviceHash));
@@ -137,13 +155,29 @@ service cloud.firestore {
             existing().status == 'approved' &&
             incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt', 'deviceHash', 'ipAddress', 'userAgent'])
           ) ||
+          // 2-1) 학생 본인(승인 대기 포함): 비밀번호가 없을 때만 처음 설정 (변경·삭제는 교사 초기화로만)
+          (
+            isRegistrationOwner(existing()) &&
+            existing().get('passwordHash', '') == '' &&
+            isPasswordHash(incoming().get('passwordHash', '')) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['passwordHash', 'updatedAt'])
+          ) ||
           // 3) 다른 기기·브라우저에서 재접속: 이름·생년월일이 맞으면 이 익명 계정으로 연결
           (
             isSignedIn() &&
             incoming().uid == request.auth.uid &&
-            incoming().diff(existing()).affectedKeys().hasOnly(['uid', 'claimName', 'claimBirthDate', 'updatedAt']) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['uid', 'claimName', 'claimBirthDate', 'claimPasswordHash', 'updatedAt']) &&
             incoming().claimName == existing().name &&
-            birthDateMatches(incoming().claimBirthDate, existing().birthDate)
+            birthDateMatches(incoming().claimBirthDate, existing().birthDate) &&
+            // 비밀번호가 설정된 학생: 이번 요청에 새로 담긴 "해시:임의값" 증명의 해시가 저장된 해시와 같아야 함
+            // (임의값이 매번 바뀌므로 문서에 남아 있는 예전 증명으로는 통과할 수 없음)
+            (
+              existing().get('passwordHash', '') == '' ||
+              (
+                incoming().diff(existing()).affectedKeys().hasAny(['claimPasswordHash']) &&
+                incoming().claimPasswordHash.split(':')[0] == existing().passwordHash
+              )
+            )
           )
         );
 
@@ -281,6 +315,14 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    function isValidStudentAuthSetting(data) {
+      return data.keys().hasAll(['passwordRequired', 'updatedBy', 'updatedAt']) &&
+        data.keys().hasOnly(['passwordRequired', 'updatedBy', 'updatedAt']) &&
+        data.passwordRequired is bool &&
+        data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 120 &&
+        data.updatedAt is timestamp;
+    }
+
     // Classroom-wide Lesson Access ON/OFF Settings (Readable by students, writable by Admin Teacher)
     match /app_settings/{settingId} {
       allow get: if isValidId(settingId);
@@ -290,6 +332,12 @@ service cloud.firestore {
         incoming().updatedAt == request.time &&
         isAdmin();
       allow delete: if settingId == 'lesson_access' && isAdmin();
+
+      // 학생 비밀번호 사용 설정 (교사만 변경)
+      allow create, update: if settingId == 'student_auth' &&
+        isValidStudentAuthSetting(incoming()) &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
     }
   }
 }

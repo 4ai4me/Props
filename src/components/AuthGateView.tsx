@@ -10,7 +10,6 @@ import { signInWithPopup, signOut, User } from 'firebase/auth';
 import { db, auth, googleProvider, handleFirestoreError, OperationType } from '../firebase';
 import {
   ADMIN_TEACHER_EMAIL,
-  STUDENT_PASSWORD_FEATURE_ENABLED,
   StudentIdentityInput,
   buildSafeStudentKey,
   formatDeviceHashAsMac,
@@ -36,6 +35,12 @@ import {
 } from 'lucide-react';
 import { recordStudentAccessLog } from '../utils/auditLogger';
 import { ensureStudentAuth, openOwnRegistration } from '../utils/studentAuth';
+import {
+  hashStudentPassword,
+  needsPasswordSetup,
+  setInitialStudentPassword,
+  useStudentAuthPolicy,
+} from '../utils/studentPassword';
 
 export interface FirestoreStudentRegistrationDoc {
   studentKey: string;
@@ -56,6 +61,9 @@ export interface FirestoreStudentRegistrationDoc {
   uid?: string;
   claimName?: string;
   claimBirthDate?: string;
+  /** 비밀번호 해시 (비밀번호를 설정하지 않았으면 없음 또는 빈 값). 원문은 저장하지 않음 */
+  passwordHash?: string;
+  claimPasswordHash?: string;
 }
 
 interface AuthGateViewProps {
@@ -102,6 +110,13 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
   });
 
   const [pendingDoc, setPendingDoc] = useState<FirestoreStudentRegistrationDoc | null>(null);
+  // 학생 비밀번호 사용 설정 (교사가 학생 가입 관리에서 켜고 끔, 기본: 사용 안 함)
+  const policy = useStudentAuthPolicy();
+  const passwordOn = policy.passwordRequired;
+  // 기존 가입자 비밀번호 처음 설정 폼
+  const [setupPassword, setSetupPassword] = useState('');
+  const [setupPasswordConfirm, setSetupPasswordConfirm] = useState('');
+  const [setupBusy, setSetupBusy] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'good' | 'warn' } | null>(null);
 
@@ -115,6 +130,8 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       setPendingDoc(null);
       return;
     }
+    // 비밀번호 사용 설정을 받은 뒤에 판단 (받기 전에 입장시키지 않음)
+    if (!policy.loaded) return;
     const ref = doc(db, 'student_registrations', activeStudentKey);
     let cancelled = false;
     let unsub: (() => void) | null = null;
@@ -131,7 +148,8 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
         }
         const data = snap.data() as FirestoreStudentRegistrationDoc;
         setPendingDoc(data);
-        if (data.status === 'approved') {
+        // 비밀번호 사용이 켜져 있는데 아직 비밀번호가 없으면, 먼저 비밀번호를 설정해야 입장 가능
+        if (data.status === 'approved' && !needsPasswordSetup(policy.passwordRequired, data)) {
           try {
             const parsed = cleanStudentState(JSON.parse(data.worksheetJson));
             onStudentApprovedLogin(data, parsed);
@@ -168,7 +186,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       cancelled = true;
       unsub?.();
     };
-  }, [activeStudentKey, onStudentApprovedLogin]);
+  }, [activeStudentKey, onStudentApprovedLogin, policy.loaded, policy.passwordRequired]);
 
   // If teacher is already logged in with authorized email
   useEffect(() => {
@@ -183,7 +201,8 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
     e.preventDefault();
     setStatusMsg(null);
 
-    const validation = validateStudentRegistrationInput(form);
+    // 비밀번호 사용이 켜져 있으면 가입 시 비밀번호 필수
+    const validation = validateStudentRegistrationInput(form, { enforcePassword: passwordOn });
     if (!validation.ok) {
       setStatusMsg({ text: validation.error || '입력값을 확인해 주세요.', type: 'warn' });
       return;
@@ -220,7 +239,16 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       // 2. Check if this studentKey already exists (서버 규칙이 본인 여부를 확인)
       const studentUser = await ensureStudentAuth();
       const regRef = doc(db, 'student_registrations', sKey);
-      const opened = await openOwnRegistration(sKey, form.name, normalizedBirth);
+      const opened = await openOwnRegistration(sKey, form.name, normalizedBirth, form.password || '');
+
+      if (opened.kind === 'password_required') {
+        setStatusMsg({
+          text: '이미 가입된 학생입니다. [승인된 학생 입장] 탭에서 비밀번호를 함께 입력해 로그인해 주세요.',
+          type: 'warn',
+        });
+        setLoading(false);
+        return;
+      }
 
       if (opened.kind === 'ok') {
         const existing = opened.doc;
@@ -252,6 +280,9 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       initialWorksheet.group = `${form.school.trim()} ${form.grade.trim()}학년 ${form.classNum.trim()}반`.slice(0, 25);
       initialWorksheet.code = `${form.grade.trim()}${String(form.classNum.trim()).padStart(2, '0')}${String(form.studentNum.trim()).padStart(2, '0')}_${form.name.trim()}`.slice(0, 25);
 
+      // 비밀번호는 원문이 아닌 해시만 저장
+      const passwordHash = passwordOn ? await hashStudentPassword(sKey, form.password || '') : '';
+
       const batch = writeBatch(db);
       batch.set(regRef, {
         studentKey: sKey,
@@ -267,6 +298,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
         status: 'pending',
         worksheetJson: JSON.stringify(initialWorksheet),
         uid: studentUser.uid,
+        ...(passwordHash ? { passwordHash } : {}),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -326,7 +358,8 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
     e.preventDefault();
     setStatusMsg(null);
 
-    const validation = validateStudentRegistrationInput(form);
+    // 로그인은 비밀번호 형식을 검사하지 않음 (비밀번호가 설정된 학생만 서버가 확인)
+    const validation = validateStudentRegistrationInput(form, { enforcePassword: false });
     if (!validation.ok) {
       setStatusMsg({ text: validation.error || '입력값을 확인해 주세요.', type: 'warn' });
       return;
@@ -338,7 +371,16 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       const normalizedBirth = normalizeBirthDate(form.birthDate);
       // 이름·생년월일 확인은 Firestore 보안 규칙(서버)이 수행합니다.
       // (다른 학생의 문서는 목록 조회도, 열람도 할 수 없습니다)
-      const opened = await openOwnRegistration(sKey, form.name, normalizedBirth);
+      const opened = await openOwnRegistration(sKey, form.name, normalizedBirth, form.password || '');
+
+      if (opened.kind === 'password_required') {
+        setStatusMsg({
+          text: '비밀번호를 설정한 학생입니다. 비밀번호를 함께 입력해 주세요. (비밀번호를 잊었다면 선생님께 초기화를 요청하세요)',
+          type: 'warn',
+        });
+        setLoading(false);
+        return;
+      }
 
       if (opened.kind === 'not_found') {
         setStatusMsg({
@@ -351,7 +393,9 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
 
       if (opened.kind === 'mismatch') {
         setStatusMsg({
-          text: '이름 또는 생년월일이 등록된 정보와 일치하지 않습니다.',
+          text: form.password
+            ? '이름·생년월일 또는 비밀번호가 등록된 정보와 일치하지 않습니다. (비밀번호를 잊었다면 선생님께 초기화를 요청하세요)'
+            : '이름 또는 생년월일이 등록된 정보와 일치하지 않습니다.',
           type: 'warn',
         });
         setLoading(false);
@@ -404,6 +448,42 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 기존 가입자: 비밀번호 사용이 켜진 뒤 처음 로그인하면 비밀번호를 먼저 설정
+  const handleSetupPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingDoc) return;
+    const check = validateStudentPassword(setupPassword);
+    if (!check.ok) {
+      setStatusMsg({ text: check.error || '비밀번호 형식을 확인해 주세요.', type: 'warn' });
+      return;
+    }
+    if (setupPassword !== setupPasswordConfirm) {
+      setStatusMsg({ text: '비밀번호 확인이 일치하지 않습니다. 다시 입력해 주세요.', type: 'warn' });
+      return;
+    }
+    setSetupBusy(true);
+    try {
+      await setInitialStudentPassword(pendingDoc.studentKey, setupPassword);
+      setSetupPassword('');
+      setSetupPasswordConfirm('');
+      setStatusMsg({
+        text:
+          pendingDoc.status === 'approved'
+            ? '비밀번호가 설정되었습니다. 활동지 화면으로 이동합니다. 다음부터는 로그인할 때 이 비밀번호를 입력하세요.'
+            : '비밀번호가 설정되었습니다. 선생님 승인 후 활동지가 열립니다.',
+        type: 'good',
+      });
+    } catch (err) {
+      console.error('Initial password setup failed:', err);
+      setStatusMsg({
+        text: '비밀번호 저장에 실패했습니다. 네트워크를 확인한 뒤 다시 시도하거나, 이미 비밀번호가 있다면 선생님께 초기화를 요청하세요.',
+        type: 'warn',
+      });
+    } finally {
+      setSetupBusy(false);
     }
   };
 
@@ -503,6 +583,60 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
 
       {portalMode === 'student' ? (
         <div className="mt-5 rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-xs">
+          {/* 비밀번호 사용이 켜졌는데 아직 비밀번호가 없는 기존 가입자: 먼저 비밀번호 설정 */}
+          {pendingDoc && pendingDoc.status !== 'rejected' && needsPasswordSetup(passwordOn, pendingDoc) && (
+            <form
+              onSubmit={handleSetupPasswordSubmit}
+              className="mb-6 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5"
+              aria-label="비밀번호 설정"
+            >
+              <div className="flex items-center gap-2 text-sm font-extrabold text-amber-900">
+                <KeyRound className="h-4 w-4" />
+                비밀번호를 먼저 설정해 주세요
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-amber-900">
+                <strong>
+                  {pendingDoc.school} {pendingDoc.grade}학년 {pendingDoc.classNum}반 {pendingDoc.studentNum}번 {pendingDoc.name}
+                </strong>{' '}
+                학생, 이제부터 로그인할 때 비밀번호가 필요합니다. 활동지를 열기 전에 비밀번호를 만들어 주세요.
+                (대문자·소문자·숫자·특수문자를 모두 포함한 8~32자리)
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={32}
+                  required
+                  value={setupPassword}
+                  onChange={(e) => setSetupPassword(e.target.value)}
+                  placeholder="새 비밀번호"
+                  className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2.5 text-sm"
+                  aria-label="새 비밀번호"
+                />
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  maxLength={32}
+                  required
+                  value={setupPasswordConfirm}
+                  onChange={(e) => setSetupPasswordConfirm(e.target.value)}
+                  placeholder="새 비밀번호 확인"
+                  className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2.5 text-sm"
+                  aria-label="새 비밀번호 확인"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={setupBusy}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-amber-500 disabled:opacity-60"
+              >
+                {setupBusy ? '저장 중…' : '비밀번호 설정하고 계속하기'}
+              </button>
+            </form>
+          )}
+
           {/* If student has an active pending/rejected registration on this device, show live status card */}
           {pendingDoc && pendingDoc.status !== 'approved' && (
             <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50/70 p-5">
@@ -717,20 +851,20 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                   비밀번호 (대문자·소문자·숫자·특수문자 포함 8~32자리)
                 </label>
                 <span className="text-xs font-semibold text-slate-500">
-                  {STUDENT_PASSWORD_FEATURE_ENABLED ? '활성화됨' : '현재 비활성화 모드 (입력 불필요)'}
+                  {passwordOn ? '사용 중 (가입 시 필수 · 로그인 시 설정한 학생만)' : '현재 비활성화 모드 (입력 불필요)'}
                 </span>
               </div>
 
               <input
                 id="stu-password"
                 type="password"
-                disabled={!STUDENT_PASSWORD_FEATURE_ENABLED}
+                disabled={!passwordOn}
                 minLength={8}
                 maxLength={32}
                 value={form.password || ''}
                 onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
                 placeholder={
-                  STUDENT_PASSWORD_FEATURE_ENABLED
+                  passwordOn
                     ? '대문자, 소문자, 숫자, 특수문자 포함 8~32자리 입력'
                     : '비활성화 모드 — 비밀번호 입력 없이 학적 정보만으로 신청·입장 가능합니다'
                 }
@@ -750,7 +884,7 @@ export const AuthGateView: React.FC<AuthGateViewProps> = ({
                     {i > 0 && <span aria-hidden="true" className="text-slate-300">·</span>}
                     <span
                       className={
-                        STUDENT_PASSWORD_FEATURE_ENABLED && ok
+                        passwordOn && ok
                           ? 'font-bold text-emerald-700'
                           : 'text-slate-500'
                       }

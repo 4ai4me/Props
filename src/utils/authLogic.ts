@@ -12,8 +12,9 @@ export const ADMIN_TEACHER_EMAIL = 'liha1634@gmail.com';
 export const BOOTSTRAPPED_ADMIN_EMAIL = 'planitia4ai@gmail.com';
 
 /**
- * 학생 신규 가입 신청 시 비밀번호 입력 기능 플래그
- * (요구사항: 비밀번호 입력 기능 생성만 하되 현재 비활성화 모드 유지)
+ * 비밀번호 형식 검사의 기본값 (validateStudentRegistrationInput 에 enforcePassword를 주지 않았을 때).
+ * ⚠️ 실제 비밀번호 사용 여부는 이 상수가 아니라, 교사가 [학생 가입 관리]에서 켜고 끄는
+ *    app_settings/student_auth.passwordRequired 설정으로 정합니다 (src/utils/studentPassword.ts).
  */
 export const STUDENT_PASSWORD_FEATURE_ENABLED = false;
 

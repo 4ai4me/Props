@@ -109,6 +109,15 @@ student_registrations/{studentKey}/props_lessons/teacher 교사 평가·메모 (
 - 차시 문서에는 `schemaVersion`(현재 1)이 기록됩니다. 문서 구조를 바꿀 때는 버전을 올리고 읽는 쪽에서 버전별로 처리합니다.
 - 관련 코드: `src/utils/lessonStore.ts`(저장·불러오기), `src/utils/lessonMerge.ts`(합치기·변경 감지, 단위 테스트 `lessonMerge.test.ts`).
 
+**학생 비밀번호 (2026-10-30 추가, 기본: 사용 안 함)**
+- 교사가 [학생 가입 관리] → **학생 비밀번호 사용** 스위치로 켜고 끕니다 (`app_settings/student_auth.passwordRequired`, Func·Props 공통). 문서가 없으면 '사용 안 함'.
+- 켜면: 새 가입은 비밀번호 필수(대문자·소문자·숫자·특수문자 포함 8~32자) / 비밀번호가 없는 기존 학생은 다음 로그인 때 **비밀번호를 먼저 설정해야 활동지가 열림** / 비밀번호를 설정한 학생은 다른 기기에서 로그인할 때 비밀번호 필요.
+- 끄더라도 이미 비밀번호를 설정한 학생은 보안을 위해 계속 비밀번호가 필요합니다(필요하면 학생별 초기화).
+- **교사 초기화**: 학생 가입 관리 표의 [비밀번호] 열 → [초기화]. 학생은 다음 로그인 때 이름·생년월일로 입장한 뒤 새 비밀번호를 설정합니다.
+- 비밀번호 원문은 저장하지 않고 `SHA-256(접두어|학생키|비밀번호)` 해시만 가입 문서의 `passwordHash`에 저장합니다. 다른 기기 재연결 시 `해시:임의값` 증명(`claimPasswordHash`)을 보내고 보안 규칙이 해시를 비교합니다(임의값이 매번 바뀌어 예전 증명 재사용 불가).
+- ⚠️ 해시 방식(`src/utils/passwordCore.ts`)은 Func·Props에서 반드시 같아야 합니다 — `passwordCore.test.ts`의 고정값 테스트가 검사합니다.
+- 한계: 비밀번호를 아직 설정하지 않은 학생은 이름·생년월일만 아는 사람이 먼저 로그인해 비밀번호를 설정할 수 있습니다. 비밀번호 사용을 켠 직후에는 학생들이 바로 설정하도록 안내하세요.
+
 **보안 규칙 요약**
 | 대상 | 읽기 | 쓰기 |
 |---|---|---|
@@ -118,6 +127,8 @@ student_registrations/{studentKey}/props_lessons/teacher 교사 평가·메모 (
 | 교사 평가 `teacher` | 교사, 본인 | 교사 |
 | 접속 기록 | 교사 | 로그인한 사용자(생성만) |
 | 차시 잠금 설정 | 누구나 | 교사 |
+| 학생 비밀번호 사용 설정 | 누구나 | 교사 |
+| 비밀번호 해시 | 교사, 본인 | 처음 설정: 본인(비밀번호 없을 때만) · 초기화: 교사 |
 
 **사용량(무료 한도) 주의**
 - 이 데이터베이스는 AI Studio 공유 할당량 데이터베이스로, **결제를 등록해도 무료 한도(쓰기 하루 2만 단위)를 넘을 수 없습니다.** 한도는 미국 태평양 시간 자정(한국 시간 오후 4~5시)에 초기화됩니다.
@@ -220,6 +231,7 @@ export interface Lesson7ViewProps {
 교사용 수사 기록실, 차시별 활성/비활성(선행 학습 방지 및 클라우드 서버 강제 동기화) 제어 패널, 실시간 수합 대시보드, 학생 가입 승인, 평가 진행율 표시 및 사건 기록 비교 컴포넌트입니다. (`https://github.com/4ai4me/Func`와 동일한 `/app_settings/lesson_access` 서버 동기화 및 다중 우회 차단 규격 적용)
 
 - **전체 답안 보기 (2026-10-30)**: 상세 비교 창(인라인·비모달 모두) 아래에 차시별로 학생이 입력한 **모든 문항**을 문항 이름과 함께 표시합니다. 차시마다 `작성 n/m` 현황을 보여 주며, 비어 있는 문항과 기존 요약 칸의 `미작성`은 **빨간 굵은 글씨**로 강조됩니다. 문항 이름은 `src/utils/answerLabels.ts`에서 관리하고, 이름표가 없는 새 필드라도 값이 있으면 `기타 기록`에 표시됩니다. 학생 화면에 문항을 추가하면 `answerLabels.ts`에 이름표를 추가하세요 (`answerLabels.test.ts`가 누락을 검사합니다).
+- **비모달 상세 비교 창 이동 (2026-10-30)**: 창의 어두운 제목 표시줄을 마우스로 끌거나 패드에서 손가락으로 끌어 옮길 수 있습니다(최대화·최소화 상태 제외). 창을 다시 열면 처음 위치(오른쪽 아래)에서 시작하며, 화면 밖으로 완전히 나가지 않습니다. (`src/utils/useDraggableWindow.ts`)
 
 ```typescript
 export interface TeacherViewProps {
@@ -346,7 +358,7 @@ npm run dev
 npm run lint
 
 # 4. 순수 수학 및 인증 로직 단위 테스트 실행
-npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts src/utils/lessonMerge.test.ts src/utils/answerLabels.test.ts src/components/FullAnswerPanel.test.tsx
+npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts src/utils/lessonMerge.test.ts src/utils/answerLabels.test.ts src/components/FullAnswerPanel.test.tsx src/utils/passwordCore.test.ts src/utils/useDraggableWindow.test.ts
 
 # 5. 프로덕션 빌드 및 GitHub Pages 루트 번들(ghpages-app.js/css) 자동 동기화
 npm run build

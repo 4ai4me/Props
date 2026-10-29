@@ -87,10 +87,18 @@ import {
   Save,
   Lock,
   Unlock,
+  KeyRound,
 } from 'lucide-react';
 import { StudentAccessLog } from '../utils/auditLogger';
 import { MathText } from './MathText';
 import { AnswerText, UnwrittenMark } from './AnswerText';
+import { useDraggableWindow } from '../utils/useDraggableWindow';
+import {
+  hasStudentPassword,
+  resetStudentPassword,
+  saveStudentAuthPolicy,
+  useStudentAuthPolicy,
+} from '../utils/studentPassword';
 import { FullAnswerPanel } from './FullAnswerPanel';
 
 interface TeacherViewProps {
@@ -128,6 +136,9 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   const detailRef = useRef<HTMLDivElement | null>(null);
 
   const [cloudRegistrations, setCloudRegistrations] = useState<FirestoreStudentRegistrationDoc[]>([]);
+  // 학생 비밀번호 사용 설정 (기본: 사용 안 함)
+  const studentAuthPolicy = useStudentAuthPolicy();
+  const passwordSetCount = cloudRegistrations.filter((r) => hasStudentPassword(r)).length;
   // 학생별 차시 문서(student_registrations/{studentKey}/props_lessons/*)
   const [lessonDocsByStudent, setLessonDocsByStudent] = useState<Map<string, StudentLessonSnapshot>>(
     () => new Map()
@@ -165,6 +176,13 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   const [isModelessOpen, setIsModelessOpen] = useState<boolean>(false);
   const [isModelessMinimized, setIsModelessMinimized] = useState<boolean>(false);
   const [isModelessExpanded, setIsModelessExpanded] = useState<boolean>(false);
+  // 비모달 창 끌어서 옮기기 (기본 크기일 때만. 최대화·최소화 상태에서는 고정)
+  const modelessDrag = useDraggableWindow(isModelessOpen && !isModelessExpanded && !isModelessMinimized);
+  const resetModelessPosition = modelessDrag.resetPosition;
+  useEffect(() => {
+    // 창을 새로 열 때마다 처음 위치(오른쪽 아래)에서 시작
+    if (isModelessOpen) resetModelessPosition();
+  }, [isModelessOpen, resetModelessPosition]);
 
   // Real-time Student Access Logs state
   const [accessLogs, setAccessLogs] = useState<StudentAccessLog[]>([]);
@@ -419,6 +437,52 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, 'student_registrations');
     }
+  };
+
+  // ------------------------------------------------------------------
+  // 학생 비밀번호 관리 (사용 설정 · 초기화)
+  // ------------------------------------------------------------------
+  const handleToggleStudentPassword = (nextOn: boolean) => {
+    onRequestConfirm(
+      nextOn ? '학생 비밀번호 사용 켜기' : '학생 비밀번호 사용 끄기',
+      nextOn
+        ? '켜면 ① 새로 가입하는 학생은 비밀번호를 반드시 입력하고, ② 비밀번호가 없는 기존 가입 학생은 다음 로그인 때 비밀번호를 먼저 설정해야 활동지가 열리며, ③ 비밀번호를 설정한 학생은 다른 기기에서 로그인할 때 비밀번호가 필요합니다. 이 설정은 함수(Func)·명제(Props) 두 사이트에 함께 적용됩니다. 켤까요?'
+        : '끄면 새로 가입하는 학생은 비밀번호 없이 가입하고, 비밀번호가 없는 학생에게 설정을 요구하지 않습니다. 이미 비밀번호를 설정한 학생은 보안을 위해 로그인할 때 계속 비밀번호가 필요합니다 (필요하면 학생별로 초기화하세요). 끌까요?',
+      async () => {
+        try {
+          await saveStudentAuthPolicy(nextOn, adminEmail);
+          setNotice({
+            text: nextOn ? '학생 비밀번호 사용을 켰습니다.' : '학생 비밀번호 사용을 껐습니다.',
+            type: 'good',
+          });
+        } catch (err) {
+          console.error('Failed to save student password policy:', err);
+          setNotice({
+            text: `비밀번호 사용 설정 저장 실패: ${err instanceof Error ? err.message : String(err)} (교사 Google 로그인 상태와 보안 규칙 게시 여부를 확인해 주세요)`,
+            type: 'warn',
+          });
+        }
+      }
+    );
+  };
+
+  const handleResetStudentPassword = (reg: FirestoreStudentRegistrationDoc) => {
+    onRequestConfirm(
+      '학생 비밀번호 초기화',
+      `${reg.school} ${reg.grade}-${reg.classNum}-${reg.studentNum} ${reg.name} 학생의 비밀번호를 초기화할까요? 학생은 다음 로그인 때 이름·생년월일로 입장한 뒤 새 비밀번호를 설정하게 됩니다. (활동지 내용은 그대로 유지됩니다)`,
+      async () => {
+        try {
+          await resetStudentPassword(reg.studentKey);
+          setNotice({ text: `${reg.name} 학생의 비밀번호를 초기화했습니다.`, type: 'good' });
+        } catch (err) {
+          console.error(`Password reset failed for ${reg.studentKey}:`, err);
+          setNotice({
+            text: `비밀번호 초기화 실패: ${err instanceof Error ? err.message : String(err)}`,
+            type: 'warn',
+          });
+        }
+      }
+    );
   };
 
   const handleDeleteStudentRegistration = (reg: FirestoreStudentRegistrationDoc) => {
@@ -1413,6 +1477,41 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
               </div>
             )}
 
+            {/* 학생 비밀번호 사용 설정 (기본: 사용 안 함) */}
+            <div
+              className={`rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                studentAuthPolicy.passwordRequired ? 'border-blue-200 bg-blue-50' : 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <div className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                <div className="flex items-center gap-1.5 font-extrabold text-slate-900">
+                  <KeyRound className="h-4 w-4 text-blue-600" />
+                  학생 비밀번호 사용:{' '}
+                  {studentAuthPolicy.passwordRequired ? (
+                    <span className="text-blue-700">사용 중</span>
+                  ) : (
+                    <span className="text-slate-500">사용 안 함</span>
+                  )}
+                </div>
+                <div className="mt-0.5 text-[11px] sm:text-xs text-slate-500">
+                  켜면 가입 시 비밀번호가 필수가 되고, 비밀번호가 없는 기존 학생은 다음 로그인 때 비밀번호를 먼저 설정합니다.
+                  비밀번호 설정 학생 {passwordSetCount}명 / 전체 {cloudRegistrations.length}명 · 함수·명제 사이트 공통 설정
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={!studentAuthPolicy.loaded}
+                onClick={() => handleToggleStudentPassword(!studentAuthPolicy.passwordRequired)}
+                className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors disabled:opacity-50 ${
+                  studentAuthPolicy.passwordRequired
+                    ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {studentAuthPolicy.passwordRequired ? '비밀번호 사용 끄기' : '비밀번호 사용 켜기'}
+              </button>
+            </div>
+
             <p className="text-sm text-slate-600 leading-relaxed">
               학생이 <strong>학교 / 학년 / 반 / 번호 / 생년월일 / 이름</strong>으로 가입을 신청하면 이곳에 실시간으로 표시됩니다.
               학교 공용 네트워크 환경을 고려하여 IP는 검사하지 않으며, <strong>기기 고유 MAC 주소 식별자</strong> 기준으로만 중복을 식별합니다.
@@ -1501,6 +1600,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                     <th className="py-3 px-3.5 text-left">이름</th>
                     <th className="py-3 px-3.5 text-left">생년월일</th>
                     <th className="py-3 px-3.5 text-left">기기 고유 MAC 주소 식별자 (중복 점검)</th>
+                    <th className="py-3 px-3.5 text-left">비밀번호</th>
                     <th className="py-3 px-3.5 text-left">관리자 승인 처리</th>
                   </tr>
                 </thead>
@@ -1543,6 +1643,27 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                               )}
                             </div>
                           </td>
+                          <td className="py-3 px-3.5 text-xs">
+                            {hasStudentPassword(reg) ? (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
+                                  <KeyRound className="h-3.5 w-3.5" /> 설정됨
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetStudentPassword(reg)}
+                                  className="rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-bold text-amber-800 hover:bg-amber-100 transition-colors"
+                                  title="비밀번호를 잊은 학생: 초기화 후 다음 로그인 때 새로 설정"
+                                >
+                                  초기화
+                                </button>
+                              </div>
+                            ) : (
+                              <span className={studentAuthPolicy.passwordRequired ? 'font-bold text-rose-600' : 'text-slate-400'}>
+                                {studentAuthPolicy.passwordRequired ? '미설정 (다음 로그인 때 설정)' : '없음'}
+                              </span>
+                            )}
+                          </td>
                           <td className="py-3 px-3.5">
                             <div className="flex flex-wrap items-center gap-1.5">
                               {reg.status !== 'approved' && (
@@ -1578,7 +1699,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                     })
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-8 px-4 text-center text-slate-500">
+                      <td colSpan={7} className="py-8 px-4 text-center text-slate-500">
                         {approvalSearchName
                           ? `'${approvalSearchName}' 학생 이름을 포함하는 가입 신청 내역이 없습니다.`
                           : '현재 해당 상태의 학생 가입 신청 내역이 없습니다.'}
@@ -2964,7 +3085,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
       {/* NON-MODAL FLOATING COMPARISON WINDOW (비모달 상세 비교 창) */}
       {isModelessOpen && selectedStudent && (
         <div
-          className={`no-print fixed z-40 transition-all duration-200 pointer-events-auto shadow-2xl ${
+          ref={modelessDrag.windowRef}
+          style={modelessDrag.windowStyle}
+          className={`no-print fixed z-40 ${
+            modelessDrag.dragging ? '' : 'transition-all duration-200'
+          } pointer-events-auto shadow-2xl ${
             isModelessExpanded
               ? 'inset-3 sm:inset-6 flex flex-col rounded-2xl border-2 border-blue-500 bg-white overflow-hidden'
               : isModelessMinimized
@@ -3004,8 +3129,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
           ) : (
             /* Full Modeless Window View */
             <>
-              {/* Window Header Bar */}
-              <div className="bg-slate-900 text-white px-4 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between gap-2 border-b border-slate-800 shrink-0 select-none">
+              {/* Window Header Bar — 잡고 끌어서 창 이동 (마우스·터치) */}
+              <div
+                {...modelessDrag.handleProps}
+                title={isModelessExpanded ? undefined : '제목 표시줄을 잡고 끌면 창을 옮길 수 있습니다'}
+                className="bg-slate-900 text-white px-4 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between gap-2 border-b border-slate-800 shrink-0 select-none"
+              >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Layers className="h-5 w-5 text-sky-400 shrink-0" />
                   <div className="min-w-0">
@@ -3020,6 +3149,11 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                         비모달 모드 (배경 상호작용 가능)
                       </span>
+                      {!isModelessExpanded && (
+                        <span className="text-[11px] font-semibold text-slate-400" aria-hidden="true">
+                          ⠿ 제목 표시줄을 끌어서 이동
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
