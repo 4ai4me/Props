@@ -179,7 +179,7 @@ export interface Lesson7ViewProps {
 ```
 
 ### 4.4 `TeacherView`
-교사용 수사 기록실, 차시별 활성/비활성(선행 학습 방지) 제어 패널, 실시간 수합 대시보드, 학생 가입 승인, 평가 진행율 표시 및 사건 기록 비교 컴포넌트입니다.
+교사용 수사 기록실, 차시별 활성/비활성(선행 학습 방지 및 클라우드 서버 강제 동기화) 제어 패널, 실시간 수합 대시보드, 학생 가입 승인, 평가 진행율 표시 및 사건 기록 비교 컴포넌트입니다. (`https://github.com/4ai4me/Func`와 동일한 `/app_settings/lesson_access` 서버 동기화 및 다중 우회 차단 규격 적용)
 
 ```typescript
 export interface TeacherViewProps {
@@ -190,8 +190,12 @@ export interface TeacherViewProps {
   onUpdateRecords: React.Dispatch<React.SetStateAction<StudentRecord[]>>;
   onPrintStudentReport: (student: StudentRecord) => void;
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
-  lessonConfig: LessonActivationConfig;
-  onUpdateLessonConfig: (nextConfig: LessonActivationConfig, summaryMessage?: string) => void;
+  lessonAccess: LessonAccessConfig;
+  lessonAccessSyncStatus: 'loading' | 'saving' | 'synced' | 'error';
+  lessonAccessLastSyncedAt: string | null;
+  onUpdateLessonAccess: (updater: (prev: LessonAccessConfig) => LessonAccessConfig, summaryLabel?: string) => void;
+  onForceSyncLessonAccessToServer: () => Promise<boolean>;
+  onRefreshLessonAccessFromServer: () => Promise<void>;
 }
 ```
 

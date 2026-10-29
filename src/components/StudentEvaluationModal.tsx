@@ -12,16 +12,21 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  Lock,
 } from 'lucide-react';
 import {
   EVAL_CRITERIA,
   EVAL_DESCRIPTIONS,
   EVAL_SCORE_LABELS,
+  LESSON_TAB_METADATA,
+  LessonAccessConfig,
+  LessonTabNumber,
   StudentRecord,
   ensureTeacherEval,
   getTeacherEvalAverage,
   getTeacherEvaluationProgress,
   hasTeacherEvaluation,
+  isLessonEnabled,
   TOPICS,
   TopicId,
 } from '../utils/mathLogic';
@@ -30,14 +35,16 @@ export interface StudentEvaluationModalProps {
   isOpen: boolean;
   onClose: () => void;
   student: StudentRecord;
+  lessonAccess?: LessonAccessConfig;
   onPrintReport?: (student: StudentRecord) => void;
-  onGoToLesson?: (lesson: 1 | 2 | 3 | 4 | 5 | 6 | 7) => void;
+  onGoToLesson?: (lesson: LessonTabNumber) => void;
 }
 
 export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
   isOpen,
   onClose,
   student,
+  lessonAccess,
   onPrintReport,
   onGoToLesson,
 }) => {
@@ -502,28 +509,36 @@ export const StudentEvaluationModal: React.FC<StudentEvaluationModalProps> = ({
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 shadow-xs">
                   <div className="text-xs font-bold text-slate-700">탐구 바로가기</div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[
-                      { lesson: 1 as const, title: '01차시 (직접 증명)' },
-                      { lesson: 2 as const, title: '02차시 (반례 탐색)' },
-                      { lesson: 3 as const, title: '03차시 (대우법)' },
-                      { lesson: 4 as const, title: '04차시 (귀류법)' },
-                      { lesson: 5 as const, title: '05차시 (절대부등식1)' },
-                      { lesson: 6 as const, title: '06차시 (절대부등식2)' },
-                      { lesson: 7 as const, title: '07차시 (절대부등식3)' },
-                    ].map(({ lesson, title }) => (
-                      <button
-                        key={lesson}
-                        type="button"
-                        onClick={() => {
-                          onGoToLesson(lesson);
-                          onClose();
-                        }}
-                        className="rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-colors flex items-center justify-center gap-1"
-                      >
-                        <span>{title}</span>
-                        <ArrowRight className="h-3 w-3" />
-                      </button>
-                    ))}
+                    {LESSON_TAB_METADATA.map(({ num: lesson, badge, shortTitle }) => {
+                      const unlocked = lessonAccess ? isLessonEnabled(lessonAccess, lesson) : true;
+                      return (
+                        <button
+                          key={lesson}
+                          type="button"
+                          disabled={!unlocked}
+                          aria-disabled={!unlocked}
+                          onClick={() => {
+                            if (!unlocked) return;
+                            onGoToLesson(lesson);
+                            onClose();
+                          }}
+                          className={`rounded-xl border p-2.5 text-xs font-bold transition-colors flex items-center justify-center gap-1 ${
+                            unlocked
+                              ? 'border-slate-200 bg-white text-slate-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700'
+                              : 'border-dashed border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-75'
+                          }`}
+                        >
+                          <span>
+                            {badge}차시 ({shortTitle})
+                          </span>
+                          {unlocked ? (
+                            <ArrowRight className="h-3 w-3 shrink-0" />
+                          ) : (
+                            <Lock className="h-3 w-3 shrink-0 text-amber-600" />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

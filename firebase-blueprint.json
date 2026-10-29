@@ -133,21 +133,22 @@
       },
       "required": ["deviceHash", "studentKey", "ipAddress", "createdAt"]
     },
-    "ClassroomConfig": {
-      "title": "ClassroomConfig",
-      "description": "Global classroom settings managed by the teacher, controlling per-lesson activation (1~7) to prevent ahead-of-schedule progression.",
+    "LessonAccessSetting": {
+      "title": "LessonAccessSetting",
+      "description": "Controls whether each lesson (1차시 ~ 7차시) is active/open or locked for students to prevent jumping ahead.",
       "type": "object",
       "properties": {
-        "l1": { "type": "boolean" },
-        "l2": { "type": "boolean" },
-        "l3": { "type": "boolean" },
-        "l4": { "type": "boolean" },
-        "l5": { "type": "boolean" },
-        "l6": { "type": "boolean" },
-        "l7": { "type": "boolean" },
+        "l1": { "type": "boolean", "description": "Whether Lesson 1 is open for students" },
+        "l2": { "type": "boolean", "description": "Whether Lesson 2 is open for students" },
+        "l3": { "type": "boolean", "description": "Whether Lesson 3 is open for students" },
+        "l4": { "type": "boolean", "description": "Whether Lesson 4 is open for students" },
+        "l5": { "type": "boolean", "description": "Whether Lesson 5 is open for students" },
+        "l6": { "type": "boolean", "description": "Whether Lesson 6 is open for students" },
+        "l7": { "type": "boolean", "description": "Whether Lesson 7 is open for students" },
+        "updatedBy": { "type": "string", "minLength": 1, "maxLength": 120 },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "updatedAt"]
+      "required": ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "updatedBy", "updatedAt"]
     }
   },
   "firestore": {
@@ -159,9 +160,9 @@
       "schema": { "$ref": "#/entities/DeviceLock" },
       "description": "Enforces one-device-one-registration duplicate prevention."
     },
-    "/classroom_settings/{configId}": {
-      "schema": { "$ref": "#/entities/ClassroomConfig" },
-      "description": "Stores teacher-controlled lesson activation states."
+    "/app_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/LessonAccessSetting" },
+      "description": "Stores classroom-wide lesson ON/OFF lock configuration."
     }
   }
 }

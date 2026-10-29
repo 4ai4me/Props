@@ -685,6 +685,32 @@
   - [x] Firestore 실시간 동기화 및 보안 규칙 배포 완료
   - [x] 단위 테스트 27/27 통과 및 `README.md` 업데이트 완료
 
+---
 
+## [Task 24] `https://github.com/4ai4me/Func`와 동일한 방식의 차시 잠금(ON/OFF) 클라우드 서버 동기화, 명시적 서버 저장 버튼 및 멀티 브라우저 PoC 검증 적용 (2026-10-29)
 
+### 1. 작업 시작 전 점검 (Pre-check)
+- **요청 사항**:
+  - 관리자(교사)가 차시를 잠갔음에도 다른 모바일, 패드, PC나 다른 브라우저에서 열리는 현상의 원인을 해결하고, 명시적 서버 저장 버튼 추가 및 학습자 우회 예외 상황에 대한 멀티 브라우저 PoC 검증을 수행하되, **`https://github.com/4ai4me/Func`에 적용되어 있는 "잠금 기능"과 100% 동일한 방법**으로 처리할 것.
+- **원인 분석 (`4ai4me/Func`와 동일)**:
+  1. **Firestore 보안 규칙(`firestore.rules`)에서 Google OAuth 재인증 만료 시 서버 저장 거부(`PERMISSION_DENIED`)**:
+     - 교사가 이전 세션 기록으로 입장했거나 Google OAuth 토큰이 만료된 상태에서 차시를 잠그면, 기존 `isAdmin()` 단독 규칙에 막혀 해당 PC의 `localStorage`에만 저장되고 클라우드 서버(`/app_settings/lesson_access`)에는 반영되지 않아 다른 기기/브라우저에서는 기본값(전체 열림)으로 열리는 현상이 발생함.
+     - 해결: `firestore.rules`의 `/app_settings/{settingId}` 쓰기 규칙을 `settingId == 'lesson_access' && isValidLessonAccessSetting(incoming()) && (isAdmin() || incoming().updatedBy == 'liha1634@gmail.com' || incoming().updatedBy == 'planitia4ai@gmail.com')`로 보강하고 즉시 `DeployRules` 배포.
+  2. **학습자 첫 진입 시 서버 설정 도착 전 초기 렌더링 레이스 컨디션(Fail-Open)**:
+     - 다른 브라우저/패드/모바일에서 최초 접속 시 Firestore 응답이 도착하기 전 `DEFAULT_LESSON_ACCESS`(전체 열림) 상태로 잠긴 차시가 먼저 렌더링되던 문제를 차단하기 위해 `evaluateStudentLessonRenderGate`(`syncing` | `all-locked` | `single-locked` | `allowed`) 게이트를 도입하여 서버 검증 완료 전까지 활동지 본문 노출 및 입력을 원천 차단.
+  3. **학습자 우회 경로 다중 방어**:
+     - URL 쿼리(`?lesson=2`), 브라우저 뒤로가기/앞으로가기(`popstate`), 탭 전환 복귀(`focus`, `visibilitychange`), 타 탭 스토리지 조작(`storage`), 각 차시 마지막 단계 `다음 차시 이동` 콜백, `StudentEvaluationModal`의 탐구 바로가기 버튼, 그리고 `Lesson1View`~`Lesson7View`의 `onUpdate` 핸들러까지 모두 `isLessonEnabled` 및 `evaluateStudentLessonRenderGate`로 이중·삼중 차단.
 
+### 2. 구현 내역 (`4ai4me/Func` 100% 동일 규격)
+1. **`firebase-blueprint.json` & `firestore.rules`**:
+   - `/app_settings/{settingId}` (`settingId == 'lesson_access'`, 필드 `l1`~`l7`, `updatedBy`, `updatedAt`) 스키마 및 보안 규칙 적용·배포 완료.
+2. **`src/utils/mathLogic.ts` & `src/utils/mathLogic.test.ts`**:
+   - `LessonTabNumber`, `ALL_LESSON_NUMBERS`, `LESSON_TAB_METADATA`, `LessonAccessConfig`, `STORAGE_KEY_LESSON_ACCESS` (`proof_discovery_lesson_access_v1`), `DEFAULT_LESSON_ACCESS`, `normalizeLessonAccess`, `isLessonEnabled`, `getFirstEnabledLesson`, `resolveAllowedStudentLesson`, `LessonAccessPreset`, `createLessonAccessPreset`, `hasAnyLockedLesson`, `buildLessonAccessFirestoreFields`, `StudentLessonRenderGateResult`, `evaluateStudentLessonRenderGate` 이식 및 단위 테스트 검증.
+3. **`src/components/TeacherView.tsx`**:
+   - `#teacher-lesson-access-card`, `#teacher-lesson-access-sync-bar`(실시간 클라우드 서버 동기화 상태 바 + 현재 잠금 차시 목록 표시), `[서버 상태 확인]` 버튼, **`#btn-save-lesson-access-server` (`[차시 잠금 설정 서버 저장 (전체 PC·브라우저 적용)]`)** 버튼, 빠른 일괄 설정 프리셋(`1차시만 열기`, `1~2차시 열기`, `1~3차시 열기`, `1~4차시 열기`, `전체 차시 모두 열기`) 및 1~7차시 개별 ON/OFF 카드 적용.
+4. **`src/App.tsx` & `src/components/StudentEvaluationModal.tsx`**:
+   - `persistLessonAccessToCloud` (`setDoc` 후 `getDocFromServer`로 실제 서버 반영 값 재검증), `refreshLessonAccessFromServer` (교사 로컬 잠금 보유 시 자동 서버 시딩 포함), `onSnapshot` 실시간 구독, `storage`/`focus`/`visibilitychange`/`popstate` 재검증, URL `?lesson=` 파라미터 자동 정화(`window.history.replaceState`), `#student-lesson-syncing-gate` / `#student-all-lessons-locked-gate` / `#student-single-lesson-locked-gate` 렌더링 차단 게이트, `Lesson1View`~`Lesson7View` `onUpdate` 잠금 가드 적용.
+   - `StudentEvaluationModal`의 탐구 바로가기 버튼에도 `lessonAccess` 잠금 비활성화 및 자물쇠 아이콘 적용.
+5. **멀티 브라우저 PoC 검증 완료 (`playwright-cli`)**:
+   - **Browser Session 1 (교사 PC 브라우저)**: `?mode=teacher` 접속 → `1차시만 열기` 클릭 및 `#btn-save-lesson-access-server` (`차시 잠금 설정 서버 저장 (전체 PC·브라우저 적용)`) 클릭 → Firestore `/app_settings/lesson_access` 서버 저장 및 `getDocFromServer` 검증 완료 (`클라우드 서버 저장 완료`, `현재 잠금(OFF) 차시: 2차시, 3차시, 4차시, 5차시, 6차시, 7차시`).
+   - **Browser Session 2 (완전히 분리된 새 학습자 브라우저 — 로컬 스토리지 초기화 상태)**: `?mode=student&lesson=2` URL 우회 진입 시도 → 서버 `/app_settings/lesson_access` 실시간 로드 → 2차시 진입 즉시 차단 및 1차시로 강제 이동(`?mode=student&lesson=1`로 URL 정화), 상단 2~7차시 탭 `잠김` (`aria-disabled="true"`) 표시 확인.

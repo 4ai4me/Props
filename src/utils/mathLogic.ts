@@ -2749,9 +2749,26 @@ export function tokenizeMathRadicals(text: string): MathTextToken[] {
   return tokens;
 }
 
-export type LessonNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type LessonTabNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
-export interface LessonActivationConfig {
+export const ALL_LESSON_NUMBERS: LessonTabNumber[] = [1, 2, 3, 4, 5, 6, 7];
+
+export const LESSON_TAB_METADATA: {
+  num: LessonTabNumber;
+  badge: string;
+  shortTitle: string;
+  fullTitle: string;
+}[] = [
+  { num: 1, badge: '01', shortTitle: '패턴의 비밀', fullTitle: '패턴의 비밀 (1차시)' },
+  { num: 2, badge: '02', shortTitle: '진실의 증명', fullTitle: '진실의 증명 (2차시)' },
+  { num: 3, badge: '03', shortTitle: '대우법 추리', fullTitle: '대우법 추리 (3차시)' },
+  { num: 4, badge: '04', shortTitle: '귀류법 추리', fullTitle: '귀류법 추리 (4차시)' },
+  { num: 5, badge: '05', shortTitle: '절대부등식1', fullTitle: '절대부등식1 (5차시)' },
+  { num: 6, badge: '06', shortTitle: '절대부등식2', fullTitle: '절대부등식2 (6차시)' },
+  { num: 7, badge: '07', shortTitle: '절대부등식3', fullTitle: '절대부등식3 (7차시)' },
+];
+
+export interface LessonAccessConfig {
   1: boolean;
   2: boolean;
   3: boolean;
@@ -2760,86 +2777,119 @@ export interface LessonActivationConfig {
   6: boolean;
   7: boolean;
   updatedAt?: string;
+  updatedBy?: string;
 }
 
-export const STORAGE_KEY_LESSON_CONFIG = 'math_detective_lesson_config_v1';
+export const STORAGE_KEY_LESSON_ACCESS = 'math_detective_lesson_access_v1';
 
-export const LESSON_META: ReadonlyArray<{
-  lesson: LessonNumber;
-  badge: string;
-  shortTitle: string;
-  fullTitle: string;
-}> = [
-  { lesson: 1, badge: '01', shortTitle: '패턴의 비밀 (1차시)', fullTitle: '1차시 · 패턴의 비밀 (직접 증명 & 실생활 함수)' },
-  { lesson: 2, badge: '02', shortTitle: '진실의 증명 (2차시)', fullTitle: '2차시 · 진실의 증명 (반례와 정당화)' },
-  { lesson: 3, badge: '03', shortTitle: '대우법 추리 (3차시)', fullTitle: '3차시 · 대우법 추리 (~q → ~p)' },
-  { lesson: 4, badge: '04', shortTitle: '귀류법 추리 (4차시)', fullTitle: '4차시 · 귀류법 추리 (√2, 1+√2)' },
-  { lesson: 5, badge: '05', shortTitle: '절대부등식1 (5차시)', fullTitle: '5차시 · 절대부등식1 (완전제곱식)' },
-  { lesson: 6, badge: '06', shortTitle: '절대부등식2 (6차시)', fullTitle: '6차시 · 절대부등식2 (산술·기하평균)' },
-  { lesson: 7, badge: '07', shortTitle: '절대부등식3 (7차시)', fullTitle: '7차시 · 절대부등식3 (절댓값 부등식)' },
-];
+export const DEFAULT_LESSON_ACCESS: LessonAccessConfig = {
+  1: true,
+  2: true,
+  3: true,
+  4: true,
+  5: true,
+  6: true,
+  7: true,
+};
 
-export function createDefaultLessonConfig(): LessonActivationConfig {
-  return {
-    1: true,
-    2: true,
-    3: true,
-    4: true,
-    5: true,
-    6: true,
-    7: true,
-  };
-}
-
-export function cleanLessonConfig(raw: unknown): LessonActivationConfig {
-  const base = createDefaultLessonConfig();
-  if (!raw || typeof raw !== 'object') return base;
+export function normalizeLessonAccess(raw: unknown): LessonAccessConfig {
+  if (!raw || typeof raw !== 'object') {
+    return { ...DEFAULT_LESSON_ACCESS };
+  }
   const obj = raw as Record<string, unknown>;
-  const result: LessonActivationConfig = {
-    1: typeof obj['1'] === 'boolean' ? obj['1'] : typeof obj.l1 === 'boolean' ? obj.l1 : true,
-    2: typeof obj['2'] === 'boolean' ? obj['2'] : typeof obj.l2 === 'boolean' ? obj.l2 : true,
-    3: typeof obj['3'] === 'boolean' ? obj['3'] : typeof obj.l3 === 'boolean' ? obj.l3 : true,
-    4: typeof obj['4'] === 'boolean' ? obj['4'] : typeof obj.l4 === 'boolean' ? obj.l4 : true,
-    5: typeof obj['5'] === 'boolean' ? obj['5'] : typeof obj.l5 === 'boolean' ? obj.l5 : true,
-    6: typeof obj['6'] === 'boolean' ? obj['6'] : typeof obj.l6 === 'boolean' ? obj.l6 : true,
-    7: typeof obj['7'] === 'boolean' ? obj['7'] : typeof obj.l7 === 'boolean' ? obj.l7 : true,
+  const pickBool = (num: LessonTabNumber): boolean => {
+    if (typeof obj[String(num)] === 'boolean') return obj[String(num)] as boolean;
+    if (typeof obj[`l${num}`] === 'boolean') return obj[`l${num}`] as boolean;
+    return true;
   };
-  if (typeof obj.updatedAt === 'string') {
-    result.updatedAt = obj.updatedAt;
+  const result: LessonAccessConfig = {
+    1: pickBool(1),
+    2: pickBool(2),
+    3: pickBool(3),
+    4: pickBool(4),
+    5: pickBool(5),
+    6: pickBool(6),
+    7: pickBool(7),
+  };
+  if (typeof obj.updatedBy === 'string' && obj.updatedBy.trim()) {
+    result.updatedBy = obj.updatedBy.trim();
+  }
+  if (typeof obj.updatedAt === 'string' && obj.updatedAt.trim()) {
+    result.updatedAt = obj.updatedAt.trim();
+  } else if (
+    obj.updatedAt &&
+    typeof (obj.updatedAt as { toDate?: () => Date }).toDate === 'function'
+  ) {
+    try {
+      result.updatedAt = (obj.updatedAt as { toDate: () => Date }).toDate().toISOString();
+    } catch {
+      // ignore
+    }
   }
   return result;
 }
 
-export function isLessonEnabled(config: LessonActivationConfig, lesson: LessonNumber): boolean {
+export function isLessonEnabled(config: LessonAccessConfig, lesson: LessonTabNumber): boolean {
   return Boolean(config[lesson]);
 }
 
-export function getFirstEnabledLesson(config: LessonActivationConfig): LessonNumber | null {
-  const lessons: LessonNumber[] = [1, 2, 3, 4, 5, 6, 7];
-  for (const l of lessons) {
-    if (config[l]) return l;
+export function getFirstEnabledLesson(config: LessonAccessConfig): LessonTabNumber | null {
+  for (const num of ALL_LESSON_NUMBERS) {
+    if (config[num]) return num;
   }
   return null;
 }
 
-export function createLessonPresetConfig(
-  preset: 'only1' | 'upTo2' | 'upTo4' | 'all'
-): LessonActivationConfig {
-  const now = new Date().toISOString();
-  switch (preset) {
-    case 'only1':
-      return { 1: true, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, updatedAt: now };
-    case 'upTo2':
-      return { 1: true, 2: true, 3: false, 4: false, 5: false, 6: false, 7: false, updatedAt: now };
-    case 'upTo4':
-      return { 1: true, 2: true, 3: true, 4: true, 5: false, 6: false, 7: false, updatedAt: now };
-    case 'all':
-    default:
-      return { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true, updatedAt: now };
+export function resolveAllowedStudentLesson(
+  config: LessonAccessConfig,
+  requestedLesson: LessonTabNumber
+): { allowed: boolean; targetLesson: LessonTabNumber | null } {
+  if (isLessonEnabled(config, requestedLesson)) {
+    return { allowed: true, targetLesson: requestedLesson };
   }
+  return {
+    allowed: false,
+    targetLesson: getFirstEnabledLesson(config),
+  };
 }
 
-export function toFirestoreLessonConfigPayload(config: LessonActivationConfig): {
+export type LessonAccessPreset =
+  | 'only1'
+  | 'upTo2'
+  | 'upTo3'
+  | 'upTo4'
+  | 'allOpen'
+  | 'allLocked';
+
+export function createLessonAccessPreset(
+  preset: LessonAccessPreset,
+  updatedBy?: string
+): LessonAccessConfig {
+  const now = new Date().toISOString();
+  const base: LessonAccessConfig = {
+    1: preset !== 'allLocked',
+    2: preset === 'upTo2' || preset === 'upTo3' || preset === 'upTo4' || preset === 'allOpen',
+    3: preset === 'upTo3' || preset === 'upTo4' || preset === 'allOpen',
+    4: preset === 'upTo4' || preset === 'allOpen',
+    5: preset === 'allOpen',
+    6: preset === 'allOpen',
+    7: preset === 'allOpen',
+    updatedAt: now,
+  };
+  if (updatedBy) {
+    base.updatedBy = updatedBy;
+  }
+  return base;
+}
+
+export function hasAnyLockedLesson(config: LessonAccessConfig): boolean {
+  return ALL_LESSON_NUMBERS.some((num) => !config[num]);
+}
+
+export function buildLessonAccessFirestoreFields(
+  config: LessonAccessConfig,
+  updatedByEmail?: string
+): {
   l1: boolean;
   l2: boolean;
   l3: boolean;
@@ -2847,14 +2897,75 @@ export function toFirestoreLessonConfigPayload(config: LessonActivationConfig): 
   l5: boolean;
   l6: boolean;
   l7: boolean;
+  updatedBy: string;
 } {
+  const normalized = normalizeLessonAccess(config);
+  const rawEmail = (updatedByEmail || normalized.updatedBy || 'liha1634@gmail.com').trim();
+  const safeUpdatedBy =
+    rawEmail === 'liha1634@gmail.com' || rawEmail === 'planitia4ai@gmail.com'
+      ? rawEmail
+      : 'liha1634@gmail.com';
   return {
-    l1: Boolean(config[1]),
-    l2: Boolean(config[2]),
-    l3: Boolean(config[3]),
-    l4: Boolean(config[4]),
-    l5: Boolean(config[5]),
-    l6: Boolean(config[6]),
-    l7: Boolean(config[7]),
+    l1: Boolean(normalized[1]),
+    l2: Boolean(normalized[2]),
+    l3: Boolean(normalized[3]),
+    l4: Boolean(normalized[4]),
+    l5: Boolean(normalized[5]),
+    l6: Boolean(normalized[6]),
+    l7: Boolean(normalized[7]),
+    updatedBy: safeUpdatedBy,
   };
 }
+
+export interface StudentLessonRenderGateResult {
+  canRender: boolean;
+  reason: 'syncing' | 'all_locked' | 'lesson_locked' | 'allowed';
+  effectiveLesson: LessonTabNumber;
+  redirectLesson: LessonTabNumber | null;
+}
+
+export function evaluateStudentLessonRenderGate(
+  config: LessonAccessConfig,
+  requestedLesson: LessonTabNumber,
+  isServerChecked: boolean
+): StudentLessonRenderGateResult {
+  const firstOpen = getFirstEnabledLesson(config);
+  const safeEffective: LessonTabNumber = isLessonEnabled(config, requestedLesson)
+    ? requestedLesson
+    : firstOpen ?? 1;
+
+  if (!isServerChecked) {
+    return {
+      canRender: false,
+      reason: 'syncing',
+      effectiveLesson: safeEffective,
+      redirectLesson: firstOpen,
+    };
+  }
+
+  if (firstOpen === null) {
+    return {
+      canRender: false,
+      reason: 'all_locked',
+      effectiveLesson: 1,
+      redirectLesson: null,
+    };
+  }
+
+  if (!isLessonEnabled(config, requestedLesson)) {
+    return {
+      canRender: false,
+      reason: 'lesson_locked',
+      effectiveLesson: firstOpen,
+      redirectLesson: firstOpen,
+    };
+  }
+
+  return {
+    canRender: true,
+    reason: 'allowed',
+    effectiveLesson: requestedLesson,
+    redirectLesson: requestedLesson,
+  };
+}
+

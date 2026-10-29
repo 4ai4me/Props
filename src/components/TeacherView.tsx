@@ -13,11 +13,12 @@ import {
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import {
   StudentRecord,
-  LessonActivationConfig,
-  LessonNumber,
-  LESSON_META,
-  createLessonPresetConfig,
-  isLessonEnabled,
+  ALL_LESSON_NUMBERS,
+  LESSON_TAB_METADATA,
+  LessonAccessConfig,
+  LessonAccessPreset,
+  LessonTabNumber,
+  createLessonAccessPreset,
   TOPICS,
   TopicId,
   EVAL_CRITERIA,
@@ -87,8 +88,12 @@ interface TeacherViewProps {
   onUpdateRecords: React.Dispatch<React.SetStateAction<StudentRecord[]>>;
   onPrintStudentReport: (student: StudentRecord) => void;
   onRequestConfirm: (title: string, message: string, onConfirm: () => void) => void;
-  lessonConfig: LessonActivationConfig;
-  onUpdateLessonConfig: (nextConfig: LessonActivationConfig, summaryMessage?: string) => void;
+  lessonAccess: LessonAccessConfig;
+  lessonAccessSyncStatus?: 'checking' | 'saving' | 'synced' | 'local_only' | 'error';
+  lessonAccessLastSyncedAt?: Date | null;
+  onUpdateLessonAccess: (nextConfig: LessonAccessConfig, reasonLabel?: string) => Promise<boolean> | void;
+  onForceSyncLessonAccessToServer?: () => Promise<boolean> | void;
+  onRefreshLessonAccessFromServer?: () => Promise<void> | void;
 }
 
 export const TeacherView: React.FC<TeacherViewProps> = ({
@@ -99,8 +104,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   onUpdateRecords,
   onPrintStudentReport,
   onRequestConfirm,
-  lessonConfig,
-  onUpdateLessonConfig,
+  lessonAccess,
+  lessonAccessSyncStatus = 'synced',
+  lessonAccessLastSyncedAt = null,
+  onUpdateLessonAccess,
+  onForceSyncLessonAccessToServer,
+  onRefreshLessonAccessFromServer,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const detailRef = useRef<HTMLDivElement | null>(null);
@@ -113,7 +122,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   });
 
   // Section collapse/expand states
-  const [isLessonLockOpen, setIsLessonLockOpen] = useState(true);
+  const [isLessonAccessOpen, setIsLessonAccessOpen] = useState(true);
   const [isApprovalOpen, setIsApprovalOpen] = useState(true);
   const [isControlsOpen, setIsControlsOpen] = useState(true);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(true);
@@ -238,9 +247,12 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
   // Real-time listener for student access logs
   useEffect(() => {
-    const ref = collection(db, 'student_access_logs');
+    const q = query(
+      collection(db, 'student_access_logs'),
+      where('status', 'in', ['pending', 'approved', 'rejected', 'teacher'])
+    );
     const unsub = onSnapshot(
-      ref,
+      q,
       (snap) => {
         const list: StudentAccessLog[] = [];
         snap.forEach((d) => {
@@ -900,37 +912,82 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const enabledLessonsList = LESSON_META.filter((m) => isLessonEnabled(lessonConfig, m.lesson));
+  const enabledLessonCount = ALL_LESSON_NUMBERS.filter((n) => lessonAccess[n]).length;
+  const lockedLessonNumbers = ALL_LESSON_NUMBERS.filter((n) => !lessonAccess[n]);
 
-  const handleToggleSingleLesson = (lessonNum: LessonNumber) => {
-    const nextState = !lessonConfig[lessonNum];
-    const nextConfig: LessonActivationConfig = {
-      ...lessonConfig,
-      [lessonNum]: nextState,
+  const handleToggleSingleLesson = async (lessonNum: LessonTabNumber) => {
+    const nextVal = !lessonAccess[lessonNum];
+    const nextConfig: LessonAccessConfig = {
+      ...lessonAccess,
+      [lessonNum]: nextVal,
       updatedAt: new Date().toISOString(),
+      updatedBy: adminEmail,
     };
-    onUpdateLessonConfig(
-      nextConfig,
-      nextState
-        ? `${lessonNum}차시 학습을 [활성(열림)]으로 전환했습니다.`
-        : `${lessonNum}차시 학습을 [비활성(선행 잠금)]으로 전환했습니다.`
-    );
+    const meta = LESSON_TAB_METADATA.find((m) => m.num === lessonNum);
+    const label = `${meta ? meta.fullTitle : `${lessonNum}차시`} ${
+      nextVal ? '활성화(열림)' : '비활성화(선행 잠금)'
+    }`;
+    const ok = await onUpdateLessonAccess(nextConfig, label);
+    setNotice({
+      text:
+        ok === false
+          ? `[차시 접근 설정] ${label} — 현재 브라우저에는 반영되었으나 서버 동기화 확인이 필요합니다. [서버 저장] 버튼을 눌러주세요.`
+          : `[차시 접근 서버 저장 완료] ${label} 설정이 클라우드 서버에 저장되어 모든 PC·브라우저의 학생 화면에 즉시 반영되었습니다.`,
+      type: ok === false ? 'warn' : nextVal ? 'good' : 'info',
+    });
+  };
+
+  const handleApplyLessonPreset = async (preset: LessonAccessPreset, presetLabel: string) => {
+    const nextConfig = createLessonAccessPreset(preset, adminEmail);
+    const ok = await onUpdateLessonAccess(nextConfig, presetLabel);
+    setNotice({
+      text:
+        ok === false
+          ? `[차시 일괄 설정] '${presetLabel}' — 서버 동기화 확인이 필요합니다. [서버 저장] 버튼을 눌러주세요.`
+          : `[차시 일괄 서버 저장 완료] '${presetLabel}' 설정이 클라우드 서버에 저장되어 모든 PC·브라우저의 학생 화면에 즉시 반영되었습니다.`,
+      type: ok === false ? 'warn' : 'good',
+    });
+  };
+
+  const handleManualServerSaveClick = async () => {
+    if (onForceSyncLessonAccessToServer) {
+      const ok = await onForceSyncLessonAccessToServer();
+      setNotice({
+        text:
+          ok === false
+            ? '차시 잠금 설정 서버 저장 중 오류가 발생했습니다. 네트워크 연결을 확인 후 다시 시도해 주세요.'
+            : `현재 차시 활성/잠금 설정(열림 ${enabledLessonCount}개, 잠금 ${lockedLessonNumbers.length}개)이 클라우드 서버에 확실하게 저장되었습니다. 모든 PC와 다른 브라우저에서도 즉시 동일하게 잠금 적용됩니다.`,
+        type: ok === false ? 'warn' : 'good',
+      });
+    } else {
+      await onUpdateLessonAccess(
+        {
+          ...lessonAccess,
+          updatedAt: new Date().toISOString(),
+          updatedBy: adminEmail,
+        },
+        '현재 차시 잠금 설정 서버 강제 동기화'
+      );
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* SECTION 0: Per-Lesson Activation / Lock Control (Prevent Ahead-of-Schedule Progression) */}
-      <div className="rounded-2xl border border-indigo-200/90 bg-white p-5 sm:p-7 shadow-xs">
+      {/* SECTION 0: Lesson Access ON/OFF Management (Prevent Jumping Ahead) */}
+      <div
+        id="teacher-lesson-access-card"
+        className="rounded-2xl border border-indigo-200/90 bg-white p-5 sm:p-7 shadow-xs"
+      >
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setIsLessonLockOpen((prev) => !prev)}
+              onClick={() => setIsLessonAccessOpen((prev) => !prev)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
-              aria-expanded={isLessonLockOpen}
-              aria-label="차시별 활성/비활성 제어 메뉴 접기/펼치기"
+              aria-expanded={isLessonAccessOpen}
+              aria-label="차시별 학습 활성/잠금 메뉴 접기/펼치기"
             >
-              {isLessonLockOpen ? (
+              {isLessonAccessOpen ? (
                 <>
                   <ChevronUp className="h-4 w-4 text-slate-600" />
                   <span>접기</span>
@@ -945,156 +1002,226 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             <div>
               <div className="text-xs font-bold text-indigo-600 flex items-center gap-1.5">
                 <Lock className="h-3.5 w-3.5" />
-                <span>수업 진도 제어 · 선행 학습 방지 (실시간 학생 화면 반영)</span>
+                <span>수업 진도 통제 · 학습자 차시 선행 방지 설정 (클라우드 서버 실시간 연동)</span>
               </div>
               <h2 className="mt-0.5 text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
-                차시별 활성 / 비활성 (ON / OFF) 관리
-                <span className="text-xs font-bold text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
-                  현재 열림: {enabledLessonsList.length} / 7차시 (
-                  {enabledLessonsList.length === 0
-                    ? '전체 잠김'
-                    : enabledLessonsList.length === 7
-                    ? '전체 열림'
-                    : enabledLessonsList.map((m) => `${m.lesson}차시`).join(', ')}
-                  )
+                차시별 학습 활성(ON) / 비활성(OFF) 관리
+                <span
+                  className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full border ${
+                    enabledLessonCount === 7
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      : enabledLessonCount === 0
+                      ? 'bg-rose-50 text-rose-800 border-rose-200'
+                      : 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                  }`}
+                >
+                  현재 열림 {enabledLessonCount}개 / 전체 7차시
                 </span>
               </h2>
             </div>
           </div>
 
-          {/* Quick Preset Buttons */}
+          {/* Quick Presets */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <button
               type="button"
-              onClick={() =>
-                onUpdateLessonConfig(
-                  createLessonPresetConfig('only1'),
-                  '1차시만 활성화하고 2~7차시는 선행 학습 방지를 위해 잠갔습니다.'
-                )
-              }
+              onClick={() => handleApplyLessonPreset('only1', '1차시만 열기 (2~7차시 잠금)')}
               className="inline-flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-extrabold text-indigo-800 hover:bg-indigo-100 transition-colors"
             >
               <Lock className="h-3.5 w-3.5 text-indigo-600" />
-              1차시만 ON (선행 방지)
+              1차시만 열기
             </button>
             <button
               type="button"
-              onClick={() =>
-                onUpdateLessonConfig(
-                  createLessonPresetConfig('upTo2'),
-                  '1~2차시만 활성화하고 3~7차시는 잠갔습니다.'
-                )
-              }
-              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+              onClick={() => handleApplyLessonPreset('upTo2', '1~2차시 열기 (3~7차시 잠금)')}
+              className="inline-flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-extrabold text-indigo-800 hover:bg-indigo-100 transition-colors"
             >
-              1~2차시 ON
+              1~2차시 열기
             </button>
             <button
               type="button"
-              onClick={() =>
-                onUpdateLessonConfig(
-                  createLessonPresetConfig('upTo4'),
-                  '1~4차시(명제 증명 단원)를 활성화하고 5~7차시는 잠갔습니다.'
-                )
-              }
-              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+              onClick={() => handleApplyLessonPreset('upTo3', '1~3차시 열기 (4~7차시 잠금)')}
+              className="inline-flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-extrabold text-indigo-800 hover:bg-indigo-100 transition-colors"
             >
-              1~4차시 ON
+              1~3차시 열기
             </button>
             <button
               type="button"
-              onClick={() =>
-                onUpdateLessonConfig(
-                  createLessonPresetConfig('all'),
-                  '전체 1~7차시를 모두 활성화(열림)했습니다.'
-                )
-              }
+              onClick={() => handleApplyLessonPreset('upTo4', '1~4차시 열기 (5~7차시 잠금)')}
+              className="inline-flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-extrabold text-indigo-800 hover:bg-indigo-100 transition-colors"
+            >
+              1~4차시 열기
+            </button>
+            <button
+              type="button"
+              onClick={() => handleApplyLessonPreset('allOpen', '전체 차시 열기 (1~7차시 모두 활성)')}
               className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-800 hover:bg-emerald-100 transition-colors"
             >
               <Unlock className="h-3.5 w-3.5 text-emerald-600" />
-              전체 차시 모두 ON
+              전체 열기
             </button>
           </div>
         </div>
 
-        {isLessonLockOpen && (
+        {/* Cloud Server Sync Verification & Explicit Save Action Bar */}
+        <div
+          id="teacher-lesson-access-sync-bar"
+          className={`mt-4 rounded-xl border px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+            lessonAccessSyncStatus === 'synced'
+              ? 'border-emerald-200 bg-emerald-50/70 text-emerald-950'
+              : lessonAccessSyncStatus === 'saving' || lessonAccessSyncStatus === 'checking'
+              ? 'border-blue-200 bg-blue-50/70 text-blue-950'
+              : 'border-amber-300 bg-amber-50/80 text-amber-950'
+          }`}
+        >
+          <div className="space-y-0.5 text-xs sm:text-sm">
+            <div className="font-extrabold flex items-center gap-1.5 flex-wrap">
+              {lessonAccessSyncStatus === 'synced' ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>
+                    클라우드 서버 저장 완료 · 모든 PC 및 다른 브라우저(크롬·엣지·사파리·태블릿) 학생 화면에 동일 적용됨
+                  </span>
+                </>
+              ) : lessonAccessSyncStatus === 'saving' || lessonAccessSyncStatus === 'checking' ? (
+                <>
+                  <RefreshCw className="h-4 w-4 text-blue-600 animate-spin shrink-0" />
+                  <span>클라우드 서버에 차시 잠금 설정을 동기화하고 있습니다…</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                  <span>
+                    로컬 설정 상태 · 우측 [차시 잠금 설정 서버 저장] 버튼을 누르면 모든 PC·브라우저에 즉시 강제 적용됩니다
+                  </span>
+                </>
+              )}
+            </div>
+            <div className="text-[11px] sm:text-xs text-slate-600">
+              {lockedLessonNumbers.length > 0 ? (
+                <span>
+                  현재 잠금(OFF) 차시:{' '}
+                  <strong className="text-rose-700">
+                    {lockedLessonNumbers.map((n) => `${n}차시`).join(', ')}
+                  </strong>{' '}
+                  (학습자 진입·URL 우회·선행 입력 완전 차단 중)
+                </span>
+              ) : (
+                <span>현재 1~7차시가 모두 열려 있습니다 (선행 제한 없음)</span>
+              )}
+              {lessonAccessLastSyncedAt && (
+                <span className="ml-2 mono text-slate-500">
+                  · 마지막 서버 동기화: {lessonAccessLastSyncedAt.toLocaleTimeString('ko-KR')}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {onRefreshLessonAccessFromServer && (
+              <button
+                type="button"
+                onClick={() => onRefreshLessonAccessFromServer()}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-extrabold text-slate-700 hover:bg-slate-50 transition-colors"
+                title="클라우드 서버에 저장된 최신 차시 잠금 설정을 다시 불러와 확인합니다"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>서버 상태 확인</span>
+              </button>
+            )}
+            <button
+              type="button"
+              id="btn-save-lesson-access-server"
+              onClick={handleManualServerSaveClick}
+              disabled={lessonAccessSyncStatus === 'saving'}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 px-4 py-2 text-xs sm:text-sm font-extrabold text-white shadow-xs transition-all active:scale-95"
+              title="현재 ON/OFF 차시 잠금 설정을 클라우드 서버(Firestore)에 즉시 저장하여 모든 PC와 다른 브라우저에 강제 적용합니다"
+            >
+              <Save className="h-4 w-4" />
+              <span>
+                {lessonAccessSyncStatus === 'saving'
+                  ? '서버 저장 중…'
+                  : '차시 잠금 설정 서버 저장 (전체 PC·브라우저 적용)'}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {isLessonAccessOpen && (
           <div className="mt-4 pt-4 border-t border-slate-100 space-y-4">
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              각 차시 버튼을 클릭하여 <strong>활성(ON)</strong> 또는 <strong>비활성(OFF, 선행 잠금)</strong> 상태를 전환할 수 있습니다.
-              비활성화된 차시는 학생 화면 상단 탭에 <strong>‘잠김’</strong>으로 표시되며, 학생이 임의로 클릭하거나 다음 차시로 넘어가는 것이 즉시 차단됩니다.
+              각 차시를 <strong>ON(활성)</strong> 또는 <strong>OFF(비활성·잠금)</strong>으로 전환하면 클라우드 서버에 즉시 저장되며, 필요 시 상단 <strong>[차시 잠금 설정 서버 저장]</strong> 버튼으로 언제든 수동 강제 저장할 수 있습니다.
+              비활성(OFF)된 차시는 자물쇠(<Lock className="inline h-3.5 w-3.5 text-slate-500" />)로 잠기며, 다른 PC나 다른 브라우저에서 접속한 학생도 탭 클릭·다음 차시 이동·URL 직접 입력(<code className="mono text-xs">?lesson=2</code>) 등 모든 경로에서 접근이 원천 차단됩니다.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {LESSON_META.map((meta) => {
-                const enabled = isLessonEnabled(lessonConfig, meta.lesson);
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {LESSON_TAB_METADATA.map((item) => {
+                const isEnabled = Boolean(lessonAccess[item.num]);
                 return (
                   <div
-                    key={meta.lesson}
+                    key={item.num}
                     className={`rounded-xl border p-3.5 flex flex-col justify-between gap-3 transition-all ${
-                      enabled
+                      isEnabled
                         ? 'border-emerald-200 bg-emerald-50/40'
-                        : 'border-slate-200 bg-slate-100/80 opacity-85'
+                        : 'border-slate-200 bg-slate-50/80 opacity-85'
                     }`}
                   >
-                    <div>
-                      <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
                         <span
-                          className={`mono text-xs font-extrabold px-2 py-0.5 rounded-md whitespace-nowrap ${
-                            enabled
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-slate-300 text-slate-700'
+                          className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-extrabold mono ${
+                            isEnabled
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-slate-200 text-slate-700'
                           }`}
                         >
-                          {meta.badge}차시
+                          {item.badge}차시
                         </span>
-                        <span
-                          className={`inline-flex items-center gap-1 text-xs font-extrabold whitespace-nowrap ${
-                            enabled ? 'text-emerald-700' : 'text-rose-700'
-                          }`}
-                        >
-                          {enabled ? (
-                            <>
-                              <Unlock className="h-3.5 w-3.5 shrink-0" />
-                              <span>활성 (열림)</span>
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="h-3.5 w-3.5 shrink-0" />
-                              <span>비활성 (잠김)</span>
-                            </>
-                          )}
-                        </span>
+                        <div className="mt-1.5 text-sm font-extrabold text-slate-900">
+                          {item.shortTitle}
+                        </div>
                       </div>
-                      <div className="mt-2 text-sm font-extrabold text-slate-900 leading-snug">
-                        <MathText text={meta.shortTitle} />
-                      </div>
-                    </div>
 
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={enabled}
-                      aria-label={`${meta.lesson}차시 활성 상태 전환`}
-                      onClick={() => handleToggleSingleLesson(meta.lesson)}
-                      className={`w-full min-h-[38px] rounded-lg px-3 py-1.5 text-xs font-extrabold flex items-center justify-between gap-2 whitespace-nowrap transition-colors ${
-                        enabled
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
-                          : 'bg-slate-800 hover:bg-slate-900 text-slate-200'
-                      }`}
-                    >
-                      <span>{enabled ? '학습 허용 ON' : '선행 잠금 OFF'}</span>
                       <span
-                        className={`inline-block h-4 w-7 shrink-0 rounded-full p-0.5 transition-colors ${
-                          enabled ? 'bg-emerald-800' : 'bg-slate-600'
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold whitespace-nowrap ${
+                          isEnabled
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-slate-700 text-white'
                         }`}
                       >
-                        <span
-                          className={`block h-3 w-3 rounded-full bg-white transition-transform ${
-                            enabled ? 'translate-x-3' : 'translate-x-0'
-                          }`}
-                        />
+                        {isEnabled ? (
+                          <>
+                            <Unlock className="h-3 w-3" />
+                            <span>ON · 열림</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="h-3 w-3" />
+                            <span>OFF · 잠금</span>
+                          </>
+                        )}
                       </span>
-                    </button>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/70">
+                      <span className="text-[11px] font-semibold text-slate-600">
+                        {isEnabled ? '학생 접속·풀이 가능' : '학생 진입·선행 차단됨'}
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={isEnabled}
+                        aria-label={`${item.fullTitle} 활성 여부 전환`}
+                        onClick={() => handleToggleSingleLesson(item.num)}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-extrabold transition-colors whitespace-nowrap ${
+                          isEnabled
+                            ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                            : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        }`}
+                      >
+                        {isEnabled ? '잠그기 (OFF)' : '열기 (ON)'}
+                      </button>
+                    </div>
                   </div>
                 );
               })}

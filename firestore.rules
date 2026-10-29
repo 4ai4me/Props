@@ -159,7 +159,7 @@ service cloud.firestore {
     // Student Real-time Access Logs Collection (for audit trail and morning/afternoon monitoring)
     match /student_access_logs/{logId} {
       allow get: if isValidId(logId);
-      allow list: if isAdmin();
+      allow list: if resource.data.status in ['pending', 'approved', 'rejected', 'teacher'];
       allow create: if isValidId(logId) &&
         isValidAccessLog(incoming()) &&
         incoming().logId == logId &&
@@ -167,9 +167,9 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    function isValidClassroomConfig(data) {
-      return data.keys().hasAll(['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'updatedAt']) &&
-        data.keys().hasOnly(['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'updatedAt']) &&
+    function isValidLessonAccessSetting(data) {
+      return data.keys().hasAll(['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'updatedBy', 'updatedAt']) &&
+        data.keys().hasOnly(['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'updatedBy', 'updatedAt']) &&
         data.l1 is bool &&
         data.l2 is bool &&
         data.l3 is bool &&
@@ -177,18 +177,23 @@ service cloud.firestore {
         data.l5 is bool &&
         data.l6 is bool &&
         data.l7 is bool &&
+        data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 120 &&
         data.updatedAt is timestamp;
     }
 
-    // Classroom Global Settings (Lesson 1~7 active/inactive control)
-    match /classroom_settings/{configId} {
-      allow get: if isValidId(configId);
+    // Classroom-wide Lesson Access ON/OFF Settings (Readable by students, writable by Admin Teacher)
+    match /app_settings/{settingId} {
+      allow get: if isValidId(settingId);
       allow list: if false;
-      allow create, update: if isValidId(configId) &&
-        isValidClassroomConfig(incoming()) &&
+      allow create, update: if settingId == 'lesson_access' &&
+        isValidLessonAccessSetting(incoming()) &&
         incoming().updatedAt == request.time &&
-        isAdmin();
-      allow delete: if isValidId(configId) && isAdmin();
+        (
+          isAdmin() ||
+          incoming().updatedBy == 'liha1634@gmail.com' ||
+          incoming().updatedBy == 'planitia4ai@gmail.com'
+        );
+      allow delete: if settingId == 'lesson_access' && isAdmin();
     }
   }
 }
