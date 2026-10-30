@@ -1253,6 +1253,13 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
                   <RefreshCw className="h-4 w-4 text-blue-600 animate-spin shrink-0" />
                   <span>클라우드 서버에 차시 잠금 설정을 동기화하고 있습니다…</span>
                 </>
+              ) : lessonAccessSyncStatus === 'error' ? (
+                <>
+                  <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                  <span className="text-rose-700">
+                    클라우드 서버에서 차시 잠금 설정을 확인하지 못했습니다 · 인터넷 연결 또는 Firebase 사용량 한도를 확인한 뒤 [서버 상태 확인]을 눌러 주세요 (학생 화면은 마지막으로 받은 설정을 사용합니다)
+                  </span>
+                </>
               ) : (
                 <>
                   <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />

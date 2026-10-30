@@ -678,8 +678,11 @@ export default function App() {
         setIsLessonAccessServerChecked(true);
         setLessonAccessSyncStatus('local_only');
       }
-    } catch {
+    } catch (err) {
+      // 서버에서 읽지 못함 (네트워크·사용량 한도 등): '확인 중'에 멈추지 않고 오류로 표시
+      console.error('Failed to read lesson access settings from server:', err);
       setIsLessonAccessServerChecked(true);
+      setLessonAccessSyncStatus((prev) => (prev === 'synced' ? prev : 'error'));
     }
   }, [sessionMode, applyServerLessonAccessSnapshot, persistLessonAccessToCloud]);
 
@@ -691,6 +694,12 @@ export default function App() {
         setIsLessonAccessServerChecked(true);
       }
     }, 2500);
+    // 15초가 지나도 서버 응답이 없으면 '확인 중' 대신 연결 문제로 표시 (계속 돌기만 하지 않도록)
+    const stuckTimer = setTimeout(() => {
+      if (isMounted) {
+        setLessonAccessSyncStatus((prev) => (prev === 'checking' ? 'error' : prev));
+      }
+    }, 15000);
 
     refreshLessonAccessFromServer();
 
@@ -703,8 +712,10 @@ export default function App() {
         }
         applyServerLessonAccessSnapshot(docSnap.data());
       },
-      () => {
+      (err) => {
+        console.error('Lesson access listener error:', err);
         setIsLessonAccessServerChecked(true);
+        setLessonAccessSyncStatus((prev) => (prev === 'synced' ? prev : 'error'));
       }
     );
 
@@ -750,6 +761,7 @@ export default function App() {
     return () => {
       isMounted = false;
       clearTimeout(safetyTimer);
+      clearTimeout(stuckTimer);
       unsubFirestore();
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('focus', handleWindowFocusOrVisible);
