@@ -838,3 +838,21 @@
 - **확인하지 못한 범위**: `saveNow()`의 순차 실행·재시도·로그아웃 대기, `beforeunload` 확인 창, 단계 이동 시 저장은 React 화면 안의 동작이라 작업 환경에서 실행 검증하지 못함(타입 검사와 코드 검토만) → 사용자 확인 필요.
 - **알려진 한계**: iPad Safari는 창 닫기 확인 창(`beforeunload`)을 지원하지 않음. 오프라인 상태에서 창을 닫으면 그 기기의 보관본에만 남음(같은 학생이 같은 기기로 다시 로그인하면 자동 저장).
 - **배포**: 보안 규칙 변경 없음 → push만 필요.
+
+
+---
+
+## [2026-10-30] 차시 잠금 동기화 표시 오류 · Console 404 정리 (Tier 1~2)
+
+- **요청 내용**: (1) 교사 화면의 "클라우드 서버에 차시 잠금 설정을 동기화하고 있습니다…"가 계속 도는 문제 (2) 개발자 도구 Console의 오류 정리
+- **원인 분석**:
+  1. 계속 도는 표시의 실제 원인은 Google Cloud에서 **Token Service API(securetoken.googleapis.com)가 사용 중지**되어 1시간마다 하는 로그인 토큰 갱신이 403으로 실패한 것 → **사용자가 API를 사용 설정해 해결**(코드 문제 아님). 다만 코드가 서버 읽기·실시간 수신 오류를 무시해서, 실패해도 "동기화 중"에 멈춰 원인을 알 수 없었음.
+  2. Console 404: `index.html`의 개발용 진입 파일(`/src/main.tsx`)을 GitHub Pages에서도 요청 / 탭 아이콘(`favicon.ico`) 없음. 둘 다 사이트 동작에는 영향 없음. (`[rhwp]` 메시지는 브라우저 확장 프로그램 출력이라 대상 아님)
+- **구현 내역 (Definition of Done)**:
+  - [x] `App.tsx`: 차시 잠금 설정 서버 읽기·실시간 수신 오류를 기록하고 상태를 `error`로 전환, 15초 넘게 응답이 없으면 `error`로 표시
+  - [x] `TeacherView.tsx`: `error` 상태 전용 빨간 안내 문구(인터넷 연결·Firebase 사용량 확인, 학생은 마지막 설정 사용)
+  - [x] `index.html`에서 `/src/main.tsx` 줄 제거 → `vite.config.ts`의 `injectDevEntry` 플러그인이 개발 실행·빌드 때만 넣음
+  - [x] `index.html`에 탭 아이콘(f(x), 파일 없이 SVG 직접 포함)
+- **회귀 확인 (실제로 확인한 범위)**: `tsc --noEmit` 통과, 전체 단위 테스트 통과, `npm run build` 통과(빌드 결과 `dist/index.html`에 진입 스크립트 포함, `index-*.js`/`index-*.css` 생성 확인 → 배포 파일 복사 방식 그대로), 로컬 서버에서 GitHub Pages처럼 띄워 Chromium으로 확인: 화면 정상 표시, `main.tsx`·`favicon` 404 없음, 그 밖의 4xx·페이지 오류 없음
+- **확인하지 못한 범위**: 서버 확인 실패 시 빨간 안내가 실제로 표시되는지는 Firebase에 연결할 수 없는 작업 환경이라 확인하지 못함(코드 검토만)
+- **운영 참고**: Token Service API·Identity Toolkit API가 꺼지면 학생·교사 모두 로그인 1시간 뒤 저장·조회가 막힘. Google Cloud 콘솔 → API 및 서비스에서 두 API가 "관리"(사용 중) 상태인지 확인.
