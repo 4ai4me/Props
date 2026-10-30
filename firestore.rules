@@ -24,12 +24,14 @@ service cloud.firestore {
     }
 
     // Sole Admin Teacher (Google email liha1634@gmail.com + runtime owner fallback)
+    // 익명 로그인 학생에게는 email 항목이 없으므로 .get(이름, 기본값)으로 읽음
+    // (직접 읽으면 규칙 '오류'로 집계되어, 정상적인 거부와 진짜 오류를 구분하기 어려워짐)
     function isAdmin() {
       return isSignedIn() &&
-        request.auth.token.email_verified == true &&
+        request.auth.token.get('email_verified', false) == true &&
         (
-          request.auth.token.email == 'liha1634@gmail.com' ||
-          request.auth.token.email == 'planitia4ai@gmail.com' ||
+          request.auth.token.get('email', '') == 'liha1634@gmail.com' ||
+          request.auth.token.get('email', '') == 'planitia4ai@gmail.com' ||
           exists(/databases/$(database)/documents/admins/$(request.auth.uid))
         );
     }
@@ -60,7 +62,7 @@ service cloud.firestore {
 
     function studentPasswordRequired() {
       return exists(/databases/$(database)/documents/app_settings/student_auth) &&
-        get(/databases/$(database)/documents/app_settings/student_auth).data.passwordRequired == true;
+        get(/databases/$(database)/documents/app_settings/student_auth).data.get('passwordRequired', false) == true;
     }
 
     function isValidStudentRegistration(data) {
@@ -195,8 +197,11 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/student_registrations/$(studentKey)).data;
     }
 
+    // 가입 문서가 없으면(삭제된 학생 등) 오류 대신 '본인 아님'으로 판단
     function isStudentOwnerOf(studentKey) {
-      return isSignedIn() && registrationData(studentKey).get('uid', '') == request.auth.uid;
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/student_registrations/$(studentKey)) &&
+        registrationData(studentKey).get('uid', '') == request.auth.uid;
     }
 
     function isLessonCollection(course) {
@@ -233,7 +238,7 @@ service cloud.firestore {
         isValidLessonDoc(incoming(), studentKey, docId) &&
         (
           isAdmin() ||
-          (isStudentOwnerOf(studentKey) && registrationData(studentKey).status == 'approved')
+          (isStudentOwnerOf(studentKey) && registrationData(studentKey).get('status', '') == 'approved')
         );
 
       // 교사 평가·메모: 교사만
