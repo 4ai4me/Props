@@ -105,6 +105,9 @@ student_registrations/{studentKey}/props_lessons/teacher 교사 평가·메모 (
 - 학생이 입력을 멈추고 **10초** 뒤, **내용이 바뀐 차시 문서만** 저장합니다. 탭을 닫거나 다른 창으로 전환하면 즉시 저장합니다.
 - 차시 문서가 아직 없는 차시는 예전 `worksheetJson` 내용을 그대로 사용하므로 별도 데이터 이전 작업이 필요 없습니다(학생이 그 차시를 수정할 때 자연스럽게 옮겨짐).
 - 서버 내용을 불러오기 전에는 자동 저장하지 않습니다(오래된 내용으로 서버를 덮어쓰지 않기 위해). 입력 내용은 그동안 기기(`localStorage`)에 보관됩니다.
+- **즉시 저장 시점 (2026-10-30 추가)**: 입력을 멈추고 10초 뒤 자동 저장에 더해, **다음 단계·이전 단계·단계 탭·다른 차시로 이동할 때**, 탭을 전환하거나 닫을 때, 인터넷이 다시 연결될 때 바로 저장합니다(바뀐 차시가 없으면 저장하지 않음). 모든 저장은 `App.tsx`의 `saveNow()` 한 곳에서 순서대로 실행됩니다.
+- **저장 실패 대비**: 실패하면 30초마다 자동 재시도하고 한 번 안내합니다. 저장되지 않은 내용이 있을 때 창을 닫으려 하면 브라우저 확인 창이 뜹니다(iPad Safari 등 일부 브라우저는 표시하지 않음). 로그아웃 시 마지막 저장을 최대 5초 기다리고, 저장이 확인되지 않으면 기기에 보관합니다.
+- **기기 보관(localStorage)은 학생별**: 학생 모드에서는 `STORAGE_KEY_STUDENT::{studentKey}`에 보관하고, 로그인할 때 **같은 학생의 보관본만** 합칩니다(공용 기기에서 앞 학생 답안이 뒤 학생 문서에 섞이지 않도록). 로그아웃 시 서버 저장이 확인되면 보관본을 지우고 화면을 비웁니다. (`src/utils/studentDraft.ts`)
 - 교사 평가·메모는 입력을 **1.5초** 모았다가 `teacher` 문서에만 저장합니다.
 - 차시 문서에는 `schemaVersion`(현재 1)이 기록됩니다. 문서 구조를 바꿀 때는 버전을 올리고 읽는 쪽에서 버전별로 처리합니다.
 - 관련 코드: `src/utils/lessonStore.ts`(저장·불러오기), `src/utils/lessonMerge.ts`(합치기·변경 감지, 단위 테스트 `lessonMerge.test.ts`).
@@ -358,7 +361,7 @@ npm run dev
 npm run lint
 
 # 4. 순수 수학 및 인증 로직 단위 테스트 실행
-npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts src/utils/lessonMerge.test.ts src/utils/answerLabels.test.ts src/components/FullAnswerPanel.test.tsx src/utils/passwordCore.test.ts src/utils/useDraggableWindow.test.ts
+npx tsx --test src/utils/mathLogic.test.ts src/utils/authLogic.test.ts src/utils/lessonMerge.test.ts src/utils/answerLabels.test.ts src/components/FullAnswerPanel.test.tsx src/utils/passwordCore.test.ts src/utils/useDraggableWindow.test.ts src/utils/studentDraft.test.ts
 
 # 5. 프로덕션 빌드 및 GitHub Pages 루트 번들(ghpages-app.js/css) 자동 동기화
 npm run build

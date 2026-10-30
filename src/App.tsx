@@ -63,6 +63,7 @@ import { MathSymbolInputBar } from './components/MathSymbolInputBar';
 import { MathText } from './components/MathText';
 import { recordStudentAccessLog } from './utils/auditLogger';
 import { ensureStudentAuth } from './utils/studentAuth';
+import { isRecordOfStudent, studentDraftKey } from './utils/studentDraft';
 import { needsPasswordSetup, useStudentAuthPolicy } from './utils/studentPassword';
 import {
   LessonJsonMap,
@@ -113,6 +114,10 @@ function parseLegacyPropsWorksheet(
 // 학생 활동지 자동 저장 대기 시간: 입력이 멈춘 뒤 이 시간이 지나면 한 번 저장
 // (기존 0.9초 → 10초. 탭 전환·닫기 시에는 즉시 저장되므로 내용이 사라지지 않음)
 const AUTOSAVE_DELAY_MS = 10000;
+// 저장 실패 시 자동 재시도 간격
+const SAVE_RETRY_DELAY_MS = 30000;
+// 로그아웃할 때 마지막 저장을 기다리는 최대 시간 (오프라인이면 저장이 끝나지 않으므로)
+const LOGOUT_SAVE_WAIT_MS = 5000;
 
 export default function App() {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
@@ -142,10 +147,24 @@ export default function App() {
 
   const [student, setStudent] = useState<StudentRecord>(() => {
     try {
+      // 학생 세션이 남아 있으면 그 학생의 기기 보관본만 불러옴 (다른 학생 답안이 섞이지 않도록)
+      const rawProfile = localStorage.getItem('math_detective_approved_profile_v1');
+      const profile = rawProfile ? (JSON.parse(rawProfile) as FirestoreStudentRegistrationDoc) : null;
+      if (profile?.studentKey) {
+        const draft = localStorage.getItem(studentDraftKey(STORAGE_KEY_STUDENT, profile.studentKey));
+        if (draft) return cleanStudentState(JSON.parse(draft));
+        // 예전 방식(학생 구분 없는 키) 보관본: 같은 학생의 것일 때만 사용
+        const legacy = localStorage.getItem(STORAGE_KEY_STUDENT);
+        if (legacy) {
+          const record = cleanStudentState(JSON.parse(legacy));
+          if (isRecordOfStudent(record, profile)) return record;
+        }
+        return createInitialStudentState();
+      }
       const raw = localStorage.getItem(STORAGE_KEY_STUDENT);
       if (raw) return cleanStudentState(JSON.parse(raw));
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Saved worksheet on this device is unreadable; starting fresh:', err);
     }
     return createInitialStudentState();
   });
@@ -261,8 +280,18 @@ export default function App() {
   // 학생 비밀번호 사용 설정 (기본: 사용 안 함)
   const studentAuthPolicy = useStudentAuthPolicy();
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // 자동 저장 대기 중인 작업 (탭 닫힘·전환 시 즉시 실행)
-  const pendingSaveRef = useRef<(() => Promise<void>) | null>(null);
+  // 저장 함수(saveNow)가 항상 최신 값을 쓰도록 렌더링마다 갱신
+  const studentRef = useRef(student);
+  studentRef.current = student;
+  const approvedProfileRef = useRef(approvedProfile);
+  approvedProfileRef.current = approvedProfile;
+  const sessionModeRef = useRef(sessionMode);
+  sessionModeRef.current = sessionMode;
+  // 저장을 한 번에 하나씩 순서대로 실행 (같은 내용을 겹쳐 저장하지 않도록)
+  const saveChainRef = useRef<Promise<boolean>>(Promise.resolve(true));
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveErrorNotifiedRef = useRef(false);
+  const saveNowRef = useRef<() => Promise<boolean>>(() => Promise.resolve(true));
   // 서버에 저장되어 있는 차시별 내용(JSON). null이면 아직 서버에서 불러오지 못한 상태이므로
   // 자동 저장을 하지 않습니다 (불러오기 전의 오래된 내용으로 서버의 최신 내용을 덮어쓰지 않기 위해).
   const serverLessonJsonRef = useRef<LessonJsonMap | null>(null);
@@ -283,67 +312,138 @@ export default function App() {
     return () => unsub();
   }, []);
 
-  // Sync student state to localStorage and debounced Firestore update when approved
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_STUDENT, JSON.stringify(student));
-    } catch {
-      // ignore
-    }
-
-    if (sessionMode === 'student' && approvedProfile?.studentKey) {
-      const studentKey = approvedProfile.studentKey;
-      const serverJson = serverLessonJsonRef.current;
-      // 서버 내용을 아직 불러오지 못했으면 저장하지 않음 (기기에는 위에서 저장됨)
-      if (!serverJson) return;
-
-      // 서버와 내용이 달라진 차시만 저장 (바뀐 것이 없으면 쓰지 않음)
-      const changed = findChangedLessons(student, serverJson);
-      if (changed.length === 0) {
-        pendingSaveRef.current = null;
-        if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-        return;
+  /**
+   * 지금 바로 클라우드에 저장 (바뀐 차시만).
+   * - 바뀐 내용이 없으면 아무것도 쓰지 않고 true.
+   * - 저장이 끝난 뒤에만 true(저장됨)로 처리. 실패하면 false + 자동 재시도 예약.
+   * - 자동 저장(10초), 다음 단계·차시 이동, 탭 전환·닫기, [지금 저장], 재시도, 로그아웃이 모두 이 함수를 씀.
+   */
+  const saveNow = useCallback((): Promise<boolean> => {
+    const run = async (): Promise<boolean> => {
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = null;
       }
+      const profile = approvedProfileRef.current;
+      if (sessionModeRef.current !== 'student' || !profile?.studentKey) return true;
+      const serverJson = serverLessonJsonRef.current;
+      // 서버 내용을 아직 불러오지 못함: 덮어쓰지 않음 (입력 내용은 기기에 보관 중)
+      if (!serverJson) return false;
+      const record = studentRef.current;
+      const changed = findChangedLessons(record, serverJson);
+      if (changed.length === 0) return true;
 
       setCloudSyncStatus('saving');
-      const recordToSave = student;
-      pendingSaveRef.current = async () => {
-        pendingSaveRef.current = null;
-        try {
-          const saved = await saveLessons(studentKey, recordToSave, changed);
-          if (serverLessonJsonRef.current) {
-            serverLessonJsonRef.current = { ...serverLessonJsonRef.current, ...saved };
-          }
-          setCloudSyncStatus('saved');
-          setLastSavedAt(new Date());
-        } catch (err) {
-          console.error(`Firestore autosave failed (${changed.join(', ')}):`, err);
-          setCloudSyncStatus('error');
+      try {
+        const saved = await saveLessons(profile.studentKey, record, changed);
+        if (serverLessonJsonRef.current) {
+          serverLessonJsonRef.current = { ...serverLessonJsonRef.current, ...saved };
         }
-      };
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-      syncTimerRef.current = setTimeout(() => {
-        pendingSaveRef.current?.();
-      }, AUTOSAVE_DELAY_MS);
-    }
-  }, [student, sessionMode, approvedProfile]);
+        if (retryTimerRef.current) {
+          clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = null;
+        }
+        saveErrorNotifiedRef.current = false;
+        // 저장하는 동안 학생이 더 입력했으면 '저장 중' 유지 (곧 다시 저장됨)
+        const stillChanged =
+          serverLessonJsonRef.current !== null &&
+          findChangedLessons(studentRef.current, serverLessonJsonRef.current).length > 0;
+        setCloudSyncStatus(stillChanged ? 'saving' : 'saved');
+        setLastSavedAt(new Date());
+        return true;
+      } catch (err) {
+        console.error(`Cloud save failed (${changed.join(', ')}):`, err);
+        setCloudSyncStatus('error');
+        if (!saveErrorNotifiedRef.current) {
+          saveErrorNotifiedRef.current = true;
+          showToast(
+            '클라우드 저장에 실패했습니다. 입력한 내용은 이 기기에 보관되어 있고, 30초마다 자동으로 다시 저장을 시도합니다.',
+            'warn'
+          );
+        }
+        if (!retryTimerRef.current) {
+          retryTimerRef.current = setTimeout(() => {
+            retryTimerRef.current = null;
+            void saveNowRef.current();
+          }, SAVE_RETRY_DELAY_MS);
+        }
+        return false;
+      }
+    };
+    const next = saveChainRef.current.then(run, run);
+    saveChainRef.current = next.catch(() => false);
+    return next;
+  }, [showToast]);
+  saveNowRef.current = saveNow;
 
-  // 탭을 닫거나 다른 창으로 전환할 때는 기다리지 않고 바로 저장
+  /** 아직 클라우드에 저장되지 않은 변경이 있는지 */
+  const hasUnsavedChanges = useCallback((): boolean => {
+    if (sessionModeRef.current !== 'student' || !approvedProfileRef.current?.studentKey) return false;
+    const serverJson = serverLessonJsonRef.current;
+    if (!serverJson) return false;
+    return findChangedLessons(studentRef.current, serverJson).length > 0;
+  }, []);
+
+  // 기기 보관(localStorage) + 입력이 멈추고 10초 뒤 자동 저장 예약
+  useEffect(() => {
+    try {
+      // 학생 모드에서는 학생별 키에 보관 (공용 기기에서 다른 학생 답안과 섞이지 않도록)
+      const key =
+        sessionMode === 'student' && approvedProfile?.studentKey
+          ? studentDraftKey(STORAGE_KEY_STUDENT, approvedProfile.studentKey)
+          : STORAGE_KEY_STUDENT;
+      localStorage.setItem(key, JSON.stringify(student));
+    } catch (err) {
+      console.warn('Failed to keep worksheet on this device:', err);
+    }
+
+    if (sessionMode !== 'student' || !approvedProfile?.studentKey) return;
+    // 서버 내용을 아직 불러오지 못했으면 예약하지 않음 (불러온 뒤 다시 실행됨)
+    const serverJson = serverLessonJsonRef.current;
+    if (!serverJson) return;
+    if (findChangedLessons(student, serverJson).length === 0) return;
+
+    setCloudSyncStatus('saving');
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      syncTimerRef.current = null;
+      void saveNow();
+    }, AUTOSAVE_DELAY_MS);
+  }, [student, sessionMode, approvedProfile, saveNow]);
+
+  // 다음 단계·이전 단계·단계 탭·다른 차시로 이동할 때: 기다리지 않고 바로 저장
+  // (바뀐 내용이 없으면 저장하지 않음)
+  useEffect(() => {
+    void saveNow();
+  }, [steps, activeLessonTab, saveNow]);
+
+  // 탭 전환·닫기 시 즉시 저장, 인터넷이 다시 연결되면 재시도,
+  // 저장되지 않은 내용이 있는데 창을 닫으려 하면 브라우저 확인 창 표시
   useEffect(() => {
     const flushNow = () => {
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-      pendingSaveRef.current?.();
+      void saveNow();
     };
     const handleVisibility = () => {
       if (document.visibilityState === 'hidden') flushNow();
     };
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges()) return;
+      void saveNow();
+      e.preventDefault();
+      // 일부 브라우저는 returnValue가 있어야 확인 창을 띄움 (문구는 브라우저 기본 문구로 표시됨)
+      e.returnValue = '';
+    };
     window.addEventListener('pagehide', flushNow);
+    window.addEventListener('online', flushNow);
+    window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       window.removeEventListener('pagehide', flushNow);
+      window.removeEventListener('online', flushNow);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, []);
+  }, [saveNow, hasUnsavedChanges]);
 
   // 학생 로그인 후: 서버의 차시 문서를 불러와 예전 worksheetJson 내용과 합칩니다.
   // 불러오기가 끝나야 자동 저장이 시작됩니다.
@@ -366,7 +466,8 @@ export default function App() {
         // 서버가 실제로 가진 내용 = 차시 문서(있으면) 또는 예전 worksheetJson
         serverLessonJsonRef.current = splitLessons(assembled);
         setStudent((prev) => {
-          const merged = mergeStudentStates(assembled, prev);
+          // 화면의 내용이 같은 학생의 것일 때만 합침 (다른 학생 답안이 섞이지 않도록)
+          const merged = isRecordOfStudent(prev, profile) ? mergeStudentStates(assembled, prev) : assembled;
           merged.group = groupLabel;
           merged.code = codeLabel;
           return merged;
@@ -431,7 +532,7 @@ export default function App() {
       if (needsPasswordSetup(studentAuthPolicy.passwordRequired, snap.data())) {
         // 비밀번호 사용이 켜졌는데 아직 비밀번호가 없는 학생: 첫 화면에서 비밀번호부터 설정
         // (학생 키는 남겨 두어 첫 화면이 바로 비밀번호 설정 폼을 보여 줌. 입력 내용은 기기에 보관됨)
-        void pendingSaveRef.current?.();
+        void saveNow();
         setSessionMode('gate');
         showToast('이제부터 비밀번호가 필요합니다. 비밀번호를 설정한 뒤 계속해 주세요.', 'warn');
       }
@@ -727,20 +828,13 @@ export default function App() {
       showToast('서버의 활동지를 다시 불러오는 중입니다. 잠시 후 [지금 저장]을 다시 눌러 주세요.', 'warn');
       return;
     }
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    pendingSaveRef.current = null;
-    const changed = findChangedLessons(student, serverJson);
-    if (changed.length === 0) {
+    if (findChangedLessons(student, serverJson).length === 0) {
       setCloudSyncStatus('saved');
       showToast('모든 내용이 이미 클라우드에 저장되어 있습니다.', 'good');
       return;
     }
-    setCloudSyncStatus('saving');
-    try {
-      const saved = await saveLessons(approvedProfile.studentKey, student, changed);
-      serverLessonJsonRef.current = { ...serverJson, ...saved };
-      setCloudSyncStatus('saved');
-      setLastSavedAt(new Date());
+    const ok = await saveNow();
+    if (ok) {
       showToast('클라우드에 최신 활동지가 즉시 저장되었습니다.', 'good');
 
       // Record access log for save event
@@ -757,10 +851,8 @@ export default function App() {
         ipAddress: approvedProfile.ipAddress,
         userAgent: approvedProfile.userAgent,
       }).catch((logErr) => console.warn('Save audit log skipped:', logErr));
-    } catch (err) {
-      console.error('Manual force save failed:', err);
-      setCloudSyncStatus('error');
-      showToast('클라우드 저장 중 오류가 발생했습니다. 네트워크 연결을 확인하세요.', 'warn');
+    } else {
+      showToast('클라우드 저장 중 오류가 발생했습니다. 네트워크 연결을 확인하세요. (입력 내용은 이 기기에 보관되며 자동으로 다시 시도합니다)', 'warn');
     }
   };
 
@@ -780,7 +872,16 @@ export default function App() {
       } catch {}
 
       setStudent((prev) => {
-        const merged = mergeStudentStates(worksheet, prev);
+        // 이 학생이 이 기기에 남긴 보관본만 합침 (공용 기기에서 앞 학생 답안이 섞이지 않도록)
+        let local: StudentRecord | null = null;
+        try {
+          const raw = localStorage.getItem(studentDraftKey(STORAGE_KEY_STUDENT, regDoc.studentKey));
+          if (raw) local = cleanStudentState(JSON.parse(raw));
+        } catch (err) {
+          console.warn('Saved draft for this student is unreadable; ignoring it:', err);
+        }
+        if (!local && isRecordOfStudent(prev, regDoc)) local = prev;
+        const merged = local ? mergeStudentStates(worksheet, local) : worksheet;
         merged.group = groupLabel;
         merged.code = codeLabel;
         return merged;
@@ -815,12 +916,33 @@ export default function App() {
   const handleExitMode = async () => {
     // 교사·학생 모두 로그아웃. 학생은 다음 접속 때 새 익명 계정이 만들어지므로
     // 공용 기기에서 다음 사람이 이전 학생의 문서에 접근할 수 없습니다.
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    try {
-      await pendingSaveRef.current?.();
-    } catch {
-      // ignore
+    const leavingStudentKey = sessionMode === 'student' ? approvedProfile?.studentKey : undefined;
+    if (leavingStudentKey) {
+      // 마지막 저장 (오프라인이면 끝나지 않으므로 최대 5초만 기다림)
+      const allSaved = await Promise.race([
+        saveNow(),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), LOGOUT_SAVE_WAIT_MS)),
+      ]);
+      if (allSaved) {
+        // 서버 저장이 확인되면 이 기기의 보관본 삭제
+        try {
+          localStorage.removeItem(studentDraftKey(STORAGE_KEY_STUDENT, leavingStudentKey));
+        } catch (err) {
+          console.warn('Failed to remove saved draft:', err);
+        }
+      } else {
+        showToast(
+          '아직 클라우드에 저장되지 않은 내용이 있어 이 기기에 보관해 두었습니다. 같은 학생이 이 기기로 다시 로그인하면 자동으로 저장됩니다.',
+          'warn'
+        );
+      }
     }
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    serverLessonJsonRef.current = null;
     try {
       await signOut(auth);
     } catch {
@@ -831,6 +953,10 @@ export default function App() {
       localStorage.removeItem('math_detective_approved_profile_v1');
     } catch {}
     setApprovedProfile(null);
+    if (leavingStudentKey) {
+      // 다음 사람이 이전 학생의 답안을 보거나 이어서 쓰지 않도록 화면 비우기
+      setStudent(createInitialStudentState());
+    }
     setSessionMode('gate');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
