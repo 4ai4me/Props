@@ -869,3 +869,20 @@
   3. `student_auth`·가입 문서의 필드를 직접 읽는 부분(필드가 없으면 오류)
 - **구현 내역**: `token.get(이름, 기본값)`, 가입 문서 `exists()` 확인 후 읽기, `data.get(필드, 기본값)`으로 변경. 결과(허용/거부)는 이전과 동일하고, 이전에 "오류"로 막히던 요청이 "거부"로 집계됨. Func·Props 규칙 동일.
 - **확인 범위**: 규칙 문법·동작은 작업 환경에서 에뮬레이터를 쓸 수 없어 **코드 검토만** 함 → 콘솔 게시 시 문법 검사 통과 여부와, 게시 후 며칠간 "오류" 수가 줄어드는지 확인 필요
+
+
+---
+
+## [2026-11-05] 보안 규칙 동기화: Func 전용 차시 잠금(`func_lesson_access`) 추가 (Tier 1 — Props 화면 변경 없음)
+
+**시작**
+- Tier: 1 (규칙 파일만, Props 코드·화면 변경 없음)
+- 목표: Func 저장소에서 추가한 `app_settings/func_lesson_access` 규칙을 Props `firestore.rules`에도 같게 반영 (두 저장소 규칙 동일 유지)
+- 회귀 위험: Props의 `lesson_access`·가입·차시 문서 규칙 (변경 없음)
+
+**완료**
+- 변경 파일: `firestore.rules` (Func `b33beb9`의 규칙과 동일. 기존 규칙은 그대로, 함수 `isValidFuncLessonAccessSetting`와 `func_lesson_access` 허용 조건만 추가), `log.md`
+- 배경: Func가 역함수를 4·5차시로 나누며 8차시가 되어, Props와 함께 쓰던 `app_settings/lesson_access`(7칸) 대신 Func 전용 잠금 문서를 씀. 이제 Func에서 차시를 잠가도 Props 잠금은 바뀌지 않고, Props에서 잠가도 Func는 바뀌지 않음(처음 한 번만 Func가 공용 값을 이어받음)
+- 확인한 것: `diff`로 Func `firestore.rules`와 같음 확인. 규칙 게시는 선생님이 Firebase 콘솔에서 함(2026-11-05)
+- 확인하지 못한 것: 규칙 에뮬레이터 실행(작업 환경에서 받을 수 없음)
+- 남은 위험·후속 작업: 없음 (Props 사이트는 계속 `lesson_access` 사용)

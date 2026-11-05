@@ -320,6 +320,22 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    // Func 전용 차시 잠금 (2026-11-05~, 1~8차시). Props와 함께 쓰던 lesson_access(7칸)는 그대로 둠
+    function isValidFuncLessonAccessSetting(data) {
+      return data.keys().hasAll(['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8', 'updatedBy', 'updatedAt']) &&
+        data.keys().hasOnly(['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8', 'updatedBy', 'updatedAt']) &&
+        data.l1 is bool &&
+        data.l2 is bool &&
+        data.l3 is bool &&
+        data.l4 is bool &&
+        data.l5 is bool &&
+        data.l6 is bool &&
+        data.l7 is bool &&
+        data.l8 is bool &&
+        data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 120 &&
+        data.updatedAt is timestamp;
+    }
+
     function isValidStudentAuthSetting(data) {
       return data.keys().hasAll(['passwordRequired', 'updatedBy', 'updatedAt']) &&
         data.keys().hasOnly(['passwordRequired', 'updatedBy', 'updatedAt']) &&
@@ -337,6 +353,13 @@ service cloud.firestore {
         incoming().updatedAt == request.time &&
         isAdmin();
       allow delete: if settingId == 'lesson_access' && isAdmin();
+
+      // Func 전용 차시 잠금 (교사만 변경, 읽기는 위 allow get으로 누구나)
+      allow create, update: if settingId == 'func_lesson_access' &&
+        isValidFuncLessonAccessSetting(incoming()) &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow delete: if settingId == 'func_lesson_access' && isAdmin();
 
       // 학생 비밀번호 사용 설정 (교사만 변경)
       allow create, update: if settingId == 'student_auth' &&
