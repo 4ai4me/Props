@@ -336,6 +336,17 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    // Func 반별 차시 잠금 (2026-11-09~). classes = { '학교|학년|반': { l1..l8 } }
+    // 교사만 쓰므로 반마다의 칸은 앱이 읽을 때 검사(칸이 틀린 반은 무시하고 전체 설정을 따름)
+    function isValidFuncClassLessonAccessSetting(data) {
+      return data.keys().hasAll(['classes', 'updatedBy', 'updatedAt']) &&
+        data.keys().hasOnly(['classes', 'updatedBy', 'updatedAt']) &&
+        data.classes is map &&
+        data.classes.size() <= 60 &&
+        data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 120 &&
+        data.updatedAt is timestamp;
+    }
+
     function isValidStudentAuthSetting(data) {
       return data.keys().hasAll(['passwordRequired', 'updatedBy', 'updatedAt']) &&
         data.keys().hasOnly(['passwordRequired', 'updatedBy', 'updatedAt']) &&
@@ -360,6 +371,13 @@ service cloud.firestore {
         incoming().updatedAt == request.time &&
         isAdmin();
       allow delete: if settingId == 'func_lesson_access' && isAdmin();
+
+      // Func 반별 차시 잠금 (교사만 변경, 읽기는 위 allow get으로 누구나 — 반 이름과 열림 여부만 있음)
+      allow create, update: if settingId == 'func_lesson_access_classes' &&
+        isValidFuncClassLessonAccessSetting(incoming()) &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow delete: if settingId == 'func_lesson_access_classes' && isAdmin();
 
       // 학생 비밀번호 사용 설정 (교사만 변경)
       allow create, update: if settingId == 'student_auth' &&

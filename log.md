@@ -886,3 +886,19 @@
 - 확인한 것: `diff`로 Func `firestore.rules`와 같음 확인. 규칙 게시는 선생님이 Firebase 콘솔에서 함(2026-11-05)
 - 확인하지 못한 것: 규칙 에뮬레이터 실행(작업 환경에서 받을 수 없음)
 - 남은 위험·후속 작업: 없음 (Props 사이트는 계속 `lesson_access` 사용)
+
+
+---
+
+## [2026-11-09] 보안 규칙 동기화: Func 반별 차시 잠금(`func_lesson_access_classes`) 추가 (Tier 1 — Props 화면 변경 없음)
+
+**시작**
+- Tier: 1 (규칙 파일만, Props 코드·화면 변경 없음)
+- 목표: Func에서 추가한 `app_settings/func_lesson_access_classes` 규칙을 Props `firestore.rules`에도 같게 반영 (두 저장소 규칙 동일 유지)
+- 회귀 위험: Props의 `lesson_access`·가입·차시 문서 규칙 (변경 없음)
+
+**완료**
+- 변경 파일: `firestore.rules` (Func의 규칙과 동일. 기존 규칙은 그대로, 함수 `isValidFuncClassLessonAccessSetting`와 `func_lesson_access_classes` 허용 조건만 추가 — 교사만 쓰기), `log.md`
+- 확인한 것: `diff`로 Func `firestore.rules`와 같음 확인
+- 확인하지 못한 것: 규칙 에뮬레이터 실행(작업 환경에서 받을 수 없음). 규칙 게시는 선생님이 Firebase 콘솔에서 함
+- 남은 위험·후속 작업: 없음 (Props 사이트는 계속 `lesson_access` 사용)
