@@ -902,3 +902,19 @@
 - 확인한 것: `diff`로 Func `firestore.rules`와 같음 확인
 - 확인하지 못한 것: 규칙 에뮬레이터 실행(작업 환경에서 받을 수 없음). 규칙 게시는 선생님이 Firebase 콘솔에서 함
 - 남은 위험·후속 작업: 없음 (Props 사이트는 계속 `lesson_access` 사용)
+
+
+---
+
+## [2026-11-13] 보안 규칙 동기화: Func 9차시 잠금 칸(`l9`) 허용 (Tier 1 — Props 화면 변경 없음)
+
+**시작**
+- Tier: 1 (규칙 파일만, Props 코드·화면 변경 없음)
+- 목표: Func가 무리함수를 8·9차시로 나누며 `app_settings/func_lesson_access`에 `l9` 칸을 추가 — 같은 규칙을 Props `firestore.rules`에도 반영(두 저장소 규칙 동일 유지)
+- 회귀 위험: Props의 `lesson_access`·가입·차시 문서 규칙 (변경 없음)
+
+**완료**
+- 변경 파일: `firestore.rules`(`isValidFuncLessonAccessSetting`의 `hasOnly`에 `l9` 추가, `l9`는 있으면 true/false만 — 예전 8칸 문서도 계속 허용), `log.md`
+- 확인한 것: `diff`로 Func `firestore.rules`(브랜치 `lesson8-irrational`)와 같음 확인
+- 확인하지 못한 것: 규칙 에뮬레이터 실행(작업 환경에서 받을 수 없음). 규칙 게시는 선생님이 Firebase 콘솔에서 함
+- 남은 위험·후속 작업: 없음 (Props 사이트는 계속 `lesson_access` 사용). main 합치기는 Func 9차시 배포와 함께
